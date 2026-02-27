@@ -48,10 +48,10 @@ For more authentication options, see the [Azure Identity documentation](https://
 
 ### 4. Install the Plugins
 # Add the repo as a plugin marketplace
-/plugin marketplace add microsoft/github-copilot-for-azure
+/plugin marketplace add microsoft/azure-skills
 
 # Pull in the Azure plugin
-/plugin install azure@github-copilot-for-azure
+/plugin install azure@azure-skills
 
 ## Available Tools
 
