@@ -53,12 +53,30 @@ services:
 
 ## Runtime Stacks
 
+> **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION FOR VERSIONS**
+>
+> Do NOT use hardcoded versions. Query for latest GA versions before generating code:
+>
+> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
+>
+> Use the azure-documentation MCP tool to fetch current supported versions:
+> ```yaml
+> intent: "Azure Functions supported language runtime versions"
+> learn: true
+> ```
+
+### Version Selection Priority
+1. **Latest GA** — For new projects (best features, longest support window)
+2. **LTS** — For enterprise/compliance requirements
+3. **User-specified** — When explicitly requested
+
 | Language | FUNCTIONS_WORKER_RUNTIME | linuxFxVersion |
 |----------|-------------------------|----------------|
-| Node.js | `node` | `Node\|18` |
-| Python | `python` | `Python\|3.11` |
-| .NET | `dotnet` | `DOTNET\|8.0` |
-| Java | `java` | `Java\|17` |
+| Node.js | `node` | `Node\|<version>` |
+| Python | `python` | `Python\|<version>` |
+| .NET | `dotnet-isolated` | `DOTNET-ISOLATED\|<version>` |
+| Java | `java` | `Java\|<version>` |
+| PowerShell | `powershell` | `PowerShell\|<version>` |
 
 ## References
 

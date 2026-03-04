@@ -40,7 +40,7 @@ The adapter handles protocol translation between Foundry request/response format
 
 ### Python: Async Credentials
 
-Always use `DefaultAzureCredential` from `azure.identity.aio` (not `azure.identity`) — `AzureAIClient` requires async credentials.
+For **local development**, use `DefaultAzureCredential` from `azure.identity.aio` (not `azure.identity`) — `AzureAIClient` requires async credentials. In production, use `ManagedIdentityCredential` from `azure.identity.aio`. See [auth-best-practices.md](../../../references/auth-best-practices.md).
 
 ### Python: Environment Variables
 
@@ -87,6 +87,6 @@ For VS Code `launch.json` and `tasks.json` configuration templates, see [AI Tool
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `ModuleNotFoundError` | Missing SDK | `pip install agent-framework --pre` in venv |
-| Async credential error | Wrong import | Use `azure.identity.aio.DefaultAzureCredential` |
+| Async credential error | Wrong import | Use `azure.identity.aio.DefaultAzureCredential` (local dev) or `azure.identity.aio.ManagedIdentityCredential` (production) |
 | Agent name validation error | Invalid characters | Use alphanumeric + hyphens, start/end alphanumeric, max 63 chars |
 | Hosting adapter not found | Missing package | Install `azure-ai-agentserver-agentframework` |

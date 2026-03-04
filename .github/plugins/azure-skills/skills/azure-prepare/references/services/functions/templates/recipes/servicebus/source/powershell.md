@@ -160,7 +160,7 @@ Set these in `local.settings.json`:
 ```
 
 > **Note:** For local development with UAMI, use Azure Identity `DefaultAzureCredential`
-> which will use your `az login` credentials.
+> which will use your `az login` credentials. See [auth-best-practices.md](../../../../../../auth-best-practices.md) for production guidance.
 
 ## Common Patterns
 

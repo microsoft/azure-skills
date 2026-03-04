@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry:resource/create
-description: >-
+description: |
   Create Azure AI Services multi-service resource (Foundry resource) using Azure CLI.
   USE FOR: create Foundry resource, new AI Services resource, create multi-service resource, provision Azure AI Services, AIServices kind resource, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry.
   DO NOT USE FOR: creating ML workspace hubs (use microsoft-foundry:project/create), deploying models (use microsoft-foundry:models/deploy), managing permissions (use microsoft-foundry:rbac), monitoring resource usage (use microsoft-foundry:quota).

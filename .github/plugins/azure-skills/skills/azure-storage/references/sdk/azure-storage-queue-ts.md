@@ -15,7 +15,7 @@ const client = new QueueServiceClient(`https://${accountName}.queue.core.windows
 ```
 
 ## Best Practices
-- Use DefaultAzureCredential — prefer AAD over connection strings/keys
+- Use DefaultAzureCredential for **local development only** — in production, use ManagedIdentityCredential. See [auth-best-practices.md](../auth-best-practices.md)
 - Always delete after processing — prevent duplicate processing
 - Handle poison messages — move failed messages to a dead-letter queue
 - Use appropriate visibility timeout — set based on expected processing time

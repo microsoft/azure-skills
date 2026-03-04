@@ -27,7 +27,7 @@ const session = await client.createSession({
 
 ## Path 3: Azure BYOM (Bring Your Own Model)
 
-Use your own Azure AI deployment with `DefaultAzureCredential`.
+Use your own Azure AI deployment. For local development use `DefaultAzureCredential`; for production use `ManagedIdentityCredential` — see [auth-best-practices.md](auth-best-practices.md).
 
 > ⚠️ **Warning:** The Copilot SDK encrypts prompt content. Only models that support decrypting encrypted content work with BYOM. Using unsupported models returns "400 Encrypted content is not supported" or silently times out.
 
@@ -54,6 +54,8 @@ Use your own Azure AI deployment with `DefaultAzureCredential`.
 | Azure AI Foundry | `openai` | `https://<resource>.services.ai.azure.com/api/projects/<project>/openai/v1/` |
 
 ### Code Pattern
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](auth-best-practices.md) for production patterns.
 
 ```typescript
 import { DefaultAzureCredential } from "@azure/identity";

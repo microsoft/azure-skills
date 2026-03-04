@@ -61,6 +61,32 @@ azd env set VNET_ENABLED false
 azd show
 ```
 
+## Testing HTTP Endpoints
+
+> ⚠️ **Never use `curl -I` (HEAD) to test Azure Functions endpoints.**
+>
+> Azure Functions `[HttpTrigger]` with `"get"` does **not** automatically handle HEAD requests. HEAD returns 404 from the routing layer even when GET works correctly, causing false-negative results and misdirected debugging.
+
+### ✅ DO — Use GET with output suppression
+
+```bash
+# Check status code only (GET, don't follow redirects)
+curl -s -o /dev/null -w "%{http_code}" "https://<func-name>.azurewebsites.net/api/<route>"
+
+# Get status code and redirect URL
+curl -s -o /dev/null -w "Status: %{http_code}\nRedirect: %{redirect_url}" "https://<func-name>.azurewebsites.net/api/<route>"
+
+# Verbose output showing response headers (GET)
+curl -sS -D - -o /dev/null "https://<func-name>.azurewebsites.net/api/<route>"
+```
+
+### ❌ DON'T — Use HEAD requests
+
+```bash
+# DO NOT use this — returns 404 even when the function works
+curl -I "https://<func-name>.azurewebsites.net/api/<route>"
+```
+
 ## Monitoring
 
 Monitor your Functions deployment through Azure Portal or use azd to view deployment status.

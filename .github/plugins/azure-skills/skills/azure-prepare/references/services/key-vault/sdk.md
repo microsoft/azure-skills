@@ -2,6 +2,8 @@
 
 ## Node.js
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../../auth-best-practices.md) for production patterns.
+
 ```javascript
 const { SecretClient } = require("@azure/keyvault-secrets");
 const { DefaultAzureCredential } = require("@azure/identity");
@@ -17,6 +19,8 @@ console.log(secret.value);
 
 ## Python
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../../auth-best-practices.md) for production patterns.
+
 ```python
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
@@ -31,6 +35,8 @@ print(secret.value)
 ```
 
 ## .NET
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../../auth-best-practices.md) for production patterns.
 
 ```csharp
 var client = new SecretClient(

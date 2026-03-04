@@ -26,7 +26,7 @@ SDK packages and quick start examples for Azure Storage services.
 
 ## Quick Start Examples
 
-All examples use `DefaultAzureCredential` for authentication. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+All examples use `DefaultAzureCredential` for authentication, which is recommended for **local development only**. In production, use `ManagedIdentityCredential` — see [auth-best-practices.md](auth-best-practices.md). Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
 
 **Python** - Upload Blob:
 ```python

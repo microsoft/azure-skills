@@ -16,7 +16,7 @@ const client = new ShareServiceClient(`https://${accountName}.file.core.windows.
 
 ## Best Practices
 - Use connection strings for simplicity in development
-- Use DefaultAzureCredential for production — enable managed identity in Azure
+- Use DefaultAzureCredential for **local development only** — in production, use ManagedIdentityCredential. See [auth-best-practices.md](../auth-best-practices.md)
 - Set quotas on shares to prevent unexpected storage costs
 - Use streaming for large files — `uploadStream`/`downloadToFile` for files > 256MB
 - Use ranges for partial updates — more efficient than full file replacement

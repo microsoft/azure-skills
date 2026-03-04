@@ -2,7 +2,7 @@
 
 When .NET Aspire deploys Azure Functions via `azd`, Functions run as containerized workloads on Azure Container Apps. **File-based secret storage is required** when using identity-based storage access.
 
-> ⚠️ **Critical:** When Azure Functions use identity-based storage (e.g., `AzureWebJobsStorage__accountName` or `AzureWebJobsStorage__blobServiceUri`), you **must** set `AzureWebJobsSecretStorageType=Files`.
+> ⚠️ **Critical:** When Azure Functions use identity-based storage (e.g., `AzureWebJobsStorage__blobServiceUri`), you **must** set `AzureWebJobsSecretStorageType=Files`.
 
 ## Proactive Configuration in AppHost
 
@@ -45,8 +45,8 @@ resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
           image: containerImage
           env: [
             {
-              name: 'AzureWebJobsStorage__accountName'
-              value: storageAccount.name
+              name: 'AzureWebJobsStorage__blobServiceUri'
+              value: storageAccount.properties.primaryEndpoints.blob
             }
             {
               name: 'AzureWebJobsSecretStorageType'
@@ -90,4 +90,4 @@ an Azure Storage connection string and a SAS connection uri.
 - Deploying Azure Functions to Container Apps via .NET Aspire
 - Using `AddAzureFunctionsProject` with `WithHostStorage` in your AppHost
 - Using identity-based storage access (no connection strings)
-- Setting environment variables like `AzureWebJobsStorage__accountName` or `AzureWebJobsStorage__blobServiceUri`
+- Setting environment variables like `AzureWebJobsStorage__blobServiceUri`

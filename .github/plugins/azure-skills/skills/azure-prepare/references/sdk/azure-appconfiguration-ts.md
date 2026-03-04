@@ -8,6 +8,9 @@
 npm install @azure/app-configuration @azure/identity
 
 ## Quick Start
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```typescript
 import { AppConfigurationClient } from "@azure/app-configuration";
 import { DefaultAzureCredential } from "@azure/identity";

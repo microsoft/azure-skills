@@ -39,7 +39,9 @@ What does the user want to do?
 │   ├── Has azure.yaml/infra? → Mode: MODIFY
 │   └── No Azure config? → Mode: MODERNIZE (add Azure support first)
 │
-└── Migrate/modernize for Azure → Mode: MODERNIZE
+└── Migrate/modernize for Azure
+    ├── Cross-cloud migration (AWS/GCP/Lambda)? → **Invoke azure-cloud-migrate skill** (do NOT continue in azure-prepare)
+    └── On-prem or generic modernization → Mode: MODERNIZE
 ```
 
 ## Mode: NEW

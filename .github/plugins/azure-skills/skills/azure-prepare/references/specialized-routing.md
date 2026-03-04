@@ -4,10 +4,13 @@
 
 ## Prompt-Based Routing Table
 
-| User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
-|---------------------|--------------------|-----------------------------|
-| copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
-| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
+> **⚠️ PRIORITY RULE**: Check rows **top to bottom**. The first match wins. If the prompt mentions **AWS Lambda migration or AWS Lambda**, invoke **azure-cloud-migrate** even if Azure Functions are also mentioned.
+
+| Priority | User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
+|----------|---------------------|--------------------|-----------------------------|
+| **1 (highest)** | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
+| 2 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
+| 3 (lowest) | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
 
 > ⚠️ This checks the user's **prompt text**, not just existing code. Essential for greenfield projects where there is no codebase to scan.
 

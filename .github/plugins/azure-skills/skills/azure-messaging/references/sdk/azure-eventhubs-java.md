@@ -38,6 +38,8 @@ See [Java SDK logging docs](https://learn.microsoft.com/azure/developer/java/sdk
 
 Package: `azure-messaging-eventhubs-checkpointstore-blob`
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```java
 TokenCredential credential = new DefaultAzureCredentialBuilder().build();
 

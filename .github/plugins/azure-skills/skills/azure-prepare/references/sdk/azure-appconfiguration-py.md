@@ -8,6 +8,9 @@
 pip install azure-appconfiguration azure-identity
 
 ## Quick Start
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```python
 from azure.appconfiguration import AzureAppConfigurationClient
 from azure.identity import DefaultAzureCredential

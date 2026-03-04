@@ -108,9 +108,9 @@ resource "azurerm_linux_function_app" "function_app" {
   }
 
   app_settings = {
-    "AzureWebJobsStorage__accountName"  = azurerm_storage_account.function_storage.name
-    "FUNCTIONS_EXTENSION_VERSION"       = "~4"
-    "FUNCTIONS_WORKER_RUNTIME"          = "python"
+    "AzureWebJobsStorage__blobServiceUri"  = azurerm_storage_account.function_storage.primary_blob_endpoint
+    "FUNCTIONS_EXTENSION_VERSION"          = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"             = "python"
   }
 }
 
@@ -123,7 +123,7 @@ resource "azurerm_role_assignment" "function_storage_access" {
 ```
 
 > 💡 **Key Points:**
-> - Use `AzureWebJobsStorage__accountName` instead of connection string
+> - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `shared_access_key_enabled = false` for enhanced security
 > - Use `storage_uses_managed_identity = true` for deployment authentication
 > - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
@@ -159,9 +159,9 @@ module "function_app" {
   }
 
   app_settings = {
-    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
-    "FUNCTIONS_EXTENSION_VERSION"      = "~4"
-    "FUNCTIONS_WORKER_RUNTIME"         = "python"
+    "AzureWebJobsStorage__blobServiceUri" = azurerm_storage_account.function_storage.primary_blob_endpoint
+    "FUNCTIONS_EXTENSION_VERSION"         = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"            = "python"
   }
 
   identity = {
@@ -239,7 +239,7 @@ resource "azurerm_linux_function_app" "function_app" {
   
   app_settings = {
     # Storage with managed identity
-    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
+    "AzureWebJobsStorage__blobServiceUri" = azurerm_storage_account.function_storage.primary_blob_endpoint
     
     # Service Bus with managed identity
     "SERVICEBUS__fullyQualifiedNamespace" = "${data.azurerm_servicebus_namespace.example.name}.servicebus.windows.net"

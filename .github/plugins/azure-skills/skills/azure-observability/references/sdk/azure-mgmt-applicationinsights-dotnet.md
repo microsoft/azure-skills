@@ -9,6 +9,8 @@ dotnet add package Azure.ResourceManager.ApplicationInsights
 dotnet add package Azure.Identity
 
 ## Quick Start
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```csharp
 using Azure.ResourceManager;
 using Azure.ResourceManager.ApplicationInsights;

@@ -77,6 +77,16 @@ az deployment sub show \
 | `mcp_bicep_get_az_resource_type_schema` | Resource schemas |
 | `mcp_bicep_list_avm_metadata` | Azure Verified Modules |
 
+## AVM Verification Before Deploy
+
+Before running deployment commands, verify generated templates followed AVM-first module selection:
+
+1. AVM Bicep Pattern Modules (prefer AVM+AZD patterns)
+2. AVM Bicep Resource Modules
+3. AVM Bicep Utility Modules
+
+If no AVM+AZD pattern module is available, fallback must remain within AVM modules (resource -> utility).
+
 ## Cleanup (DESTRUCTIVE)
 
 ```bash

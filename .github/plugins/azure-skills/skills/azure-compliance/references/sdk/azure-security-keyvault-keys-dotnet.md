@@ -16,7 +16,7 @@ var client = new KeyClient(new Uri("https://<vault>.vault.azure.net"), new Defau
 ```
 
 ## Best Practices
-- Use Managed Identity — prefer DefaultAzureCredential over secrets
+- Use DefaultAzureCredential for **local development only**. In production, use ManagedIdentityCredential — see [auth-best-practices.md](../auth-best-practices.md)
 - Enable soft-delete — protect against accidental deletion
 - Use HSM-backed keys — set `HardwareProtected = true` for sensitive keys
 - Implement key rotation — use automatic rotation policies

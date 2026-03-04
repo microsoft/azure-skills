@@ -11,6 +11,8 @@
 ```
 
 ## Quick Start
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```java
 import com.azure.monitor.query.LogsQueryClient;
 import com.azure.monitor.query.LogsQueryClientBuilder;

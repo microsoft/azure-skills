@@ -15,7 +15,7 @@ blob_service_client = BlobServiceClient("https://<account>.blob.core.windows.net
 ```
 
 ## Best Practices
-- Use DefaultAzureCredential instead of connection strings
+- Use DefaultAzureCredential for **local development only** — in production, use ManagedIdentityCredential. See [auth-best-practices.md](../auth-best-practices.md)
 - Use context managers for async clients
 - Set `overwrite=True` explicitly when re-uploading
 - Use `max_concurrency` for large file transfers

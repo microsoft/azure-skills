@@ -8,6 +8,8 @@
 pip install azure-monitor-query azure-identity
 
 ## Quick Start
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```python
 from azure.monitor.query import LogsQueryClient, MetricsQueryClient
 from azure.identity import DefaultAzureCredential

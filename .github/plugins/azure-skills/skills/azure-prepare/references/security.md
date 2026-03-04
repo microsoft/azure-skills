@@ -85,6 +85,28 @@ az role assignment create \
   --scope /subscriptions/SUB/resourceGroups/RG/providers/Microsoft.KeyVault/vaults/VAULT
 ```
 
+### Permissions Required to Grant Roles
+
+> ⚠️ **Important**: To assign RBAC roles to identities, you need a role with the `Microsoft.Authorization/roleAssignments/write` permission.
+
+| Your Role | Permissions | Recommended For |
+|-----------|-------------|-----------------|
+| **User Access Administrator** | Assign roles (no data access) | ✅ Least privilege for role assignment |
+| **Owner** | Full access + assign roles | ❌ More permissions than needed |
+| **Custom Role** | Specific permissions including roleAssignments/write | ✅ Fine-grained control |
+
+**Common Scenario**: Granting Storage Blob Data Owner to a Web App's managed identity
+
+```bash
+# You need User Access Administrator (or Owner) on the Storage Account to run this:
+az role assignment create \
+  --role "Storage Blob Data Owner" \
+  --assignee WEBAPP_PRINCIPAL_ID \
+  --scope /subscriptions/SUB/resourceGroups/RG/providers/Microsoft.Storage/storageAccounts/ACCOUNT
+```
+
+If you encounter `AuthorizationFailed` errors when assigning roles, you likely need the User Access Administrator role at the target scope.
+
 ### RBAC Best Practices
 
 | Role | Use When |
@@ -223,7 +245,7 @@ Use Microsoft Defender for Cloud for:
 
 ## Azure Identity SDK
 
-All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+All Azure SDKs use their language's Identity library for credential-free authentication. Use `DefaultAzureCredential` for **local development only**; in production, use `ManagedIdentityCredential` or another deterministic credential — see [auth-best-practices.md](auth-best-practices.md). Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
 
 | Language | Package | Install |
 |----------|---------|---------|

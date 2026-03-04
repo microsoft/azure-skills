@@ -9,6 +9,9 @@ npm install @azure-rest/ai-document-intelligence @azure/identity
 ```
 
 ## Quick Start
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```typescript
 import DocumentIntelligence, { isUnexpected, getLongRunningPoller, AnalyzeOperationOutput } from "@azure-rest/ai-document-intelligence";
 const client = DocumentIntelligence(endpoint, new DefaultAzureCredential());
