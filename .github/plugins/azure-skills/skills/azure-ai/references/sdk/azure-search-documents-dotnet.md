@@ -21,7 +21,7 @@ var client = new SearchClient(new Uri(endpoint), indexName, credential);
 - Semantic answers: `result.Value.SemanticSearch.Answers` / captions on each result
 
 ## Best Practices
-1. Use `DefaultAzureCredential` over API keys for production
+1. Use `DefaultAzureCredential` for **local development only**. In production, use `ManagedIdentityCredential` — see [auth-best-practices.md](../auth-best-practices.md)
 2. Use `FieldBuilder` with model attributes for type-safe index definitions
 3. Use `CreateOrUpdateIndexAsync` for idempotent index creation
 4. Batch document operations for better throughput

@@ -1,6 +1,10 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Invoke for ANY app work related to Azure: creating, building, updating, migrating, or modernizing apps. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform, Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function. DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform)."
+description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"create frontend\", \"create back end\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"deploy to Azure Container Apps using Terraform\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"containerized Node.js app\", \"social media app\", \"static portfolio website\", \"todo list with frontend and API\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.2"
 ---
 
 # Azure Prepare
@@ -20,6 +24,7 @@ Activate this skill when user wants to:
 - Modernize or migrate an application
 - Set up Azure infrastructure
 - Deploy to Azure or host on Azure
+- Create and deploy to Azure (including Terraform-based deployment requests)
 
 ## Rules
 
@@ -29,11 +34,12 @@ Activate this skill when user wants to:
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
-7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+7. ❌ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+8. **Scope: preparation only** — This skill generates infrastructure code and configuration files. Deployment execution (`azd up`, `azd deploy`, `terraform apply`) is handled by the **azure-deploy** skill, which provides built-in error recovery and deployment verification.
 
 ---
 
-## ⛔ PLAN-FIRST WORKFLOW — MANDATORY
+## ❌ PLAN-FIRST WORKFLOW — MANDATORY
 
 > **YOU MUST CREATE A PLAN BEFORE DOING ANY WORK**
 >
@@ -46,14 +52,17 @@ Activate this skill when user wants to:
 
 ---
 
-## ⛔ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
+## ❌ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
 **BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
+| Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** |
 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
+| APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
+| AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
@@ -67,7 +76,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **⛔ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | **❌ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
@@ -79,7 +88,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 ---
 
-> **⛔ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
+> **❌ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
 
 ---
 
@@ -94,7 +103,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **Validate** — Invoke **azure-validate** skill | — |
+| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
 
 ---
 

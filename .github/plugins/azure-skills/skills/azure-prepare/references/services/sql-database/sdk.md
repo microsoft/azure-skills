@@ -21,6 +21,8 @@ const pool = await sql.connect(config);
 
 ## Python (pyodbc)
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../../auth-best-practices.md) for production patterns.
+
 ```python
 import pyodbc
 from azure.identity import DefaultAzureCredential

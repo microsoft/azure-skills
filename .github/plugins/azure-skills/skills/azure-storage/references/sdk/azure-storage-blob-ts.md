@@ -15,7 +15,7 @@ const client = new BlobServiceClient(`https://${accountName}.blob.core.windows.n
 ```
 
 ## Best Practices
-- Use DefaultAzureCredential — prefer AAD over connection strings/keys
+- Use DefaultAzureCredential for **local development only** — in production, use ManagedIdentityCredential. See [auth-best-practices.md](../auth-best-practices.md)
 - Use streaming for large files — `uploadStream`/`downloadToFile` for files > 256MB
 - Set appropriate content types — use `setHTTPHeaders` for correct MIME types
 - Use SAS tokens for client access — generate short-lived tokens for browser uploads

@@ -18,6 +18,9 @@
 ```
 
 ## Quick Start
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```java
 import com.azure.security.keyvault.keys.KeyClientBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;

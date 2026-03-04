@@ -39,6 +39,8 @@ Configure via `EventHubsRetryOptions` when creating the client. See [Configuring
 
 Package: `Azure.Messaging.EventHubs.Processor` (includes `EventProcessorClient` + blob checkpoint store)
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```csharp
 var credential = new DefaultAzureCredential();
 

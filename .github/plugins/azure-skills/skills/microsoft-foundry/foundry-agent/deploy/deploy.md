@@ -15,13 +15,9 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 
 ## When to Use This Skill
 
-- Containerize an existing agent project and deploy it as a hosted agent
-- Create a new prompt agent with a model deployment
-- Create a new hosted agent from a container image
-- Start or stop hosted agent containers
-- Check agent container status
-- Update agent configuration or instructions
-- Clone or delete an agent
+USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, start agent container, stop agent container, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+
+> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, `agent_update`, or `agent_container_control` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → container startup → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, status polling).
 
 ## MCP Tools
 
@@ -93,7 +89,7 @@ Collect ACR details from project context. Let the user choose the build method:
 
 **Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
 ```bash
-az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --file Dockerfile .
+az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --source-acr-auth-id "[caller]" --file Dockerfile .
 ```
 
 **Local Docker Build:**
@@ -210,15 +206,35 @@ Read and follow the [invoke skill](../invoke/invoke.md) to send a test message a
 ## Display Agent Information
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
-Below the table you MUST also display Playground URL for direct access to the agent in Azure AI Foundry:
+Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
 
-Playground URL: https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion}
+[Open in Playground](https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion})
 
 To calculate the encodedSubId, you need to take subscription id and convert it into its 16-byte GUID, then encode it as URL-safe base64 without padding (= characters trimmed). You can use the following Python code to do this conversion:
 
 ```
 python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
 ```
+
+## Document Deployment Context
+
+After a successful deployment, persist the following to a `.env` or config file in the repo so future conversations (e.g., evaluation, monitoring) can pick them up automatically:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `AZURE_AI_PROJECT_ENDPOINT` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
+| `AZURE_AI_AGENT_NAME` | Deployed agent name | `my-support-agent` |
+| `AZURE_AI_AGENT_VERSION` | Current agent version | `1` |
+| `AZURE_CONTAINER_REGISTRY` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
+
+If a `.env` file already exists, read it first and merge — do not overwrite existing values without confirmation.
+
+## After Deployment
+
+After a successful deployment, ask the user: *"Would you like to set up evaluation and monitoring for this agent?"*
+
+- **Evaluation & optimization** → follow the [observe skill](../observe/observe.md) to configure evaluators, run batch evaluations, and optimize the agent.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 
 ## Agent Definition Schemas
 

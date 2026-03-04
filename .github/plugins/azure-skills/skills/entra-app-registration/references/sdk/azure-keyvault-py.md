@@ -15,7 +15,7 @@ client = SecretClient(vault_url="https://<vault>.vault.azure.net/", credential=D
 ```
 
 ## Best Practices
-- Use DefaultAzureCredential for authentication
+- Use DefaultAzureCredential for **local development only**. In production, use ManagedIdentityCredential — see [auth-best-practices.md](../auth-best-practices.md)
 - Use managed identity in Azure-hosted applications
 - Enable soft-delete for recovery (enabled by default)
 - Use RBAC over access policies for fine-grained control

@@ -15,7 +15,7 @@ const keyClient = new KeyClient(`https://${vaultName}.vault.azure.net`, new Defa
 ```
 
 ## Best Practices
-- Use DefaultAzureCredential — works across dev and production
+- Use DefaultAzureCredential for **local development only**. In production, use ManagedIdentityCredential — see [auth-best-practices.md](../auth-best-practices.md)
 - Enable soft-delete — required for production vaults
 - Set expiration dates on keys
 - Use key rotation policies — automate key rotation

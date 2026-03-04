@@ -37,7 +37,7 @@ Use **context7** MCP tools as the PRIMARY way to get SDK documentation and code 
 |------|--------|------|
 | GitHub default | No `model` param | `GITHUB_TOKEN` |
 | GitHub specific | `model: "<name>"` | `GITHUB_TOKEN` |
-| Azure BYOM | `model` + `provider` with `bearerToken` | `DefaultAzureCredential` |
+| Azure BYOM | `model` + `provider` with `bearerToken` | `DefaultAzureCredential` (local dev) / `ManagedIdentityCredential` (production) |
 
 **Model discovery:**
 - GitHub models: call `listModels()` on the SDK client

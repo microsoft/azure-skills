@@ -5,7 +5,9 @@
 > in the **azure-monitor-opentelemetry-py** plugin skill if installed.
 
 ## Install
+```bash
 pip install azure-monitor-opentelemetry
+```
 
 ## Quick Start
 ```python

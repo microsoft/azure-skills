@@ -13,6 +13,8 @@ Package: `azure-eventhub` | [README](https://github.com/Azure/azure-sdk-for-pyth
 
 ## Retry Configuration
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```python
 from azure.eventhub import EventHubProducerClient
 from azure.identity import DefaultAzureCredential
@@ -54,6 +56,8 @@ client = EventHubProducerClient(..., logging_enable=True)
 ## Checkpointing (BlobCheckpointStore)
 
 Package: `azure-eventhub-checkpointstoreblob` (sync) / `azure-eventhub-checkpointstoreblob-aio` (async)
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
 
 ```python
 from azure.eventhub import EventHubConsumerClient

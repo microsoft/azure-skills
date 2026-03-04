@@ -17,7 +17,7 @@ Azure CLI workflow for imperative Azure deployments.
 | Artifact | Research Action |
 |----------|-----------------|
 | Bicep files | Call `mcp_bicep_get_bicep_best_practices` |
-| Bicep modules | Call `mcp_bicep_list_avm_metadata` for Azure Verified Modules |
+| Bicep modules | Call `mcp_bicep_list_avm_metadata` and follow [AVM module order](../azd/iac-rules.md#avm-module-selection-order-mandatory) |
 | Azure CLI commands | Call `activate_azure_cli_management_tools` |
 | Azure best practices | Call `mcp_azure_mcp_get_bestpractices` |
 

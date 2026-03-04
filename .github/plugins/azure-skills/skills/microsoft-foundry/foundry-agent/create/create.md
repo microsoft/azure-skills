@@ -180,7 +180,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
 2. For Python: ensure the code uses `load_dotenv()` so Foundry-injected environment variables is available at runtime.
-3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version), not `azure.identity.DefaultAzureCredential`
+3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version) for **local development**, not `azure.identity.DefaultAzureCredential`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
 ### Step B5: Create agent.yaml
 
@@ -227,9 +227,7 @@ Apply these to both greenfield and brownfield projects:
 
 1. **Logging** — Implement proper logging using the language's standard logging framework (Python `logging` module, .NET `ILogger`). Hosted agents stream container stdout/stderr logs to Foundry, so all log output is visible via the troubleshoot workflow. Use structured log levels (INFO, WARNING, ERROR) and include context like request IDs and agent names.
 
-2. **SSL Certificate Verification** — Applicable only For vNext Experience. Disable SSL certificate verification globally in the agent process. The hosted agent runtime environment uses internal certificates that may not be in the default trust store. For Python, set the environment variable `REQUESTS_CA_BUNDLE=""` and `SSL_CERT_FILE=""`, or configure `httpx`/`aiohttp` clients with `verify=False`. For .NET, configure `HttpClientHandler.ServerCertificateCustomValidationCallback` to always return true.
-
-3. **Framework-specific best practices** — When using Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
+2. **Framework-specific best practices** — When using Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
 
 ## Error Handling
 

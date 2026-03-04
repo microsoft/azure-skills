@@ -274,6 +274,16 @@ When preparing a new azd+Terraform project:
    - Hosting resources: `azd-service-name` (matches azure.yaml services)
 4. **Research best practices** - Call `mcp_azure_mcp_azureterraformbestpractices`
 
+## AVM Terraform Module Priority
+
+For Terraform module selection, enforce this order:
+
+1. AVM Terraform Pattern Modules
+2. AVM Terraform Resource Modules
+3. AVM Terraform Utility Modules
+
+Use `mcp_azure_mcp_documentation` (`azure-documentation`) for current guidance and AVM context first, then use Context7 only as supplemental examples if required.
+
 ## Migration from Pure Terraform
 
 Converting existing Terraform project to use azd:

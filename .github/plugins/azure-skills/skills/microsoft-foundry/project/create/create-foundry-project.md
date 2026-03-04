@@ -1,15 +1,15 @@
 ---
 name: foundry-create-project
-description: >-
+description: |
   Create a new Azure AI Foundry project using Azure Developer CLI (azd) to provision infrastructure for hosting AI agents and models.
   USE FOR: create Foundry project, new AI Foundry project, set up Foundry, azd init Foundry, provision Foundry infrastructure, onboard to Foundry, create Azure AI project, set up AI project.
-  DO NOT USE FOR: deploying agents to existing projects (use deploy), creating agent code (use agent/create), deploying AI models from catalog (use microsoft-foundry main skill), Azure Functions (use azure-functions).
+  DO NOT USE FOR: deploying agents to existing projects (use agent/deploy), creating agent code (use agent/create), deploying AI models from catalog (use microsoft-foundry main skill), Azure Functions (use azure-functions).
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
 
 # Create Azure AI Foundry Project
 
-Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Container Registry, Application Insights, managed identity, and RBAC permissions.
+Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted agents (capability host + Container Registry).
 
 ## Prerequisites
 
@@ -53,6 +53,7 @@ Use AskUserQuestion for:
 
 1. **Project name** — used as azd environment name and resource group (`rg-<name>`). Must contain only alphanumeric characters and hyphens. Examples: `my-ai-project`, `dev-agents`
 2. **Azure location** (optional) — defaults to North Central US (required for hosted agents preview)
+3. **Enable hosted agents?** (yes/no) — provisions a capability host and Container Registry for deploying hosted agents. Defaults to no.
 
 ### Step 3: Create Directory and Initialize
 
@@ -72,13 +73,21 @@ If user specified a non-default location:
 azd config set defaults.location <location>
 ```
 
+If user chose to enable hosted agents:
+
+```bash
+azd env set ENABLE_HOSTED_AGENTS true
+```
+
+This provisions a capability host (`capabilityHosts/agents`) on the Foundry account and auto-adds an Azure Container Registry for hosted agent deployments.
+
 ### Step 4: Provision Infrastructure
 
 ```bash
 azd provision --no-prompt
 ```
 
-Takes 5–10 minutes. Creates resource group, Foundry account/project, Container Registry, Application Insights, managed identity, and RBAC roles.
+Takes 5–10 minutes. Creates resource group, Foundry account/project, Application Insights, managed identity, and RBAC roles. If hosted agents enabled, also creates Container Registry and capability host.
 
 ### Step 5: Retrieve Project Details
 
@@ -90,7 +99,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ### Step 6: Next Steps
 
-- Deploy an agent → `deploy` skill
+- Deploy an agent → `agent/deploy` skill
 - Browse models → `foundry_models_list` MCP tool
 - Manage project → https://ai.azure.com
 
@@ -115,7 +124,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ## Related Skills
 
-- **deploy** — Deploy agents to the created project
+- **agent/deploy** — Deploy agents to the created project
 - **agent/create** — Create a new agent for deployment
 
 ## Resources

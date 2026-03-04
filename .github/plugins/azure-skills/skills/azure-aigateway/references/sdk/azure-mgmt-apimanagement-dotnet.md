@@ -9,6 +9,8 @@ dotnet add package Azure.ResourceManager.ApiManagement
 dotnet add package Azure.Identity
 
 ## Quick Start
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```csharp
 using Azure.ResourceManager;
 using Azure.Identity;
@@ -18,7 +20,7 @@ var armClient = new ArmClient(new DefaultAzureCredential());
 ## Best Practices
 - Use `WaitUntil.Completed` for operations that must finish before proceeding
 - Use `WaitUntil.Started` for long operations like service creation (30+ min)
-- Always use DefaultAzureCredential — never hardcode keys
+- Use DefaultAzureCredential for **local development only**. In production, use ManagedIdentityCredential — see [auth-best-practices.md](../auth-best-practices.md)
 - Handle `RequestFailedException` for ARM API errors
 - Use `CreateOrUpdateAsync` for idempotent operations
 - Navigate hierarchy via `Get*` methods (e.g., `service.GetApis()`)

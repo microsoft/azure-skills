@@ -17,7 +17,7 @@ Standalone Bicep workflow (without AZD).
 | Artifact | Research Action |
 |----------|-----------------|
 | Bicep files | Call `mcp_bicep_get_bicep_best_practices` |
-| Bicep modules | Call `mcp_bicep_list_avm_metadata` for Azure Verified Modules |
+| Bicep modules | Call `mcp_bicep_list_avm_metadata` and follow [AVM module order](../azd/iac-rules.md#avm-module-selection-order-mandatory) |
 | Resource schemas | Use `activate_azure_resource_schema_tools` if needed |
 
 ## Generation Steps

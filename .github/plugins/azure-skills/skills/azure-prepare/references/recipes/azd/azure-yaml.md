@@ -1,5 +1,13 @@
 # azure.yaml Generation
 
+> ⛔ **CRITICAL: Check for .NET Aspire projects FIRST**
+>
+> **DO NOT manually create azure.yaml for .NET Aspire projects.** If you detect:
+> - Files ending with `*.AppHost.csproj` (e.g., `MyApp.AppHost.csproj`)
+> - `Aspire.Hosting` or `Aspire.AppHost.Sdk` in `.csproj` files
+>
+> **STOP and use `azd init --from-code` instead.** See [aspire.md](aspire.md) for details.
+
 Create `azure.yaml` in project root for AZD.
 
 ## Structure

@@ -1,6 +1,15 @@
 # .NET Aspire Projects
 
+> ⛔ **CRITICAL - READ THIS FIRST**
+>
+> For .NET Aspire projects, **NEVER manually create azure.yaml or infra/ files.**
+> Always use `azd init --from-code` which auto-detects the AppHost and generates everything correctly.
+>
+> **Failure to follow this causes:** "Could not find a part of the path 'infra\main.bicep'" error.
+
 Guidance for preparing .NET Aspire applications for Azure deployment.
+
+**📖 For detailed AZD workflow:** See [recipes/azd/aspire.md](recipes/azd/aspire.md)
 
 ## What is .NET Aspire?
 

@@ -1,6 +1,10 @@
 ---
 name: azure-deploy
-description: "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands. USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, deploy function app, deploy serverless function, deploy Azure Functions to cloud, bicep deploy, terraform apply. DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate)."
+description: "Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/plan.md from azure-prepare and validated status from azure-validate. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\". DO NOT USE WHEN: \"create and deploy\", \"build and deploy\", \"create a new app\", \"set up infrastructure\", \"create and deploy to Azure using Terraform\" — use azure-prepare for these."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.3"
 ---
 
 # Azure Deploy
@@ -30,12 +34,15 @@ description: "Execute deployment to Azure. Final step after preparation and vali
 ## Triggers
 
 Activate this skill when user wants to:
-- Deploy their application to Azure
-- Publish, host, or launch their app
-- Push updates to existing deployment
-- Run `azd up` or `az deployment`
-- Ship code to production
-- Deploy Azure Functions to the cloud
+- Execute deployment of an already-prepared application (azure.yaml and infra/ exist)
+- Push updates to an existing Azure deployment
+- Run `azd up`, `azd deploy`, or `az deployment` on a prepared project
+- Ship already-built code to production
+- Deploy an application that already includes API Management (APIM) gateway infrastructure
+
+> **Scope**: This skill executes deployments. It does not create applications, generate infrastructure code, or scaffold projects. For those tasks, use **azure-prepare**.
+
+> **APIM / AI Gateway**: Use this skill to deploy applications whose APIM/AI gateway infrastructure was already created during **azure-prepare**. For creating or changing APIM resources, see [APIM deployment guide](https://learn.microsoft.com/azure/api-management/get-started-create-service-instance). For AI governance policies, invoke **azure-aigateway** skill.
 
 ## Rules
 
@@ -43,6 +50,7 @@ Activate this skill when user wants to:
 2. `.azure/plan.md` must exist with status `Validated`
 3. **Pre-deploy checklist required** — [Pre-Deploy Checklist](references/pre-deploy-checklist.md)
 4. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
+5. **Scope: deployment execution only** — This skill owns execution of `azd up`, `azd deploy`, `terraform apply`, and `az deployment` commands. These commands are run through this skill's error recovery and verification pipeline.
 
 ---
 
@@ -54,8 +62,9 @@ Activate this skill when user wants to:
 | 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
 | 3 | **Load Recipe** — Based on `recipe.type` in `.azure/plan.md` | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
-| 5 | **Handle Errors** — See recipe's `errors.md` | — |
-| 6 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |
+| 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
+| 6 | **Handle Errors** — See recipe's `errors.md` | — |
+| 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
 
 > **⛔ VALIDATION PROOF CHECK**
 >
@@ -77,3 +86,4 @@ Activate this skill when user wants to:
 ## References
 
 - [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
+- [Post-Deployment Steps](references/recipes/azd/post-deployment.md) - SQL + EF Core setup

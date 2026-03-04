@@ -22,7 +22,7 @@ var adminClient = new DocumentIntelligenceAdministrationClient(new Uri(endpoint)
 - Entra ID requires custom subdomain, not regional endpoint
 
 ## Best Practices
-1. Use DefaultAzureCredential for production
+1. Use DefaultAzureCredential for **local development only**. In production, use ManagedIdentityCredential — see [auth-best-practices.md](../auth-best-practices.md)
 2. Reuse client instances — clients are thread-safe
 3. Handle long-running operations with `WaitUntil.Completed`
 4. Check field confidence — always verify `Confidence` property
