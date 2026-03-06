@@ -4,6 +4,8 @@ Identify failing agent traces, group them by root cause, and produce a prioritiz
 
 ## Step 1 — Find Failing Traces
 
+> ⚠️ **Hosted agents:** `gen_ai.agent.name` on `dependencies` holds the **code-level class name** (e.g., `BingSearchAgent`), NOT the Foundry agent name. To filter by Foundry name, use the [Hosted Agent Variant](#hosted-agent-variant--failures) below.
+
 ```kql
 dependencies
 | where timestamp > ago(24h)
@@ -81,3 +83,27 @@ exceptions
 ```
 
 Offer to view the full conversation for any trace via [Conversation Detail](conversation-detail.md).
+
+## Hosted Agent Variant — Failures
+
+For hosted agents, the Foundry agent name lives on `requests`, not `dependencies`. Use a two-step join:
+
+```kql
+let reqIds = requests
+| where timestamp > ago(24h)
+| where customDimensions["gen_ai.agent.name"] == "<foundry-agent-name>"
+| distinct id;
+dependencies
+| where timestamp > ago(24h)
+| where operation_ParentId in (reqIds)
+| where success == false or toint(resultCode) >= 400
+| extend
+    operation = tostring(customDimensions["gen_ai.operation.name"]),
+    errorType = tostring(customDimensions["error.type"]),
+    model = tostring(customDimensions["gen_ai.request.model"]),
+    conversationId = tostring(customDimensions["gen_ai.conversation.id"])
+| project timestamp, name, duration, resultCode, errorType, operation, model,
+    conversationId, operation_ParentId, operation_Id
+| order by timestamp desc
+| take 100
+```

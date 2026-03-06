@@ -11,6 +11,8 @@ allowed-tools: Read, Write, Bash, AskUserQuestion
 
 Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted agents (capability host + Container Registry).
 
+**Table of Contents:** [Prerequisites](#prerequisites) · [Workflow](#workflow) · [Best Practices](#best-practices) · [Troubleshooting](#troubleshooting) · [Related Skills](#related-skills) · [Resources](#resources)
+
 ## Prerequisites
 
 Run checks in order. STOP on any failure and resolve before proceeding.

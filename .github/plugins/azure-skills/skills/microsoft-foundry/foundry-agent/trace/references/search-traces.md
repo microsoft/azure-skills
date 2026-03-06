@@ -89,16 +89,16 @@ dependencies
 
 ## Search by Hosted Agent Name
 
-For hosted agents, the top-level agent name is recorded in the `traces` table under `azure.ai.agentserver.agent_name`, not in `dependencies`.
+For hosted agents, the Foundry agent name (e.g., `hosted-agent-022-001`) appears on both `requests` and `traces` tables — NOT on `dependencies`. Use `requests` as the preferred entry point since it also has `gen_ai.agent.name`:
 
 ```kql
-let ops = traces
+let reqIds = requests
 | where timestamp > ago(24h)
-| where customDimensions["azure.ai.agentserver.agent_name"] == "<agent_name>"
-| distinct operation_Id;
+| where customDimensions["gen_ai.agent.name"] == "<agent_name>"
+| distinct id;
 dependencies
 | where timestamp > ago(24h)
-| where operation_Id in (ops)
+| where operation_ParentId in (reqIds)
 | where isnotempty(customDimensions["gen_ai.operation.name"])
 | summarize
     startTime = min(timestamp),
@@ -107,7 +107,7 @@ dependencies
     errorCount = countif(success == false),
     totalInputTokens = sum(toint(customDimensions["gen_ai.usage.input_tokens"])),
     totalOutputTokens = sum(toint(customDimensions["gen_ai.usage.output_tokens"]))
-  by operation_Id
+  by operation_ParentId
 | order by startTime desc
 | take 50
 ```

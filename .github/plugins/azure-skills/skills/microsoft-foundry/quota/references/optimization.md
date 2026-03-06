@@ -2,6 +2,8 @@
 
 Comprehensive strategies for optimizing Azure AI Foundry quota allocation and reducing costs.
 
+**Table of Contents:** [1. Identify and Delete Unused Deployments](#1-identify-and-delete-unused-deployments) · [2. Right-Size Over-Provisioned Deployments](#2-right-size-over-provisioned-deployments) · [3. Consolidate Multiple Small Deployments](#3-consolidate-multiple-small-deployments) · [4. Cost Optimization Strategies](#4-cost-optimization-strategies) · [5. Regional Quota Rebalancing](#5-regional-quota-rebalancing)
+
 ## 1. Identify and Delete Unused Deployments
 
 **Step 1: Discovery with Quota Context**

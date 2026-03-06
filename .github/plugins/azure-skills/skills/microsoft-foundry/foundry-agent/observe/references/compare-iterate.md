@@ -8,7 +8,7 @@ Auto-poll for completion in a background terminal (same as [Step 2](evaluate-ste
 
 ## Step 9 — Compare Versions
 
-> **Critical:** `displayName` is **required** in the `insightRequest`. Omitting it causes a BadRequest error. `state` must be `"NotStarted"`.
+> **Critical:** `displayName` is **required** in the `insightRequest`. Despite the MCP tool schema showing `displayName` as optional (`type: ["string", "null"]`), the API will reject requests without it with a BadRequest error. `state` must be `"NotStarted"`.
 
 ### Required Parameters for `evaluation_comparison_create`
 

@@ -2,6 +2,8 @@
 
 ## Step 6 — Optimize Prompt
 
+> ⛔ **Guardrail:** When optimizing after a dataset update, do NOT remove dataset rows or weaken evaluators to recover scores. Score drops on a harder dataset are expected — they mean test coverage improved, not that the agent regressed. Optimize for NEW failure patterns only.
+
 Use **`prompt_optimize`** with:
 
 | Parameter | Required | Description |

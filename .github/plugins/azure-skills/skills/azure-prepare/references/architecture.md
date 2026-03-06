@@ -18,7 +18,8 @@ Select hosting stack and map components to Azure services.
 | Event-driven | ✓ | ✓✓ | |
 | Variable traffic | | ✓✓ | ✓ |
 | Complex dependencies | ✓✓ | | ✓ |
-| Long-running processes | ✓✓ | | ✓ |
+| Long-running processes | ✓✓ | ✓ (Durable Functions) | ✓ |
+| Workflow / orchestration | | ✓✓ (Durable Functions + DTS) | |
 | Minimal ops overhead | | ✓✓ | ✓ |
 
 ## Service Mapping
@@ -51,7 +52,13 @@ Select hosting stack and map components to Azure services.
 | Message Queue | Service Bus |
 | Pub/Sub | Event Grid |
 | Streaming | Event Hubs |
-| Workflow | Logic Apps, Durable Functions |
+
+### Workflow & Orchestration
+
+| Need | Service | Notes |
+|------|---------|-------|
+| Multi-step workflow / orchestration | **Durable Functions + Durable Task Scheduler** | DTS is the **required** managed backend for Durable Functions. Do NOT use Azure Storage or MSSQL backends. See [durable.md](services/functions/durable.md). |
+| Low-code / visual workflow | Logic Apps | For integration-heavy, low-code scenarios |
 
 ### Supporting (Always Include)
 

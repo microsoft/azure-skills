@@ -2,6 +2,8 @@
 
 Python-specific implementations for working with Microsoft Foundry.
 
+**Table of Contents:** [Prerequisites](#prerequisites) · [Model Discovery and Deployment](#model-discovery-and-deployment-mcp) · [RAG Agent with Azure AI Search](#rag-agent-with-azure-ai-search) · [Creating Agents](#creating-agents) · [Agent Evaluation](#agent-evaluation) · [Knowledge Index Operations](#knowledge-index-operations-mcp) · [Best Practices](#best-practices) · [Error Handling](#error-handling)
+
 ## Prerequisites
 
 ```bash

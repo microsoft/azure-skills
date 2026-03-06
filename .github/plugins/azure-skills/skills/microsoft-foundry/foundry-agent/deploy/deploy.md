@@ -171,6 +171,12 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
 
+> ⚠️ **DO NOT stop here.** Continue to Step 10 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+
+### Step 10: Auto-Create Evaluators & Dataset
+
+Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+
 ## Workflow: Prompt Agent Deployment
 
 ### Step 1: Collect Agent Configuration
@@ -203,6 +209,12 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
+> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+
+### Step 5: Auto-Create Evaluators & Dataset
+
+Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+
 ## Display Agent Information
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
@@ -229,11 +241,48 @@ After a successful deployment, persist the following to a `.env` or config file 
 
 If a `.env` file already exists, read it first and merge — do not overwrite existing values without confirmation.
 
-## After Deployment
+## After Deployment — Auto-Create Evaluators & Dataset
 
-After a successful deployment, ask the user: *"Would you like to set up evaluation and monitoring for this agent?"*
+> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
 
-- **Evaluation & optimization** → follow the [observe skill](../observe/observe.md) to configure evaluators, run batch evaluations, and optimize the agent.
+### 1. Read Agent Instructions
+
+Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
+
+### 2. Select Default Evaluators
+
+| Category | Evaluators |
+|----------|-----------|
+| **Quality (built-in)** | intent_resolution, task_adherence, coherence |
+| **Safety (include ≥2)** | violence, self_harm, hate_unfairness |
+
+### 3. Identify LLM-Judge Deployment
+
+Use **`model_deployment_get`** to find a suitable model (e.g., `gpt-4o`) for quality evaluators.
+
+### 4. Generate Local Test Dataset
+
+Use the identified LLM deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `datasets/<agent-name>-test.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
+
+> ⚠️ **Prefer local dataset generation.** Generate test queries locally and save to `datasets/*.jsonl` rather than using `generateSyntheticData=true` on the eval API. Local datasets provide reproducibility, version control, and can be reviewed before running evals.
+
+### 5. Persist Artifacts
+
+Save evaluator definitions to `evaluators/<name>.yaml` and any locally generated test datasets to `datasets/*.jsonl`:
+
+```
+evaluators/        # custom evaluator definitions
+  <name>.yaml      # prompt text, scoring type, thresholds
+datasets/          # locally generated input datasets
+  *.jsonl          # test queries
+```
+
+### 6. Prompt User
+
+*"Your agent is deployed and running. Evaluators and a test dataset have been auto-configured. Would you like to run an evaluation to identify optimization opportunities?"*
+
+- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — evaluators and dataset are already prepared.
+- **No** → stop. The user can return later.
 - **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 
 ## Agent Definition Schemas

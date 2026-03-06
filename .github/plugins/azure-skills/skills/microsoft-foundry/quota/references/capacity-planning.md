@@ -2,6 +2,8 @@
 
 Comprehensive guide for planning Azure AI Foundry capacity, including cost analysis, model selection, and workload calculations.
 
+**Table of Contents:** [Cost Comparison: TPM vs PTU](#cost-comparison-tpm-vs-ptu) · [Production Workload Examples](#production-workload-examples) · [Model Selection and Deployment Type Guidance](#model-selection-and-deployment-type-guidance)
+
 ## Cost Comparison: TPM vs PTU
 
 > **Official Pricing Sources:**

@@ -4,7 +4,7 @@ description: "Interactive guided deployment flow for Azure OpenAI models with fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Customize Model Deployment

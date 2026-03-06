@@ -44,12 +44,18 @@ IF integration IN [http]:
 IF integration IN [timer]:
   → Source-only recipe. Skip to Step 5.
 
-IF integration IN [durable, mcp]:
+IF integration IN [mcp]:
   → Source-only recipe with storage configuration:
-    - Set `enableQueue: true` in main.bicep (required for Durable task hub and MCP)
-    - Set `enableTable: true` in main.bicep (required for Durable only; NOT required for MCP)
+    - Set `enableQueue: true` in main.bicep (required for MCP)
     Note: These are minimal parameter toggles, not structural changes to IaC.
   → Then skip to Step 5.
+
+IF integration IN [durable]:
+  → Full recipe with Durable Task Scheduler backend:
+    - Add DTS IaC module (scheduler + task hub + RBAC). Continue to Step 3.
+    - Reference: [Durable Task Scheduler](../../../durable-task-scheduler/README.md) and [Bicep patterns](../../../durable-task-scheduler/bicep.md).
+    - Do NOT use Azure Storage queues/tables as the durable backend — always use Durable Task Scheduler.
+  → Continue to Step 3.
 
 IF integration IN [cosmosdb, sql, servicebus, eventhubs, blob]:
   → Full recipe. Continue to Step 3.
@@ -296,15 +302,15 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
 | HTTP        | ✓          | -           | -           | Default |
 | Timer       | ✓          | -           | -           | Checkpointing uses blob |
 | Cosmos DB   | ✓          | -           | -           | Standard |
-| **Durable** | ✓          | **✓**       | **✓**       | Queue=task hub, Table=history |
+| **Durable** | ✓          | -           | -           | Uses Durable Task Scheduler (not Storage queues/tables) |
 | **MCP**     | ✓          | **✓**       | -           | Queue=state mgmt + backplane |
 
 ## Recipe Classification
 
 | Category | Integrations | What Recipe Provides |
 |----------|-------------|---------------------|
-| **Source-only** | timer, durable, mcp | Source code snippet; may require minimal parameter toggles (e.g., `enableQueue`) but no new IaC modules |
-| **Full recipe** | cosmosdb, sql, servicebus, eventhubs, blob | IaC modules + RBAC + networking + source code |
+| **Source-only** | timer, mcp | Source code snippet; may require minimal parameter toggles (e.g., `enableQueue`) but no new IaC modules |
+| **Full recipe** | cosmosdb, sql, servicebus, eventhubs, blob, durable | IaC modules + RBAC + networking + source code |
 
 ## Critical Rules
 

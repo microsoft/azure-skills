@@ -10,6 +10,8 @@
 4. Serialize each item with `item.model_dump()` and save to `results/<eval-id>/<run-id>.json` (use `default=str` for non-serializable fields)
 5. Print summary: total items, passed, failed, errored counts
 
+> ⚠️ **Data structure gotcha:** Query/response data lives in `datasource_item.query` and `datasource_item['sample.output_text']`, **not** in `sample.input`/`sample.output` (which are empty arrays). Parse `datasource_item` fields when extracting queries and responses for analysis.
+
 > SDK setup: `pip install azure-ai-projects azure-identity openai`
 
 ## Step 4 — Cluster Failures by Root Cause

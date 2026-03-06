@@ -155,6 +155,22 @@ azd up --no-prompt
 
 ---
 
+## Service-Specific Checks
+
+### Durable Functions — Verify DTS Backend
+
+> **⛔ MANDATORY**: If the plan includes Durable Functions, verify infrastructure uses **Durable Task Scheduler** (DTS), NOT Azure Storage.
+
+Check that `infra/` Bicep files contain:
+- `Microsoft.DurableTask/schedulers` resource
+- `Microsoft.DurableTask/schedulers/taskHubs` child resource
+- `Durable Task Data Contributor` RBAC role assignment
+- `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` app setting
+
+If any are missing, **STOP** and invoke **azure-prepare** to regenerate with the durable recipe.
+
+---
+
 ## Non-AZD Deployments
 
 **For Azure CLI / Bicep:**

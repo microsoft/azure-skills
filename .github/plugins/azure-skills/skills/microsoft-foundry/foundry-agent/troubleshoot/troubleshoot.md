@@ -9,7 +9,8 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 | Agent types | Prompt (LLM-based), Hosted (container-based) |
 | MCP servers | `foundry-mcp` |
 | Key MCP tools | `agent_get`, `agent_container_status_get` |
-| Related skills | `azure-kusto` (for KQL telemetry queries) |
+| Related skills | `trace` (telemetry analysis) |
+| Preferred query tool | `monitor_resource_log_query` (Azure MCP) — preferred over `azure-kusto` for App Insights |
 | CLI references | `az cognitiveservices agent logs`, `az cognitiveservices account connection` |
 
 ## When to Use This Skill
@@ -62,7 +63,9 @@ If no observability connection is found, inform the user and suggest setting up 
 
 ### Step 5: Query Application Insights Telemetry
 
-Delegate telemetry querying to the `azure-kusto` skill. Provide it the Application Insights resource details discovered in Step 4 and the user's reported issue. The `azure-kusto` skill handles KQL query construction, execution via MCP tools, and result formatting.
+Use **`monitor_resource_log_query`** (Azure MCP tool) to run KQL queries against the Application Insights resource discovered in Step 4. This is preferred over delegating to the `azure-kusto` skill. Pass the App Insights resource ID and the KQL query directly.
+
+> ⚠️ **Always pass `subscription` explicitly** to Azure MCP tools like `monitor_resource_log_query` — they don't extract it from resource IDs.
 
 Use `* contains "<response_id>"` or `* contains "<agent_name>"` filters to narrow down results to the specific agent instance.
 

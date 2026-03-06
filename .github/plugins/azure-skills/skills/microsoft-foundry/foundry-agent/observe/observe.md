@@ -20,12 +20,15 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 
 | User Intent | Start At |
 |-------------|----------|
-| "Deploy and evaluate my agent" | [Step 1: Deploy & Setup](references/deploy-and-setup.md) |
-| "Evaluate my agent" / "Run an eval" | [Step 2: Evaluate](references/evaluate-step.md) |
+| "Deploy and evaluate my agent" | [Step 1: Auto-Setup Evaluators](references/deploy-and-setup.md) (deploy first via [deploy skill](../deploy/deploy.md)) |
+| "Agent just deployed" / "Set up evaluation" | [Step 1: Auto-Setup Evaluators](references/deploy-and-setup.md) (skip deploy, run auto-create) |
+| "Evaluate my agent" / "Run an eval" | [Step 1: Auto-Setup Evaluators](references/deploy-and-setup.md) first if `evaluators/` is empty, then [Step 2: Evaluate](references/evaluate-step.md) |
 | "Why did my eval fail?" / "Analyze results" | [Step 3: Analyze](references/analyze-results.md) |
 | "Improve my agent" / "Optimize prompt" | [Step 4: Optimize](references/optimize-deploy.md) |
 | "Compare agent versions" | [Step 5: Compare](references/compare-iterate.md) |
 | "Set up CI/CD evals" | [Step 6: CI/CD](references/cicd-monitoring.md) |
+
+> ⚠️ **Important:** Before running any evaluation (Step 2), always check if evaluators and test datasets exist in `evaluators/` and `datasets/`. If they don't, route through [Step 1: Auto-Setup](references/deploy-and-setup.md) first — even if the user only asked to "evaluate."
 
 ## Before Starting — Detect Current State
 
@@ -33,6 +36,22 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 2. Use `agent_get` and `agent_container_status_get` to verify the agent exists and is running
 3. Use `evaluation_get` to check for existing eval runs
 4. Jump to the appropriate entry point
+
+## Loop Overview
+
+```
+1. Auto-setup evaluators & local test dataset
+   → ask: "Run an evaluation to identify optimization opportunities?"
+2. Evaluate (batch eval run)
+3. Download & cluster failures
+4. Pick a category to optimize
+5. Optimize prompt
+6. Deploy new version (after user sign-off)
+7. Re-evaluate (same eval group)
+8. Compare versions → decide which to keep
+9. Loop to next category or finish
+10. Prompt: enable CI/CD evals & continuous production monitoring
+```
 
 ## Behavioral Rules
 

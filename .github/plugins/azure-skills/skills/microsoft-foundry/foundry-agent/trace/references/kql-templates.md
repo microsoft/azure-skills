@@ -2,12 +2,14 @@
 
 Ready-to-use KQL templates for querying GenAI OpenTelemetry traces in Application Insights.
 
+**Table of Contents:** [App Insights Table Mapping](#app-insights-table-mapping) · [Key GenAI OTel Attributes](#key-genai-otel-attributes) · [Span Correlation](#span-correlation) · [Hosted Agent Attributes](#hosted-agent-attributes) · [Response ID Formats](#response-id-formats) · [Common Query Templates](#common-query-templates) · [OTel Reference Links](#otel-reference-links)
+
 ## App Insights Table Mapping
 
 | App Insights Table | GenAI Data |
 |-------------------|------------|
 | `dependencies` | GenAI spans: LLM inference (`chat`), tool execution (`execute_tool`), agent invocation (`invoke_agent`) |
-| `requests` | Incoming HTTP requests to the agent endpoint |
+| `requests` | Incoming HTTP requests to the agent endpoint. For hosted agents, also carries `gen_ai.agent.name` (Foundry name) and `azure.ai.agentserver.*` attributes — **preferred entry point** for agent-name filtering |
 | `customEvents` | GenAI evaluation results (`gen_ai.evaluation.result`) — scores, labels, explanations |
 | `traces` | Log events, including GenAI events (input/output messages) |
 | `exceptions` | Error details with stack traces |
@@ -30,6 +32,8 @@ Stored in `customDimensions` on `dependencies` spans:
 | `gen_ai.response.finish_reasons` | Stop reasons | `["stop"]`, `["tool_calls"]` |
 | `error.type` | Error classification | `timeout`, `rate_limited`, `content_filter` |
 | `gen_ai.provider.name` | Provider | `azure.ai.openai`, `openai` |
+| `gen_ai.input.messages` | Full input messages (JSON array) — on `invoke_agent` spans | `[{"role":"user","parts":[{"type":"text","content":"..."}]}]` |
+| `gen_ai.output.messages` | Full output messages (JSON array) — on `invoke_agent` spans | `[{"role":"assistant","parts":[{"type":"text","content":"..."}]}]` |
 
 Stored in `customDimensions` on `customEvents` (name == `gen_ai.evaluation.result`):
 
@@ -52,9 +56,29 @@ Stored in `customDimensions` on `customEvents` (name == `gen_ai.evaluation.resul
 | `id` | Span ID — unique identifier for this span |
 | `operation_ParentId` | Parent span ID — use with `id` to build span trees |
 
+### Parent-Child Join (requests → dependencies)
+
+Use `operation_ParentId` to find child dependency spans from a parent request. This is critical for hosted agents where the Foundry agent name only lives on the parent `requests` span:
+
+```kql
+let reqIds = requests
+| where timestamp > ago(7d)
+| where customDimensions["gen_ai.agent.name"] == "<foundry-agent-name>"
+| distinct id;
+dependencies
+| where timestamp > ago(7d)
+| where operation_ParentId in (reqIds)
+| extend
+    operation = tostring(customDimensions["gen_ai.operation.name"]),
+    model = tostring(customDimensions["gen_ai.request.model"]),
+    conversationId = tostring(customDimensions["gen_ai.conversation.id"])
+| project timestamp, duration, success, operation, model, conversationId, operation_ParentId
+| order by timestamp desc
+```
+
 ## Hosted Agent Attributes
 
-Stored in `customDimensions` on `traces` (log events), NOT on `dependencies` spans:
+Stored in `customDimensions` on **both `requests` and `traces`** tables (NOT on `dependencies` spans):
 
 | Attribute | Description | Example |
 |-----------|-------------|---------|
@@ -63,7 +87,13 @@ Stored in `customDimensions` on `traces` (log events), NOT on `dependencies` spa
 | `azure.ai.agentserver.conversation_id` | Conversation ID | `conv_d7ab624de92d...` |
 | `azure.ai.agentserver.response_id` | Response ID (caresp format) | `caresp_d7ab624de92d...` |
 
-> **Important:** These attributes are on `traces` table entries, not `dependencies` spans. To correlate with GenAI spans, join on `operation_Id`.
+> **Important:** Use `requests` as the preferred entry point for agent-name filtering — it has both `azure.ai.agentserver.agent_name` and `gen_ai.agent.name` with the Foundry-level name. To reach child `dependencies` spans, join via `requests.id` → `dependencies.operation_ParentId`.
+
+> ⚠️ **`gen_ai.agent.name` means different things on different tables:**
+> - On `requests`: the **Foundry agent name** (user-visible) → e.g., `hosted-agent-022-001`
+> - On `dependencies`: the **code-level class name** → e.g., `BingSearchAgent`
+>
+> **Always start from `requests`** when filtering by the Foundry agent name the user knows.
 
 ## Response ID Formats
 

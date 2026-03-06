@@ -1,17 +1,8 @@
-# Step 1 — Deploy Agent & Setup Evaluators
+# Step 1 — Auto-Setup Evaluators & Dataset
 
-## Deploy
-
-For deployment, follow the [deploy skill](../../deploy/deploy.md). It handles project detection, Dockerfile generation, ACR build, agent creation, and container startup.
-
-After deployment completes, persist these variables to `.env` for future conversations:
-
-| Variable | Purpose |
-|----------|---------|
-| `AZURE_AI_PROJECT_ENDPOINT` | Foundry project endpoint |
-| `AZURE_AI_AGENT_NAME` | Deployed agent name |
-| `AZURE_AI_AGENT_VERSION` | Current agent version |
-| `AZURE_CONTAINER_REGISTRY` | ACR resource (hosted agents) |
+> **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), evaluators and a test dataset may already be configured. Check `evaluators/` and `datasets/` for existing artifacts before re-creating.
+>
+> If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, container startup, **and** auto-creates evaluators & dataset after a successful deployment.
 
 ## Auto-Create Evaluators & Dataset
 

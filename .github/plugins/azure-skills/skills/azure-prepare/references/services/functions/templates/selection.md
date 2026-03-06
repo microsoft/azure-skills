@@ -39,9 +39,15 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
    Recipe: recipes/servicebus/ ✅ Available
 
 7. Is it for orchestration or workflows?
-   Indicators: DurableOrchestrationTrigger, orchestrator, durable_functions
-   └─► YES → HTTP base + durable source snippet (toggle enableQueue + enableTable in base)
+   Code indicators: DurableOrchestrationTrigger, orchestrator, durable_functions
+   Natural language indicators (NEW projects): workflow, multi-step, pipeline,
+     orchestration, fan-out, fan-in, long-running process, chaining, state machine,
+     saga, order processing, approval flow
+   └─► YES → HTTP base + durable recipe (IaC: Durable Task Scheduler + task hub + RBAC + source)
+   ⛔ REQUIRED: Generate Microsoft.DurableTask/schedulers + taskHubs Bicep resources
    Recipe: recipes/durable/ ✅ Available
+   References: [durable.md](../../functions/durable.md) for storage backend rules,
+     [Durable Task Scheduler](../../durable-task-scheduler/README.md) for Bicep patterns and connection string
 
 8. Does it use Event Hubs?
    Indicators: EventHubTrigger, @app.event_hub, event_hub_output
@@ -71,5 +77,6 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
 | Type | IaC Delta? | Examples |
 |------|-----------|----------|
 | **Full recipe** | Yes — Bicep module + Terraform module + RBAC + networking | cosmosdb, servicebus, eventhubs |
+| **Full recipe (Bicep only)** | Yes — Bicep module + RBAC | durable |
 | **AZD template** | Use dedicated AZD template from Awesome AZD | sql, blob-eventgrid |
-| **Source-only** | No — only replace function source code (may toggle storage params) | timer, durable, mcp |
+| **Source-only** | No — only replace function source code (may toggle storage params) | timer, mcp |

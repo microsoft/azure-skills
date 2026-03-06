@@ -16,7 +16,8 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 |----------|-------|
 | Data source | Application Insights (App Insights) |
 | Query language | KQL (Kusto Query Language) |
-| Related skills | `azure-kusto` (KQL execution), `troubleshoot` (container logs) |
+| Related skills | `troubleshoot` (container logs) |
+| Preferred query tool | `monitor_resource_log_query` (Azure MCP) — use for App Insights KQL queries |
 | OTel conventions | [GenAI Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/), [Agent Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/) |
 
 ## Entry Points
@@ -45,7 +46,9 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 If a `.env` file already exists, read it first and merge — do not overwrite existing values without confirmation.
 
 4. Confirm the App Insights resource with the user before querying
-5. Delegate KQL execution to the `azure-kusto` skill
+5. Use **`monitor_resource_log_query`** (Azure MCP tool) to execute KQL queries against the App Insights resource. This is preferred over delegating to the `azure-kusto` skill. Pass the App Insights resource ID and the KQL query directly.
+
+> ⚠️ **Always pass `subscription` explicitly** to Azure MCP tools like `monitor_resource_log_query` — they don't extract it from resource IDs.
 
 ## Behavioral Rules
 
@@ -54,4 +57,4 @@ If a `.env` file already exists, read it first and merge — do not overwrite ex
 3. **Use time ranges.** Always scope queries with a time range (default: last 24 hours). Ask user for the range if not specified.
 4. **Explain GenAI attributes.** When displaying results, translate OTel attribute names to human-readable labels (e.g., `gen_ai.operation.name` → "Operation").
 5. **Link to conversation detail.** When showing search or failure results, offer to drill into any specific conversation.
-6. **Scope to the target agent.** An App Insights resource may contain traces from multiple agents. Always filter queries by the specific agent name. When showing overview summaries, group results by `gen_ai.agent.name` or `azure.ai.agentserver.agent_name` and warn the user if multiple agents are present.
+6. **Scope to the target agent.** An App Insights resource may contain traces from multiple agents. For hosted agents, start from the `requests` table where `gen_ai.agent.name` holds the Foundry-level name, then join to `dependencies` via `operation_ParentId`. For prompt agents, filter `dependencies` directly by `gen_ai.agent.name`. When showing overview summaries, group by agent and warn the user if multiple agents are present.

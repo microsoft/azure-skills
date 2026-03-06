@@ -55,9 +55,23 @@ Present as an indented tree with:
 - **Error type** and result code (if failed, highlight in red)
 - **Finish reason** (stop, length, content_filter, tool_calls)
 
-## Step 3 — Check for Associated Events
+## Step 3 — Extract Conversation Content from invoke_agent Spans
 
-GenAI events may contain input/output message content:
+The full input/output content lives on `invoke_agent` dependency spans in `gen_ai.input.messages` and `gen_ai.output.messages`. These JSON arrays contain the complete conversation (system prompt, user query, assistant response):
+
+```kql
+dependencies
+| where operation_Id == "<operation_id>"
+| where customDimensions["gen_ai.operation.name"] == "invoke_agent"
+| project timestamp,
+    inputMessages = tostring(customDimensions["gen_ai.input.messages"]),
+    outputMessages = tostring(customDimensions["gen_ai.output.messages"])
+| order by timestamp asc
+```
+
+Message structure: `[{"role": "user", "parts": [{"type": "text", "content": "..."}]}]`
+
+Also check the `traces` table for additional GenAI log events:
 
 ```kql
 traces
