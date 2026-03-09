@@ -64,7 +64,7 @@ Before you install, make sure you have:
 **Install the plugin**:
 
 ```
-/plugin install microsoft/azure-skills
+/plugin install azure@awesome-copilot
 ```
 
 **Update the plugin**:
