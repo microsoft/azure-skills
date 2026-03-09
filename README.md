@@ -58,6 +58,7 @@ Before you install, make sure you have:
 **Install the plugin**:
 
 ```
+/plugin marketplace add https://github.com/microsoft/azure-skills
 /plugin install azure@awesome-copilot
 ```
 
@@ -213,3 +214,4 @@ To disable Azure MCP telemetry collection, set:
 ```bash
 export AZURE_MCP_COLLECT_TELEMETRY=false
 ```
+
