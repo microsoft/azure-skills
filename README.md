@@ -59,13 +59,13 @@ Before you install, make sure you have:
 
 ```
 /plugin marketplace add https://github.com/microsoft/azure-skills
-/plugin install azure@awesome-copilot
+/plugin install azure-skills@azure-skills
 ```
 
 **Update the plugin**:
 
 ```
-/plugin install azure-skills@azure-skills
+/plugin update azure-skills@azure-skills
 ```
 
 ### VS Code
@@ -214,5 +214,6 @@ To disable Azure MCP telemetry collection, set:
 ```bash
 export AZURE_MCP_COLLECT_TELEMETRY=false
 ```
+
 
 
