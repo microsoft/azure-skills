@@ -219,3 +219,7 @@ To disable Azure MCP telemetry collection, set:
 ```bash
 export AZURE_MCP_COLLECT_TELEMETRY=false
 ```
+
+## Contribution
+
+This repository is automatically sync'ed from https://github.com/microsoft/GitHub-Copilot-for-Azure. If you would like to contribute to Azure skills, please open PR's there. Thank you!
