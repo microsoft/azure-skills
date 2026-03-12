@@ -1,6 +1,6 @@
 # Agent Observability Loop
 
-Orchestrate the full eval-driven optimization cycle for a Foundry agent. This skill manages the **multi-step workflow** — auto-creating evaluators, generating test datasets, running batch evals, clustering failures, optimizing prompts, redeploying, and comparing versions. Use this skill instead of calling individual foundry-mcp evaluation tools manually.
+Orchestrate the full eval-driven optimization cycle for a Foundry agent. This skill manages the **multi-step workflow** — auto-creating evaluators, generating test datasets, running batch evals, clustering failures, optimizing prompts, redeploying, and comparing versions. Use this skill instead of calling individual `azure` MCP evaluation tools manually.
 
 ## When to Use This Skill
 
@@ -12,7 +12,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 
 | Property | Value |
 |----------|-------|
-| MCP server | `foundry-mcp` |
+| MCP server | `azure` |
 | Key MCP tools | `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 
