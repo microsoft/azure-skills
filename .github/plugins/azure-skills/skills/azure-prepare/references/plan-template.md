@@ -110,38 +110,17 @@ List all resources to be deployed with their types and quantities. Leave quota/l
 
 For each resource type:
 
-1. **Try quota CLI first** - Run `az quota list` to check if the provider is supported
-2. **If quota CLI is not supported** (e.g., returns `BadRequest` or provider is not listed):
-   - **Get current usage** using one of these methods:
-     - **Option 1 - Azure Resource Graph** (faster for counting):
-       ```bash
-       # Install resource-graph extension first (if not already installed)
-       az extension add --name resource-graph
-       
-       # Query resource count
-       az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"
-       ```
-       Example for Cosmos DB in eastus:
-       ```bash
-       az graph query -q "resources | where type == 'microsoft.documentdb/databaseaccounts' and location == 'eastus' | count"
-       ```
-     - **Option 2 - Azure CLI resource list** (detailed resource info):
-       ```bash
-       az resource list --subscription "{subscription-id}" --resource-type "{Resource.Type}" --location "{location}"
-       ```
-       Example for Cosmos DB:
-       ```bash
-       az resource list --subscription "abc-123" --resource-type "Microsoft.DocumentDB/databaseAccounts" --location "eastus"
-       ```
-     - **Option 3 - Invoke azure-resource-lookup skill** (if available)
-   - **Get limit value** from [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-   - Document source as "Fetched from: Azure Resource Graph + Official docs" or "Fetched from: az resource list + Official docs"
-   - Skip to step 4 to get limit now as the current usage is got
-3. **Get current usage** - Use `az quota usage show` to find current deployment count
-4. **Get quota limit** - **MUST use `az quota show` first** to find the maximum allowed. **ONLY** if quota CLI returns `BadRequest` (resource type not supported), then refer to [resources-limits-quotas.md](./resources-limits-quotas.md) for official documentation limits
-5. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
-6. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
-7. **Document source** - Note whether data came from "azure-quotas (resource-name)", "Azure Resource Graph + Official docs", or "az resource list + Official docs"
+1. **Check if quota CLI is supported** - Run `az quota list --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}` to verify the provider is supported. If you encounter issues or need help finding the correct resource name, invoke the azure-quotas skill for troubleshooting.
+2. **Get current usage and limit**:
+   - **If quota CLI is supported**:
+     - Get limit: `az quota show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
+     - Get current usage: `az quota usage show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
+   - **If quota CLI is NOT supported** (returns `BadRequest`):
+     - Get current usage: `az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"` (requires `az extension add --name resource-graph`)
+     - Get limit: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+3. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
+4. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
+5. **Document source** - Note whether data came from "azure-quotas (resource-name)" or "Azure Resource Graph + Official docs"
 
 **Completed example:**
 
