@@ -4,7 +4,7 @@ description: "Recommend Azure VM sizes, VM Scale Sets (VMSS), and configurations
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Compute Skill
