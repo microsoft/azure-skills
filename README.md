@@ -88,19 +88,19 @@ The Azure MCP extension will also install a companion extension that brings the 
 **Add the marketplace** (first time only):
 
 ```bash
-claude plugin marketplace add microsoft/azure-skills
+/plugin marketplace add microsoft/azure-skills
 ```
 
 **Install the plugin**:
 
 ```bash
-claude plugin install azure@azure-skills
+/plugin install azure@azure-skills
 ```
 
-**Update the plugin**:
+**Update**:
 
 ```bash
-claude plugin update azure@azure-skills
+/plugin marketplace update azure-skills
 ```
 
 ## Verify the installation
