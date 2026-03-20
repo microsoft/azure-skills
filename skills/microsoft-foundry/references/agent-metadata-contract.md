@@ -27,7 +27,7 @@ Use this contract for every agent source folder that participates in Microsoft F
 | `environments.<name>.azureContainerRegistry` | ✅ for hosted agents | ACR used for deployment and image refresh |
 | `environments.<name>.observability.applicationInsightsResourceId` | Recommended | App Insights resource for trace workflows |
 | `environments.<name>.observability.applicationInsightsConnectionString` | Optional | Connection string when needed for tooling |
-| `environments.<name>.testCases[]` | ✅ | Dataset + evaluator + threshold bundles for evaluation workflows |
+| `environments.<name>.testCases[]` | ✅ | Dataset + local/remote references + evaluator + threshold bundles for evaluation workflows |
 
 ## Example `agent-metadata.yaml`
 
@@ -43,8 +43,10 @@ environments:
     testCases:
       - id: smoke-core
         priority: P0
-        dataset: support-agent-dev-smoke-v1
-        datasetFile: .foundry/datasets/support-agent-dev-smoke-v1.jsonl
+        dataset: support-agent-dev-eval-seed
+        datasetVersion: v1
+        datasetFile: .foundry/datasets/support-agent-dev-eval-seed-v1.jsonl
+        datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: intent_resolution
             threshold: 4
@@ -55,8 +57,10 @@ environments:
             definitionFile: .foundry/evaluators/citation-quality.yaml
       - id: trace-regressions
         priority: P1
-        dataset: support-agent-dev-traces-v3
+        dataset: support-agent-dev-traces
+        datasetVersion: v3
         datasetFile: .foundry/datasets/support-agent-dev-traces-v3.jsonl
+        datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: coherence
             threshold: 4
@@ -69,8 +73,10 @@ environments:
     testCases:
       - id: production-guardrails
         priority: P0
-        dataset: support-agent-prod-guardrails-v2
-        datasetFile: .foundry/datasets/support-agent-prod-guardrails-v2.jsonl
+        dataset: support-agent-prod-curated
+        datasetVersion: v2
+        datasetFile: .foundry/datasets/support-agent-prod-curated-v2.jsonl
+        datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: violence
             threshold: 1
@@ -95,10 +101,10 @@ environments:
 | `P1` | High-value regression coverage | Production trace regressions, key business flows |
 | `P2` | Broader quality coverage | Long-tail scenarios, exploratory quality checks |
 
-Each test case should point to one dataset and one or more evaluators with explicit thresholds. Use test-case IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+Each test case should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every test case can resolve both the cache artifact and the Foundry-registered dataset. Local dataset filenames should start with the selected environment's Foundry `agentName`, followed by stage and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Use test-case IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
 
 ## Sync Guidance
 
 - Pull/refresh when the user asks, when the workflow detects missing local cache, or when remote versions clearly differ from local metadata.
 - Push/register updates after the user confirms local changes that should be shared in Foundry.
-- Record remote dataset names, versions, and last sync timestamps in `.foundry/datasets/manifest.json` or the relevant metadata section.
+- Record remote dataset names, versions, dataset URIs, and last sync timestamps in `.foundry/datasets/manifest.json` or the relevant metadata section.

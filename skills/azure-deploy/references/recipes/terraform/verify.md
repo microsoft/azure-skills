@@ -16,3 +16,15 @@ curl -s https://$(terraform output -raw api_url)/health | jq .
 ```bash
 az resource list --resource-group $(terraform output -raw resource_group_name) --output table
 ```
+
+## Report Results to User
+
+> ⛔ **MANDATORY** — You **MUST** present the deployed endpoint URLs to the user in your response.
+
+Extract endpoints from Terraform outputs:
+
+```bash
+terraform output -raw api_url
+```
+
+Present a summary including all service URLs. Do NOT end your response without including them.

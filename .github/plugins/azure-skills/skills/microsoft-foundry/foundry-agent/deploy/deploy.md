@@ -7,7 +7,7 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
-| MCP server | `foundry-mcp` |
+| MCP server | `azure` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
 | Container protocols | `a2a`, `responses`, `mcp` |
@@ -238,6 +238,7 @@ After a successful deployment, persist the deployment context to `<agent-root>/.
 | `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
 | `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
 | `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
+| `environments.<env>.testCases[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
 
 If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
 
@@ -249,18 +250,7 @@ If `agent-metadata.yaml` already exists, merge the selected environment instead 
 
 Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
 
-### 2. Select Default Evaluators
-
-| Category | Evaluators |
-|----------|-----------|
-| **Quality (built-in)** | intent_resolution, task_adherence, coherence |
-| **Safety (include ≥2)** | violence, self_harm, hate_unfairness |
-
-### 3. Identify LLM-Judge Deployment
-
-Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
-
-### 4. Reuse or Refresh Local Cache
+### 2. Reuse or Refresh Local Cache
 
 Inspect the selected agent root before generating anything new:
 
@@ -268,11 +258,46 @@ Inspect the selected agent root before generating anything new:
 - Ask before refreshing cached files or replacing thresholds.
 - If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
 
-### 5. Generate Local Test Dataset
+### 2.5 Discover Existing Evaluators
 
-Use the identified chat-capable deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `.foundry/datasets/<agent-name>-<environment>-test-v1.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
+Use **`evaluator_catalog_get`** with the selected environment's project endpoint to list all evaluators already registered in the project. Display them to the user grouped by type (`custom` vs `built-in`) with name, category, and version. During Phase 1, catalog any promising custom evaluators for later reuse, but keep the first run on the built-in baseline. Only propose creating a new evaluator in Phase 2 when no existing evaluator covers the required dimension.
 
-> ⚠️ **Prefer local dataset generation.** Generate test queries locally and save to `.foundry/datasets/*.jsonl` rather than using `generateSyntheticData=true` on the eval API. Local datasets provide reproducibility, version control, and can be reviewed before running evals.
+### 3. Select Default Evaluators
+
+Follow the [observe skill's Two-Phase Evaluator Strategy](../observe/observe.md). Phase 1 is built-in only, so do not create a new custom evaluator during the initial setup pass.
+
+Start with <=5 built-in evaluators for the initial eval run so the first pass stays fast:
+
+| Category | Evaluators |
+|----------|-----------|
+| **Quality (built-in)** | relevance, task_adherence, intent_resolution |
+| **Safety (built-in)** | indirect_attack |
+| **Tool use (built-in, conditional)** | tool_call_accuracy (use when the agent calls tools; some catalogs label it as `builtin.tool_call_accuracy`) |
+
+After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
+
+If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring.
+
+### 4. Identify LLM-Judge Deployment
+
+Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
+
+### 5. Generate Seed Dataset
+
+> ⚠️ **MANDATORY: Read the full generation workflow before proceeding.**
+
+Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
+- The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
+- Coverage distribution targets and generation rules
+- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
+- Foundry registration steps (blob upload + `evaluation_dataset_create`)
+- Metadata updates for `agent-metadata.yaml` and `manifest.json`
+
+Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
+
+The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
+
+Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
 ### 6. Persist Artifacts and Test Cases
 
@@ -284,15 +309,15 @@ Save evaluator definitions, local datasets, and evaluation outputs under `.found
   evaluators/
     <name>.yaml
   datasets/
-    <agent-name>-<environment>-test-v1.jsonl
+    <agent-name>-eval-seed-v1.jsonl
   results/
 ```
 
-Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). For simplicity, seed exactly one `P0` smoke test case after deployment.
+Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one `P0` smoke test case after deployment.
 
 ### 7. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local test dataset, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.

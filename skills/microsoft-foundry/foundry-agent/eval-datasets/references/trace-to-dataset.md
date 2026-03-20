@@ -261,7 +261,7 @@ dependencies
 Extract the `query` from the last user-role entry in `gen_ai.input.messages` and the `response` from `gen_ai.output.messages`. Save extracted data to a local JSONL file:
 
 ```
-.foundry/datasets/<agent-name>-<environment>-traces-candidates-<date>.jsonl
+.foundry/datasets/<agent-name>-traces-candidates-<date>.jsonl
 ```
 
 ## Step 3 — Human Review (Curation)
@@ -283,7 +283,7 @@ Ask the user:
 
 ## Step 4 — Persist Dataset (Local JSONL)
 
-Save approved candidates to `.foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl`:
+Save approved candidates to `.foundry/datasets/<agent-name>-<source>-v<N>.jsonl`:
 
 ```json
 {"query": "How do I reset my password?", "context": "User account management", "metadata": {"source": "trace", "conversationId": "conv-abc-123", "harvestRule": "error"}}
@@ -298,9 +298,9 @@ After persisting, update `.foundry/datasets/manifest.json` with lineage informat
 {
   "datasets": [
     {
-      "name": "support-bot-prod-traces-v3",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v3.jsonl",
-      "version": "3",
+      "version": "v3",
       "source": "trace-harvest",
       "harvestRule": "error+latency",
       "timeRange": "2025-02-01 to 2025-02-07",
@@ -326,10 +326,10 @@ Refresh or register the local cache in Foundry so it is available for server-sid
 
 ### 5a. Discover Storage Connection
 
-Use `project_connection_list` to find an existing `AzureBlob` storage connection on the Foundry project:
+Use `project_connection_list` to find an existing `AzureStorageAccount` connection on the Foundry project:
 
 ```
-project_connection_list(foundryProjectResourceId, category: "AzureBlob")
+project_connection_list(foundryProjectResourceId, category: "AzureStorageAccount")
 ```
 
 - **Found** → use its `connectionName` and `target` (storage account URL)
@@ -343,7 +343,7 @@ Ask the user for a storage account, then create a project connection:
 project_connection_create(
   foundryProjectResourceId,
   connectionName: "datasets-storage",
-  category: "AzureBlob",
+  category: "AzureStorageAccount",
   target: "https://<storage-account>.blob.core.windows.net",
   authType: "AAD"
 )
@@ -353,30 +353,32 @@ project_connection_create(
 
 ### 5c. Upload JSONL to Blob Storage
 
-Upload the local dataset file to a `datasets` container in the storage account:
+Upload the local dataset file to the same `eval-datasets` container used for seed datasets so all Foundry-registered eval datasets follow one storage pattern:
 
 ```bash
 az storage blob upload \
   --account-name <storage-account> \
-  --container-name datasets \
-  --name <agent-name>-<environment>-<source>-v<N>.jsonl \
-  --file .foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-<source>-v<N>.jsonl \
+  --file .foundry/datasets/<agent-name>-<source>-v<N>.jsonl \
   --auth-mode login
 ```
+
+The local dataset filename should start with the selected Foundry agent name before the source/stage/version suffixes so trace-derived datasets stay grouped with the owning agent.
 
 > ⚠️ **Always pass `--auth-mode login`** to use AAD credentials. If the container doesn't exist, create it first with `az storage container create`.
 
 ### 5d. Register Dataset in Foundry
 
-Use `evaluation_dataset_create` with the blob URI and the Azure Blob `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
+Use `evaluation_dataset_create` with the blob URI and the `AzureStorageAccount` `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
 
 ```
 evaluation_dataset_create(
   projectEndpoint: "<project-endpoint>",
-  datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
+  datasetContentUri: "https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-<source>-v<N>.jsonl",
   connectionName: "datasets-storage",
-  datasetName: "<agent-name>-<environment>-<source>",
-  datasetVersion: "<N>"
+  datasetName: "<agent-name>-<source>",
+  datasetVersion: "v<N>"
 )
 ```
 
@@ -385,7 +387,7 @@ evaluation_dataset_create(
 Confirm the dataset is registered:
 
 ```
-evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>", datasetVersion: "<N>")
+evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<source>", datasetVersion: "v<N>")
 ```
 
 Display the registered dataset details to the user. Update `.foundry/datasets/manifest.json` with `"synced": true` and the server-side dataset name/version.

@@ -28,3 +28,19 @@ az webapp show \
   --resource-group <rg-name> \
   --query "{state:state, hostNames:hostNames}"
 ```
+
+## Report Results to User
+
+> ⛔ **MANDATORY** — You **MUST** present the deployed endpoint URLs to the user in your response.
+
+Extract endpoints using the appropriate command for the service type:
+
+```bash
+# Container Apps
+az containerapp show --name <app-name> --resource-group <rg-name> --query "properties.configuration.ingress.fqdn" -o tsv
+
+# App Service
+az webapp show --name <app-name> --resource-group <rg-name> --query "defaultHostName" -o tsv
+```
+
+Present a summary including all service URLs. Do NOT end your response without including them.

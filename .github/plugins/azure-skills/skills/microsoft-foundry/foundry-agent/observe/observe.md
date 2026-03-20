@@ -13,7 +13,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key MCP tools | `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
+| Key MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 | Local cache | `.foundry/agent-metadata.yaml`, `.foundry/evaluators/`, `.foundry/datasets/`, `.foundry/results/` |
 
@@ -66,7 +66,39 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 7. **Write scripts to files.** Python scripts go in `scripts/` - no inline code blocks.
 8. **Persist eval artifacts.** Save local artifacts to `.foundry/evaluators/`, `.foundry/datasets/`, and `.foundry/results/` for version tracking and comparison.
 9. **Use exact eval parameter names.** Use `evaluationId` only on batch-eval create calls that group runs; use `evalId` on `evaluation_get` and `evaluation_comparison_create`; use `evalRunId` for a specific run lookup.
-10. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis". This applies to files in `.foundry/datasets/`, `.foundry/results/`.
+10. **Check existing evaluators before creating new ones.** Always call `evaluator_catalog_get` before proposing or creating evaluators. Present the existing catalog to the user and map existing evaluators to the agent's evaluation needs. Only create a new evaluator when no existing one covers the required dimension. This applies to every workflow that involves evaluator selection - initial setup, re-evaluation, and optimization loops.
+11. **Use correct parameters when deleting evaluators.** `evaluator_catalog_delete` requires both `name` (not `evaluatorName`) and `version`. When cleaning up redundant evaluators, always pass the explicit version string. If an evaluator has multiple versions (for example, `v1`, `v2`, `v3`), delete each version individually - there is no "delete all versions" shortcut. Discover version numbers with `evaluator_catalog_get` before attempting deletions.
+12. **Use a two-phase evaluator strategy.** Phase 1 is built-in only: `relevance`, `task_adherence`, `intent_resolution`, `indirect_attack`, and `builtin.tool_call_accuracy` when the agent uses tools. Generate seed datasets with `query` and `expected_behavior` so Phase 2 can reuse or create targeted custom evaluators only after the first run exposes gaps.
+13. **Account for LLM judge knowledge cutoff.** When the agent uses real-time data sources (web search, Bing Grounding, live APIs), the LLM judge's training cutoff means it cannot verify current facts. Custom evaluators that score factual accuracy or behavioral adherence will produce systematic false negatives - flagging the agent's real-time data as "fabricated" or "beyond knowledge cutoff." Mitigations: (a) instruct the evaluator prompt to accept sourced claims it cannot verify, (b) use `expected_behavior` rubrics that describe the shape of a good answer rather than specific facts, (c) flag suspected knowledge-cutoff false negatives in the failure analysis rather than treating them as real failures.
+14. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis". This applies to files in `.foundry/datasets/`, `.foundry/results/`.
+
+## Two-Phase Evaluator Strategy
+
+| Phase | When | Evaluators | Dataset fields | Goal |
+|-------|------|------------|----------------|------|
+| Phase 1 - Initial setup | Before the first eval run | <=5 built-in evaluators only: `relevance`, `task_adherence`, `intent_resolution`, `indirect_attack`, plus `builtin.tool_call_accuracy` when the agent uses tools | `query`, `expected_behavior` (plus optional `context`, `ground_truth`) | Establish a fast baseline and identify which failure patterns built-ins can and cannot explain |
+| Phase 2 - After analysis | After reviewing the first run's failures and clusters | Reuse existing custom evaluators first; create a new custom evaluator only when the built-in set cannot capture the gap | Reuse `expected_behavior` as a per-query rubric | Turn broad failure signals into targeted, domain-aware scoring |
+
+Phase 1 keeps the first setup fast and comparable across agents. Even though the initial built-in evaluators do not consume `expected_behavior`, include it in every seed dataset row so the same dataset is ready for Phase 2 custom evaluators without regeneration.
+
+When built-in evaluators reveal patterns they cannot fully capture - for example, false negatives from `task_adherence` missing tool-call context or domain-specific quality gaps - first call `evaluator_catalog_get` again to see whether an existing custom evaluator already covers the dimension. Only create a new evaluator when the catalog still lacks the required signal.
+
+Example custom evaluator for Phase 2:
+
+```yaml
+name: behavioral_adherence
+promptText: |
+  Given the query, response, and expected behavior, rate how well
+  the response fulfills the expected behavior (1-5).
+  ## Query
+  {{query}}
+  ## Response
+  {{response}}
+  ## Expected Behavior
+  {{expected_behavior}}
+```
+
+> 💡 **Tip:** This evaluator scores against the per-query behavioral rubric in `expected_behavior`, not just the agent's global instructions. That usually produces a cleaner signal when broad built-in judges are directionally correct but too coarse for optimization.
 
 ## Related Skills
 

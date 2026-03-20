@@ -17,6 +17,7 @@ Deploy to Azure using Bicep templates directly.
 | 2 | Build (optional) | `az bicep build --file main.bicep` |
 | 3 | Deploy | `az deployment sub create` |
 | 4 | Verify | `az resource list` |
+| 5 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) |
 
 ## Deployment Commands
 

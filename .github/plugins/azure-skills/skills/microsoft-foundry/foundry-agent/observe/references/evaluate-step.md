@@ -23,7 +23,7 @@ Use **`evaluation_agent_batch_eval_create`** to run the selected test case's eva
 
 ### Test Data Options
 
-**Preferred — local dataset:** Read JSONL from `.foundry/datasets/` and pass via `inputData` (array of objects with `query` and optionally `context`, `ground_truth`). Always use this when the referenced cache file exists.
+**Preferred — local dataset:** Read JSONL from `.foundry/datasets/` and pass via `inputData` (array of objects with `query` and `expected_behavior`, optionally `context`, `ground_truth`). Always use this when the referenced cache file exists.
 
 **Fallback only — server-side synthetic data:** Set `generateSyntheticData=true` and provide `generationModelDeploymentName`. Only use this when the local cache is missing and the user explicitly requests a refresh-free synthetic run.
 

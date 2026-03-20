@@ -51,9 +51,11 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 ## Behavioral Rules
 
 1. **Always display the KQL query.** Before executing any KQL query, display it in a code block. Never run a query silently.
-2. **Keep environment visible.** Include the selected environment and agent name in each search summary and explain which metadata entry is being used.
+2. **Keep environment visible.** Include the selected environment and agent name in each search summary, and include the derived agent version when the query can recover it from telemetry.
 3. **Start broad, then narrow.** Begin with conversation-level summaries, then drill into specific conversations or spans on user request.
 4. **Use time ranges.** Always scope queries with a time range (default: last 24 hours). Ask the user for the range if not specified.
 5. **Explain GenAI attributes.** When displaying results, translate OTel attribute names to human-readable labels (for example, `gen_ai.operation.name` -> "Operation").
 6. **Link to conversation detail.** When showing search or failure results, offer to drill into any specific conversation.
 7. **Scope to the selected environment.** App Insights may contain traces from multiple agents or environments. Filter with the selected environment's agent name first, then add an environment tag filter if the telemetry emits one.
+8. **Resolve hosted-agent identity from `requests` first.** For hosted agents, prefer `requests`-scoped `gen_ai.agent.name` or `azure.ai.agentserver.agent_name` as the Foundry-facing filter. When `gen_ai.agent.id` is emitted in `<agent-name>:<version>` format, parse it to surface `agentVersion`, but do not treat `dependencies.gen_ai.agent.name` as the top-level hosted-agent name.
+9. **Use `operation_Id` to fan out hosted-agent traces.** After isolating the hosted-agent `requests` rows, materialize their `operation_Id` values and join other telemetry tables on `operation_Id`. When conversation IDs are sparse, use `coalesce(gen_ai.conversation.id, azure.ai.agentserver.conversation_id, operation_Id)` so every row still rolls up to a stable conversation key.

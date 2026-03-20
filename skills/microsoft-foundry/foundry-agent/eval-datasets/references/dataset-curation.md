@@ -22,7 +22,7 @@ Raw Traces (from KQL harvest)
 After running a [trace harvest](trace-to-dataset.md), save candidates with a `status` field:
 
 ```
-.foundry/datasets/<agent-name>-<environment>-candidates-<date>.jsonl
+.foundry/datasets/<agent-name>-traces-candidates-<date>.jsonl
 ```
 
 Each line includes a review status:
@@ -68,7 +68,7 @@ After review, filter approved candidates and save to a versioned dataset:
 1. Read `.foundry/datasets/manifest.json` to find the latest version number
 2. Filter candidates where `status == "approved"`
 3. Remove the `status` field from the output
-4. Save to `.foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl`
+4. Save to `.foundry/datasets/<agent-name>-<source>-v<N>.jsonl`
 5. Update `.foundry/datasets/manifest.json` with metadata
 
 ### Update Candidate Status

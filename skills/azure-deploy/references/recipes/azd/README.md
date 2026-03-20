@@ -21,6 +21,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 | 2 | **Deploy** | `azd up --no-prompt` |
 | 3 | **Post-Deploy** | [Post-Deployment Steps](post-deployment.md) — If using SQL + managed identity |
 | 4 | **Verify** | See [Verification](verify.md) |
+| 5 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) Step 3 |
 
 > ⚠️ **Important:** For .NET Aspire projects or projects using azd "limited mode" (no explicit `infra/` folder), verify that `azd provision` populated all required environment variables. If `azd deploy` fails with errors about missing `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, or `MANAGED_IDENTITY_CLIENT_ID`, see [Error Handling](errors.md#missing-container-registry-variables) for the resolution.
 

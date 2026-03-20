@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.0.7"
 ---
 
 # Azure Deploy
@@ -65,6 +65,7 @@ Activate this skill when user wants to:
 | 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
 | 6 | **Handle Errors** — See recipe's `errors.md` | — |
 | 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
+| 8 | **Report Results** — Present deployed endpoint URLs to the user | [Verification](references/recipes/azd/verify.md) |
 
 > **⛔ VALIDATION PROOF CHECK**
 >

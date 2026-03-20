@@ -17,6 +17,7 @@ Deploy to Azure using Azure CLI.
 | 2 | Deploy infrastructure | `az deployment sub create` |
 | 3 | Deploy application | Service-specific commands |
 | 4 | Verify | `az resource list` |
+| 5 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) |
 
 ## Infrastructure Deployment
 

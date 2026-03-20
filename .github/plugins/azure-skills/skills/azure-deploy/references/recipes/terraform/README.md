@@ -19,6 +19,7 @@ Deploy to Azure using Terraform.
 | 3 | Apply | `terraform apply tfplan` |
 | 4 | Get outputs | `terraform output` |
 | 5 | Deploy app | Service-specific commands |
+| 6 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) |
 
 ## Deployment Commands
 

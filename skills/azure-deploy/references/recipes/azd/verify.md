@@ -9,7 +9,7 @@ azd show
 ```
 
 Expected output:
-```
+```text
 Showing deployed resources:
   Resource Group: rg-myapp-dev
   Services:
@@ -28,7 +28,39 @@ curl -f "$ENDPOINT/health" || curl -f "$ENDPOINT"
 
 Expected: HTTP 200 response.
 
-## Step 3: Post-Deployment Verification (if applicable)
+## Step 3: Report Results to User
+
+> ⛔ **MANDATORY** — You **MUST** present the deployed endpoint URLs to the user in your response. A deployment is not considered complete until the user has received the URLs.
+
+Extract all endpoints from the `azd up` / `azd deploy` output or by running:
+
+```bash
+azd show
+```
+
+**Present a summary to the user that includes:**
+
+| Item | Source |
+|------|--------|
+| Deployed service endpoint(s) | `Endpoint:` lines from `azd` output or `azd show` |
+| Aspire Dashboard URL (if applicable) | `Aspire Dashboard:` line from `azd` output |
+| Azure Portal deployment link (if available) | Portal URL from provisioning output |
+
+Example response format:
+
+```text
+✅ Deployment succeeded!
+
+| Service | Endpoint |
+|---------|----------|
+| apiservice | https://apiservice.xxx.azurecontainerapps.io |
+
+Aspire Dashboard: https://aspire-dashboard.xxx.azurecontainerapps.io
+```
+
+> ⚠️ If output was truncated, run `azd show` to retrieve endpoint URLs.
+
+## Step 4: Post-Deployment Verification (if applicable)
 
 For deployments with Azure SQL Database and managed identity:
 

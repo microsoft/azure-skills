@@ -71,11 +71,12 @@ Also check for eval results: see [Eval Correlation](eval-correlation.md).
 
 > **Note:** For hosted agents, `gen_ai.agent.name` in `dependencies` refers to *sub-agents* (e.g., `BingSearchAgent`), not the top-level hosted agent. See "Search by Hosted Agent Name" below.
 
+> 💡 **Hosted-agent versioning:** If you need the deployed version, use the hosted-agent pattern below and parse `gen_ai.agent.id` when it is emitted in `<agent-name>:<version>` format.
+
 ```kql
 dependencies
 | where timestamp > ago(24h)
 | where customDimensions["gen_ai.agent.name"] == "<agent_name>"
-    or customDimensions["gen_ai.agent.id"] == "<agent_name>"
 | summarize
     startTime = min(timestamp),
     endTime = max(timestamp),
@@ -92,17 +93,33 @@ dependencies
 
 ## Search by Hosted Agent Name
 
-For hosted agents, the Foundry agent name (e.g., `hosted-agent-022-001`) appears on both `requests` and `traces` tables — NOT on `dependencies`. Use `requests` as the preferred entry point since it also has `gen_ai.agent.name`:
+For hosted agents, the Foundry agent name (e.g., `hosted-agent-022-001`) appears on `requests` and `traces` — NOT on `dependencies`. Use `requests` as the preferred entry point, materialize the matching request rows, then join downstream spans on `operation_Id`:
 
 ```kql
-let reqIds = requests
+let agentRequests = materialize(
+    requests
 | where timestamp > ago(24h)
-| where customDimensions["gen_ai.agent.name"] == "<agent_name>"
-| distinct id;
+| extend
+    foundryAgentName = coalesce(
+        tostring(customDimensions["gen_ai.agent.name"]),
+        tostring(customDimensions["azure.ai.agentserver.agent_name"])
+    ),
+    agentId = tostring(customDimensions["gen_ai.agent.id"]),
+    agentNameFromId = tostring(split(agentId, ":")[0]),
+    agentVersion = iff(agentId contains ":", tostring(split(agentId, ":")[1]), ""),
+    conversationId = coalesce(
+        tostring(customDimensions["gen_ai.conversation.id"]),
+        tostring(customDimensions["azure.ai.agentserver.conversation_id"]),
+        operation_Id
+    )
+| where foundryAgentName == "<agent_name>"
+    or agentNameFromId == "<agent_name>"
+| project operation_Id, conversationId, agentVersion
+);
 dependencies
 | where timestamp > ago(24h)
-| where operation_ParentId in (reqIds)
 | where isnotempty(customDimensions["gen_ai.operation.name"])
+| join kind=inner agentRequests on operation_Id
 | summarize
     startTime = min(timestamp),
     endTime = max(timestamp),
@@ -110,19 +127,21 @@ dependencies
     errorCount = countif(success == false),
     totalInputTokens = sum(toint(customDimensions["gen_ai.usage.input_tokens"])),
     totalOutputTokens = sum(toint(customDimensions["gen_ai.usage.output_tokens"]))
-  by operation_ParentId
+  by conversationId, operation_Id, agentVersion
 | order by startTime desc
 | take 50
 ```
+
+If `gen_ai.agent.id` does not contain `:`, continue using the requests-scoped name fields for filtering and treat `agentVersion` as optional enrichment rather than a required key.
 
 ## Conversation Summary Table
 
 Present results in this format:
 
-| Conversation ID | Start Time | Duration | Spans | Errors | Input Tokens | Output Tokens |
-|----------------|------------|----------|-------|--------|-------------|---------------|
-| conv_abc123 | 2025-01-15 10:30 | 4.2s | 12 | 0 | 850 | 320 |
-| conv_def456 | 2025-01-15 10:25 | 8.7s | 18 | 2 | 1200 | 450 |
+| Conversation ID | Agent Version | Start Time | Duration | Spans | Errors | Input Tokens | Output Tokens |
+|----------------|---------------|------------|----------|-------|--------|-------------|---------------|
+| conv_abc123 | 3 | 2025-01-15 10:30 | 4.2s | 12 | 0 | 850 | 320 |
+| conv_def456 | 4 | 2025-01-15 10:25 | 8.7s | 18 | 2 | 1200 | 450 |
 
 Highlight rows with errors in the summary. Offer to drill into any conversation via [Conversation Detail](conversation-detail.md).
 

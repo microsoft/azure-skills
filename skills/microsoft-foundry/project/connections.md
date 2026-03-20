@@ -43,7 +43,7 @@ Python and C# SDKs resolve this automatically from the connection name.
 | `bing_custom_search` | Grounding with Bing Custom Search | Bing Custom Search tool |
 | `api_key` | Any API-key resource | MCP servers, custom tools |
 | `azure_openai` | Azure OpenAI | Model access |
-| `AzureBlob` | Azure Blob Storage | Dataset upload via `evaluation_dataset_create` |
+| `AzureStorageAccount` | Azure Blob Storage | Dataset upload via `evaluation_dataset_create` |
 
 ## RBAC for Connection Management
 

@@ -4,14 +4,15 @@ Manage dataset versions with naming conventions, tagging, and version pinning fo
 
 ## Naming Convention
 
-Use the pattern `<agent-name>-<environment>-<source>-v<N>`:
+Use the pattern `<agent-name>-<source>-v<N>`:
 
 | Component | Values | Example |
 |-----------|--------|---------|
-| `<agent-name>` | Agent name from `agent-metadata.yaml` | `support-bot` |
-| `<environment>` | Selected environment key | `prod` |
+| `<agent-name>` | Selected environment's `agentName` from `agent-metadata.yaml` | `support-bot-prod` |
 | `<source>` | `traces`, `synthetic`, `manual`, `combined` | `traces` |
 | `v<N>` | Incremental version number | `v3` |
+
+`<agent-name>` already refers to the environment-specific deployed Foundry agent name. If that value includes the environment key, do **not** append the environment again.
 
 **Full examples:**
 - `support-bot-prod-traces-v1` — first production dataset from trace harvesting
@@ -49,7 +50,7 @@ Pass the contents via `inputData` parameter in **`evaluation_agent_batch_eval_cr
 Use `evaluation_dataset_versions_get` to list all versions of a dataset registered in Foundry:
 
 ```
-evaluation_dataset_versions_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>")
+evaluation_dataset_versions_get(projectEndpoint, datasetName: "<agent-name>-<source>")
 ```
 
 Use `evaluation_dataset_get` without a name to list all datasets in the project:
@@ -62,15 +63,18 @@ evaluation_dataset_get(projectEndpoint)
 
 ## Manifest File
 
-Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.json`:
+Track all dataset versions, required dataset metadata, tags, and lineage in `.foundry/datasets/manifest.json`:
 
 ```json
 {
   "datasets": [
     {
-      "name": "support-bot-prod-traces-v1",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v1.jsonl",
-      "version": "1",
+      "version": "v1",
+      "agent": "support-bot-prod",
+      "stage": "traces",
+      "datasetUri": "<foundry-dataset-uri-v1>",
       "tag": "deprecated",
       "source": "trace-harvest",
       "harvestRule": "error",
@@ -80,9 +84,12 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
       "evalRunIds": ["run-abc-123"]
     },
     {
-      "name": "support-bot-prod-traces-v2",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v2.jsonl",
-      "version": "2",
+      "version": "v2",
+      "agent": "support-bot-prod",
+      "stage": "traces",
+      "datasetUri": "<foundry-dataset-uri-v2>",
       "tag": "baseline",
       "source": "trace-harvest",
       "harvestRule": "error+latency",
@@ -92,9 +99,12 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
       "evalRunIds": ["run-def-456", "run-ghi-789"]
     },
     {
-      "name": "support-bot-prod-traces-v3",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v3.jsonl",
-      "version": "3",
+      "version": "v3",
+      "agent": "support-bot-prod",
+      "stage": "traces",
+      "datasetUri": "<foundry-dataset-uri-v3>",
       "tag": "prod",
       "source": "trace-harvest",
       "harvestRule": "error+latency+low-eval",
@@ -106,6 +116,8 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
   ]
 }
 ```
+
+Keep `stage` stable for the dataset family (`seed`, `traces`, `curated`, or `prod`) and use `tag` for mutable lifecycle labels such as `baseline`, `prod`, or `deprecated`. Persist `datasetUri` as the Foundry-returned dataset reference so deploy and observe workflows can resolve the registered dataset directly.
 
 ## Creating a New Version
 

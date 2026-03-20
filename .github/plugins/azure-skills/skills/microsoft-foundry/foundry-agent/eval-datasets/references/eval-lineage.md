@@ -31,9 +31,9 @@ Track lineage in `.foundry/datasets/manifest.json`:
 {
   "datasets": [
     {
-      "name": "support-bot-prod-traces-v3",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v3.jsonl",
-      "version": "3",
+      "version": "v3",
       "tag": "prod",
       "source": "trace-harvest",
       "harvestRule": "error+latency",

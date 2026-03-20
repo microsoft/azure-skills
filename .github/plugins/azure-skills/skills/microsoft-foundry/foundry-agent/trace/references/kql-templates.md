@@ -24,7 +24,7 @@ Stored in `customDimensions` on `dependencies` spans:
 | `gen_ai.conversation.id` | Conversation/session ID | `conv_5j66UpCpwteGg4YSxUnt7lPY` |
 | `gen_ai.response.id` | Response ID | `chatcmpl-123` |
 | `gen_ai.agent.name` | Agent name | `my-support-agent` |
-| `gen_ai.agent.id` | Agent unique ID | `asst_abc123` |
+| `gen_ai.agent.id` | Agent identifier | `asst_abc123` |
 | `gen_ai.request.model` | Requested model | `gpt-4o` |
 | `gen_ai.response.model` | Actual model used | `gpt-4o-2024-05-13` |
 | `gen_ai.usage.input_tokens` | Input token count | `450` |
@@ -56,23 +56,39 @@ Stored in `customDimensions` on `customEvents` (name == `gen_ai.evaluation.resul
 | `id` | Span ID — unique identifier for this span |
 | `operation_ParentId` | Parent span ID — use with `id` to build span trees |
 
-### Parent-Child Join (requests → dependencies)
+### Operation_Id Join (requests → dependencies)
 
-Use `operation_ParentId` to find child dependency spans from a parent request. This is critical for hosted agents where the Foundry agent name only lives on the parent `requests` span:
+Use `requests` as the hosted-agent entry point, then carry `operation_Id` forward as the trace key when joining into `dependencies`, `traces`, or `customEvents`:
 
 ```kql
-let reqIds = requests
+let agentRequests = materialize(
+    requests
 | where timestamp > ago(7d)
-| where customDimensions["gen_ai.agent.name"] == "<foundry-agent-name>"
-| distinct id;
+| extend
+    foundryAgentName = coalesce(
+        tostring(customDimensions["gen_ai.agent.name"]),
+        tostring(customDimensions["azure.ai.agentserver.agent_name"])
+    ),
+    agentId = tostring(customDimensions["gen_ai.agent.id"]),
+    agentNameFromId = tostring(split(agentId, ":")[0]),
+    agentVersion = iff(agentId contains ":", tostring(split(agentId, ":")[1]), ""),
+    conversationId = coalesce(
+        tostring(customDimensions["gen_ai.conversation.id"]),
+        tostring(customDimensions["azure.ai.agentserver.conversation_id"]),
+        operation_Id
+    )
+| where foundryAgentName == "<foundry-agent-name>"
+    or agentNameFromId == "<foundry-agent-name>"
+| project operation_Id, conversationId, agentVersion
+);
 dependencies
 | where timestamp > ago(7d)
-| where operation_ParentId in (reqIds)
+| where isnotempty(customDimensions["gen_ai.operation.name"])
+| join kind=inner agentRequests on operation_Id
 | extend
     operation = tostring(customDimensions["gen_ai.operation.name"]),
-    model = tostring(customDimensions["gen_ai.request.model"]),
-    conversationId = tostring(customDimensions["gen_ai.conversation.id"])
-| project timestamp, duration, success, operation, model, conversationId, operation_ParentId
+    model = tostring(customDimensions["gen_ai.request.model"])
+| project timestamp, duration, success, operation, model, conversationId, agentVersion, operation_Id
 | order by timestamp desc
 ```
 
@@ -87,7 +103,9 @@ Stored in `customDimensions` on **both `requests` and `traces`** tables (NOT on 
 | `azure.ai.agentserver.conversation_id` | Conversation ID | `conv_d7ab624de92d...` |
 | `azure.ai.agentserver.response_id` | Response ID (caresp format) | `caresp_d7ab624de92d...` |
 
-> **Important:** Use `requests` as the preferred entry point for agent-name filtering — it has both `azure.ai.agentserver.agent_name` and `gen_ai.agent.name` with the Foundry-level name. To reach child `dependencies` spans, join via `requests.id` → `dependencies.operation_ParentId`.
+> **Important:** Use `requests` as the preferred entry point for agent-name filtering — it has both `azure.ai.agentserver.agent_name` and `gen_ai.agent.name` with the Foundry-level name. To reach downstream spans and related telemetry, carry `operation_Id` forward from the filtered request set and join other tables on that trace key.
+
+> 💡 **Version enrichment:** Some hosted-agent `requests` telemetry emits `gen_ai.agent.id` in `<foundry-agent-name>:<version>` format. When that delimiter is present, split on `:` to recover `agentVersion`; if it is absent, keep filtering on the requests-scoped name fields and leave version blank.
 
 > ⚠️ **`gen_ai.agent.name` means different things on different tables:**
 > - On `requests`: the **Foundry agent name** (user-visible) → e.g., `hosted-agent-022-001`
