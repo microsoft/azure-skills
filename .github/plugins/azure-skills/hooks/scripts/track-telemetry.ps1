@@ -89,6 +89,12 @@ $filePath = $null
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     $skillName = $toolInput.skill
+    # Claude Code prefixes skill names with the plugin name: "plugin-name:skill-name"
+    # Since this plugin is named "azure", a skill like "azure-prepare" becomes "azure:azure-prepare"
+    # Strip the "azure:" prefix to get the actual skill name (e.g., "azure:azure-prepare" -> "azure-prepare")
+    if ($skillName -and $skillName.StartsWith("azure:")) {
+        $skillName = $skillName.Substring(6)
+    }
     if ($skillName) {
         $eventType = "skill_invocation"
         $shouldTrack = $true
