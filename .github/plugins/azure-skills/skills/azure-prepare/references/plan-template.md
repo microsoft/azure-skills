@@ -176,6 +176,7 @@ For each resource type:
 ### Phase 4: Deployment
 - [ ] Invoke azure-deploy skill
 - [ ] Deployment successful
+- [ ] Report deployed endpoint URLs
 - [ ] Update plan status to "Deployed"
 
 ---

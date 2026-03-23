@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.7"
 ---
 
 # Azure Prepare
@@ -28,7 +28,7 @@ Activate this skill when user wants to:
 
 ## Rules
 
-1. **Plan first** — Create `.azure/plan.md` before any code generation
+1. **Plan first** — Create `.azure/plan.md` **in the workspace root directory** (not the session-state folder) before any code generation
 2. **Get approval** — Present plan to user before execution
 3. **Research before generating** — Load references and invoke related skills
 4. **Update plan progressively** — Mark steps complete as you go
@@ -49,6 +49,10 @@ Activate this skill when user wants to:
 > 4. **EXECUTE** — Only after approval, execute the plan step by step
 >
 > The `.azure/plan.md` file is the **source of truth** for this workflow and for azure-validate and azure-deploy skills. Without it, those skills will fail.
+>
+> ⚠️ **CRITICAL: `.azure/plan.md` must be created inside the workspace root** (e.g., `/tmp/my-project/.azure/plan.md`). This is **NOT** the session-state `plan.md` used for internal workflow tracking. These are two different files:
+> - **`<workspace>/.azure/plan.md`** — The deployment plan artifact read by azure-validate and azure-deploy. **You must create this.**
+> - **`~/.copilot/session-state/<id>/plan.md`** — Internal session notes. This file is NOT visible to other skills.
 
 ---
 
