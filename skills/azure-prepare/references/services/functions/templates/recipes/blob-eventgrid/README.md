@@ -15,7 +15,9 @@ This recipe creates functions that respond to blob creation/deletion events via 
 | **Auth** | Managed Identity (UAMI) |
 | **IaC** | ✅ Full template available |
 
-## AZD Templates (Recommended)
+## AZD Templates (NEW projects only)
+
+> ⚠️ **Warning:** Use these templates only for **new projects**. If the user has an existing Azure Functions project, use the **Composition Steps** below to modify existing files instead.
 
 Use these templates directly instead of composing from HTTP base:
 

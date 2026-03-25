@@ -11,6 +11,20 @@ Validation steps for Azure Developer CLI projects.
 
 ## Validation Steps
 
+- [ ] 1. AZD Installation
+- [ ] 2. Schema Validation
+- [ ] 3. Environment Setup
+- [ ] 4. Authentication Check
+- [ ] 5. Subscription/Location Check
+- [ ] 6. Aspire Pre-Provisioning Checks
+- [ ] 7. Provision Preview
+- [ ] 8. Build Verification
+- [ ] 9. Package Validation
+- [ ] 10. Azure Policy Validation
+- [ ] 11. Aspire Post-Provisioning Checks
+
+## Validation Details
+
 ### 1. AZD Installation
 
 Verify AZD is installed:

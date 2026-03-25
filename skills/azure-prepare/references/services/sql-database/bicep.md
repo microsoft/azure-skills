@@ -109,22 +109,6 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 
 ## Legacy SQL Authentication (⛔ DO NOT USE)
 
-> ❌ **DEPRECATED - DO NOT USE FOR NEW DEPLOYMENTS**
-> 
-> This authentication method is included for reference only. **DO NOT use SQL authentication for new Azure SQL deployments.** It will fail in any subscription with Entra-only authentication policies and violates Azure security best practices.
->
-> **Always use Entra-only authentication (documented above) for all new deployments.**
-
-```bicep
-param sqlAdminPassword string
-
-resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
-  name: '${resourcePrefix}-sql-${uniqueHash}'
-  location: location
-  properties: {
-    administratorLogin: 'sqladmin'
-    administratorLoginPassword: sqlAdminPassword
-    minimalTlsVersion: '1.2'
-  }
-}
-```
+> ❌ **DEPRECATED — DO NOT generate `administratorLogin` or `administratorLoginPassword` properties.**
+> SQL admin authentication is disabled in subscriptions with Entra-only policies and violates Azure security best practices.
+> Always use the Entra-only authentication pattern at the top of this file.

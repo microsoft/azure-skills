@@ -9,6 +9,16 @@ Validation steps for Azure CLI deployments.
 
 ## Validation Steps
 
+- [ ] 1. Azure CLI Installation
+- [ ] 2. Authentication
+- [ ] 3. Bicep Compilation
+- [ ] 4. Template Validation
+- [ ] 5. What-If Preview
+- [ ] 6. Docker Build (if containerized)
+- [ ] 7. Azure Policy Validation
+
+## Validation Details
+
 ### 1. Azure CLI Installation
 
 Verify Azure CLI is installed:

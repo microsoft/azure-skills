@@ -9,6 +9,18 @@ Validation steps for Terraform deployments.
 
 ## Validation Steps
 
+- [ ] 1. Terraform Installation
+- [ ] 2. Azure CLI Installation
+- [ ] 3. Authentication
+- [ ] 4. Initialize
+- [ ] 5. Format Check
+- [ ] 6. Validate Syntax
+- [ ] 7. Plan Preview
+- [ ] 8. State Backend
+- [ ] 9. Azure Policy Validation
+
+## Validation Details
+
 ### 1. Terraform Installation
 
 Verify Terraform is installed:

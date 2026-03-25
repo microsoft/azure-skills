@@ -30,6 +30,8 @@ ask_user(
 - Do NOT assume user wants to delete/overwrite
 - Do NOT proceed based on "the user asked to deploy" (deploy ≠ delete old)
 - Do NOT batch destructive actions without individual confirmation
+- ⛔ Do NOT delete user project or workspace directories (e.g., `rm -rf <project-dir>`) even when adding features, converting, or migrating — use MODIFY mode to edit existing files instead. File deletions within a project (e.g., removing build artifacts or temp files) are permitted when appropriate.
+- ⛔ `azd init -t <template>` (and any `azd init` command with a template argument) is for NEW projects only — run it **only** in an empty/new directory. If the user explicitly requests re-initialization of an existing project, create a separate new directory, run the template there, and then migrate changes into the existing project with user-confirmed edits. Never run `azd init -t` directly in a non-empty existing workspace. `azd init` without a template argument may be used in existing workspaces when appropriate.
 
 ---
 

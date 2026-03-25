@@ -10,6 +10,15 @@ Validation steps for standalone Bicep deployments.
 
 ## Validation Steps
 
+- [ ] 1. Bicep Compilation
+- [ ] 2. Template Validation
+- [ ] 3. What-If Preview
+- [ ] 4. Authentication
+- [ ] 5. Linting (optional)
+- [ ] 6. Azure Policy Validation
+
+## Validation Details
+
 ### 1. Bicep Compilation
 
 ```bash
