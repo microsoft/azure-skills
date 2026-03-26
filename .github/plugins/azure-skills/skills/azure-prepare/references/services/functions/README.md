@@ -44,12 +44,19 @@ services:
 
 **Use Flex Consumption for new deployments** (all AZD templates default to Flex).
 
-| Plan | Use Case | Scaling | VNET |
-|------|----------|---------|------|
-| **Flex Consumption** ⭐ | Default for new projects | Auto, pay-per-execution | ✅ |
-| Consumption (Y1) | Variable workloads, cost optimization | Auto, scale to zero | ❌ |
-| Premium (EP1-EP3) | No cold starts, longer execution | Auto, min instances | ✅ |
-| Dedicated | Predictable load, existing App Service | Manual or auto | ✅ |
+| Plan | Use Case | Scaling | VNET | Slots |
+|------|----------|---------|------|-------|
+| **Flex Consumption** ⭐ | Default for new projects | Auto, pay-per-execution | ✅ | ❌ |
+| Consumption Windows (Y1) | Legacy/maintenance, Windows-only features | Auto, scale to zero | ❌ | ✅ 1 staging slot |
+| Consumption Linux (Y1) | Legacy/maintenance | Auto, scale to zero | ❌ | ❌ |
+| Premium (EP1-EP3) | No cold starts, longer execution, slots | Auto, min instances | ✅ | ✅ 20 slots |
+| Dedicated | Predictable load, existing App Service | Manual or auto | ✅ | ✅ varies by SKU |
+
+> ⚠️ **Deployment Slots Guidance:**
+> - **Windows Consumption (Y1)** supports 1 staging slot — valid for existing apps or specific Windows requirements.
+>   Prefer **Elastic Premium (EP1)** or **Dedicated** for new apps requiring slots, as Consumption cold starts affect swap reliability.
+> - **Linux Consumption and Flex Consumption** do **not** support deployment slots.
+> - For new projects needing slots: use **Elastic Premium** or an **App Service Plan (Standard+)**.
 
 ## Runtime Stacks
 
