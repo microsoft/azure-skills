@@ -180,6 +180,14 @@ module "function_app" {
 
 **⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
 
+> 💡 **OS and Slots Matter for Consumption:**
+> - **Linux Consumption** (`os_type = "Linux"`): Does **not** support deployment slots.
+> - **Windows Consumption** (`os_type = "Windows"`): Supports **1 staging slot** (2 total including production).
+>   If a user specifically needs Windows Consumption with a slot, that is supported — use the Windows pattern below.
+>   For new apps needing slots, prefer **Elastic Premium (EP1)** for better performance and no cold-start issues.
+
+### Linux Consumption (no slot support)
+
 ```hcl
 resource "azurerm_storage_account" "function_storage" {
   name                     = "${var.resource_prefix}func${var.unique_hash}"
@@ -222,6 +230,77 @@ resource "azurerm_linux_function_app" "function_app" {
 
   identity {
     type = "SystemAssigned"
+  }
+}
+```
+
+### Windows Consumption (supports 1 staging slot)
+
+> ⚠️ **Windows Consumption is not recommended for new projects** — consider Flex Consumption or Elastic Premium.
+> Use this pattern only for existing Windows apps or when Windows-specific features are required.
+
+```hcl
+resource "azurerm_service_plan" "function_plan" {
+  name                = "${var.resource_prefix}-funcplan-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  os_type             = "Windows"
+  sku_name            = "Y1"
+}
+
+resource "azurerm_windows_function_app" "function_app" {
+  name                = "${var.resource_prefix}-${var.service_name}-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  service_plan_id     = azurerm_service_plan.function_plan.id
+  https_only          = true
+
+  storage_account_name       = azurerm_storage_account.function_storage.name
+  storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
+
+  site_config {
+    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
+    application_stack {
+      node_version = "~20"
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_EXTENSION_VERSION"             = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"                = "node"
+    "WEBSITE_CONTENTSHARE"                    = "${lower(var.service_name)}-prod"  # must differ per slot; Azure Files share names are lowercase
+    "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" = azurerm_storage_account.function_storage.primary_connection_string
+  }
+
+  sticky_settings {
+    app_setting_names = ["WEBSITE_CONTENTSHARE", "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING"]
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+# 1 staging slot is supported on Windows Consumption
+resource "azurerm_windows_function_app_slot" "staging" {
+  name            = "staging"
+  function_app_id = azurerm_windows_function_app.function_app.id
+
+  storage_account_name       = azurerm_storage_account.function_storage.name
+  storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
+
+  site_config {
+    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
+    application_stack {
+      node_version = "~20"
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_EXTENSION_VERSION"             = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"                = "node"
+    "WEBSITE_CONTENTSHARE"                    = "${var.service_name}-staging"  # MUST differ from production
+    "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" = azurerm_storage_account.function_storage.primary_connection_string
   }
 }
 ```
