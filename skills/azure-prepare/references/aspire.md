@@ -107,6 +107,22 @@ Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confi
 | `infra/` | Project root | Bicep templates for Azure resources |
 | `.azure/` | Project root | Environment configuration |
 
+### ⛔ Step 4a: Validate Generated Output
+
+**MANDATORY: After `azd init --from-code` completes, verify the generated `azure.yaml` contains deployable services.**
+
+```bash
+# Check if azure.yaml has a non-empty services section
+cat azure.yaml
+```
+
+**If the `services` section is empty or missing:** The AppHost has no deployable resources. This happens when all resources use `.ExcludeFromManifest()` (e.g., custom resource demonstrations, local-only tooling). In this case:
+
+1. ⛔ **Do NOT proceed with deployment** — there is nothing to deploy
+2. ✅ Keep the plan status in a valid state (for example, leave it as **Planning**) and record a blocker in the plan body with the reason: "Application contains only custom/demo Aspire resources with no Azure-deployable services"
+3. ✅ Inform the user that this application is designed for local development and cannot be meaningfully deployed to Azure
+4. ⛔ Do NOT manually create Bicep, Dockerfiles, or azure.yaml to work around this — the absence of services is the correct result
+
 **Example generated azure.yaml:**
 ```yaml
 name: orleans-voting
