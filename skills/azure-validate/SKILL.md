@@ -4,7 +4,7 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Validate
@@ -15,7 +15,7 @@ metadata:
 >
 > Before proceeding, verify this prerequisite is met:
 >
-> **azure-prepare** was invoked and completed → `.azure/plan.md` exists with status `Approved` or later
+> **azure-prepare** was invoked and completed → `.azure/deployment-plan.md` exists with status `Approved` or later
 >
 > If the plan is missing, **STOP IMMEDIATELY** and invoke **azure-prepare** first.
 >
@@ -40,13 +40,13 @@ metadata:
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
-| 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/plan.md` |
+| 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/deployment-plan.md` |
+| 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
 | 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
-| 5 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
+| 5 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
 | 6 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 7 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
+| 7 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
 | 8 | **Deploy** — Invoke **azure-deploy** skill | — |
 
 > **⛔ VALIDATION AUTHORITY**

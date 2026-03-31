@@ -175,7 +175,7 @@ az quota update --resource-name {quota-name} --scope /subscriptions/{id}/provide
 6. **Handle unsupported providers gracefully**: If you get `BadRequest` error, fall back to official documentation (Azure Resource Graph + docs)
 7. **Request quota increases proactively**: If selected region lacks capacity, submit request before deployment
 8. **Have alternative regions ready**: If quota increase denied, suggest backup regions
-9. **Document capacity assumptions**: Note quota availability and source in `.azure/plan.md`
+9. **Document capacity assumptions**: Note quota availability and source in `.azure/deployment-plan.md`
 10. **Design for limits**: Architecture should account for both hard limits and quotas
 11. **Monitor usage trends**: Regular quota checks help predict future needs
 12. **Use lower environments wisely**: Dev/test environments count against quotas

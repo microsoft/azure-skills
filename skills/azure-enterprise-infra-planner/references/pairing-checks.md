@@ -1,6 +1,6 @@
 # Property & Pairing Checks
 
-Cross-check each new resource's properties against **every already-written resource** it connects to. Only run the checks relevant to this resource's type. Consult the resource file's **Pairing Constraints** section for type-specific rules.
+Cross-check each new resource's properties against every already-written resource it connects to. Only run the checks relevant to this resource's type. Consult the resource file's Pairing Constraints section for type-specific rules.
 
 ## SKU Compatibility
 

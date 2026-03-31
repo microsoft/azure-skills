@@ -54,7 +54,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 
 ## Record Selection
 
-Document in `.azure/plan.md`:
+Document in `.azure/deployment-plan.md`:
 
 ```markdown
 ## Recipe: AZD (Terraform)

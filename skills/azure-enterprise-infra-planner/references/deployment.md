@@ -4,25 +4,25 @@ Execute infrastructure deployment after plan approval and IaC generation.
 
 ## Status Gate
 
-**Before executing any deployment command, verify:**
+Before executing any deployment command, verify:
 
 ```txt
 meta.status === "approved"
 ```
 
-If status is not `approved`, **STOP** and inform the user. Do NOT manually change the status.
+If status is not `approved`, stop and inform the user. Do not manually change the status.
 
 ## Pre-Deployment Checklist
 
-1. **Plan approved** — `meta.status` is `approved`
-2. **IaC generated** — Bicep or Terraform files exist in `<project-root>/infra/`
-3. **Azure context confirmed** — Subscription and resource group selected
-4. **User confirmation** — Explicit "yes, deploy" from the user
-5. **Syntax validated** — `az bicep build` or `terraform validate` passed
+1. Plan approved — `meta.status` is `approved`
+2. IaC generated — Bicep or Terraform files exist in `<project-root>/infra/`
+3. Azure context confirmed — subscription and resource group selected
+4. User confirmation — explicit "yes, deploy" from the user
+5. Syntax validated — `az bicep build` or `terraform validate` passed
 
 ## Bicep Deployment
 
-**Scope selection:** Use **resource-group scope** when your template deploys into an existing resource group. Use **subscription scope** when your template creates resource groups or other subscription-level resources (policies, role assignments, etc.).
+Scope selection: use resource-group scope when your template deploys into an existing resource group. Use subscription scope when your template creates resource groups or other subscription-level resources (policies, role assignments, etc.).
 
 ```bash
 # Validate first (applies to both scopes)
@@ -117,9 +117,9 @@ terraform apply tfplan
 
 After successful deployment:
 
-1. **Update status** — Set `meta.status` to `deployed` in `<project-root>/.azure/infrastructure-plan.json`
-2. **Verify resources** — List resources in the target resource group using Azure CLI: `az resource list -g <resource-group-name> -o table`
-3. **Report to user** — List deployed resources, endpoints, and any follow-up actions
+1. Update status — set `meta.status` to `deployed` in `<project-root>/.azure/infrastructure-plan.json`
+2. Verify resources — list resources in the target resource group using Azure CLI: `az resource list -g <resource-group-name> -o table`
+3. Report to user — list deployed resources, endpoints, and any follow-up actions
 
 ## Error Handling
 

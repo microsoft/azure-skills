@@ -6,7 +6,7 @@ Deployment workflows for Azure Functions using AZD.
 
 - Azure Functions project prepared with azd template
 - `azure.yaml` exists and validated
-- `.azure/plan.md` status = `Validated`
+- `.azure/deployment-plan.md` status = `Validated`
 - Azure Functions Core Tools (optional, for local debugging or when using `func` commands outside azd workflows)
 
 ## AZD Deployment

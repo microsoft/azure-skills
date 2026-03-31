@@ -1,6 +1,6 @@
 # Resource Verification
 
-Run these checks **immediately after writing each resource** to `plan.resources[]`. Fix issues in-place before moving to the next resource. Load the relevant category file from [resources/](resources/README.md) for naming constraints, valid SKUs, and pairing rules.
+Run these checks immediately after writing each resource to `plan.resources[]`. Fix issues in-place before moving to the next resource. Load the relevant category file from [resources/](resources/README.md) for naming constraints, valid SKUs, and pairing rules.
 
 ## 1. Name Checks
 
@@ -24,4 +24,4 @@ Run these checks **immediately after writing each resource** to `plan.resources[
 
 ## 3. Property & Pairing Checks
 
-Cross-check against every already-written connected resource. Consult the resource file's **Pairing Constraints** section and [pairing-checks.md](pairing-checks.md) for full rules covering: SKU compatibility, subnet/network conflicts, storage pairing, Cosmos DB, Key Vault/CMK, SQL Database, and AKS networking.
+Cross-check against every already-written connected resource. Consult the resource file's Pairing Constraints section and [pairing-checks.md](pairing-checks.md) for full rules covering: SKU compatibility, subnet/network conflicts, storage pairing, Cosmos DB, Key Vault/CMK, SQL Database, and AKS networking.

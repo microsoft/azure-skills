@@ -101,4 +101,4 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 ## Next
 
-→ Update `.azure/plan.md` → **azure-validate**
+→ Update `.azure/deployment-plan.md` → **azure-validate**

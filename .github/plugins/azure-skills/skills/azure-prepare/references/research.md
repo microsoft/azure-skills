@@ -12,7 +12,7 @@ After architecture planning, research each selected component to gather best pra
 6. **Check Provisioning Limits** — Invoke **azure-quotas** skill to validate that the selected subscription and region have sufficient quota/capacity for all planned resources. Complete [Step 6 of the plan template](plan-template.md#6-provisioning-limit-checklist) in two phases: (1) prepare resource inventory with deployment quantities, (2) fetch quotas and validate capacity using azure-quotas skill
 7. **Load Runtime References** — For containerized apps, load language-specific production settings (e.g., [Node.js](runtimes/nodejs.md))
 8. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
-9. **Document Findings** — Record key insights in `.azure/plan.md`
+9. **Document Findings** — Record key insights in `.azure/deployment-plan.md`
 
 ## Service-to-Reference Mapping
 
@@ -97,7 +97,7 @@ For **PostgreSQL**:
 
 ### Step 3: Document in Plan
 
-Add research findings to `.azure/plan.md` under a `## Research Summary` section with source references and key insights per component.
+Add research findings to `.azure/deployment-plan.md` under a `## Research Summary` section with source references and key insights per component.
 
 ## Common Research Patterns
 

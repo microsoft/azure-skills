@@ -130,7 +130,7 @@ Choices: [
 
 ## Record in Plan
 
-After confirmation, record in `.azure/plan.md`:
+After confirmation, record in `.azure/deployment-plan.md`:
 
 ```markdown
 ## Azure Context

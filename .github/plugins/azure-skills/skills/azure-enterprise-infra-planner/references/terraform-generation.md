@@ -31,14 +31,14 @@ infra/
 
 ## Generation Steps
 
-1. **Create `infra/` directory** — Create `<project-root>/infra/` and `<project-root>/infra/modules/` directories. All files in subsequent steps go here.
-2. **Read plan** — Load `<project-root>/.azure/infrastructure-plan.json`, verify `meta.status === "approved"`
-3. **Generate providers.tf** — Write `infra/providers.tf` to configure `azurerm` provider with required features
-4. **Generate modules** — Group resources by category; one module per group under `infra/modules/`
-5. **Generate root main.tf** — Write `infra/main.tf` that calls all modules, wire outputs to inputs
-6. **Generate variables.tf** — Write `infra/variables.tf` with all configurable parameters
-7. **Generate terraform.tfvars** — Write `infra/terraform.tfvars` with default values from the plan
-8. **Generate backend.tf** — Write `infra/backend.tf` for Azure Storage backend remote state
+1. Create `infra/` directory — create `<project-root>/infra/` and `<project-root>/infra/modules/` directories. All files in subsequent steps go here.
+2. Read plan — load `<project-root>/.azure/infrastructure-plan.json`, verify `meta.status === "approved"`
+3. Generate providers.tf — write `infra/providers.tf` to configure `azurerm` provider with required features
+4. Generate modules — group resources by category; one module per group under `infra/modules/`
+5. Generate root main.tf — write `infra/main.tf` that calls all modules, wire outputs to inputs
+6. Generate variables.tf — write `infra/variables.tf` with all configurable parameters
+7. Generate terraform.tfvars — write `infra/terraform.tfvars` with default values from the plan
+8. Generate backend.tf — write `infra/backend.tf` for Azure Storage backend remote state
 
 ## Terraform Conventions
 

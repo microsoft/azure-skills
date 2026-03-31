@@ -4,7 +4,7 @@ Deploy to Azure using automated pipelines.
 
 ## Prerequisites
 
-- `.azure/plan.md` exists with status `Validated`
+- `.azure/deployment-plan.md` exists with status `Validated`
 - Azure Service Principal or federated credentials configured
 - Pipeline file exists (`.github/workflows/` or `azure-pipelines.yml`)
 

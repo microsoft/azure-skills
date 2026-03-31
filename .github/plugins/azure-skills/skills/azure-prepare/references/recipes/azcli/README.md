@@ -75,4 +75,4 @@ Resources: `{prefix}{token}{instance}`
 
 ## Next
 
-→ Update `.azure/plan.md` → **azure-validate**
+→ Update `.azure/deployment-plan.md` → **azure-validate**

@@ -88,6 +88,19 @@ az deployment group what-if \
 
 ### 6. Docker Build (if containerized)
 
+**Before building**, validate the Docker build context:
+
+1. Read the `Dockerfile` in `./src/<service>`
+2. If the Dockerfile contains `npm ci`, verify `package-lock.json` exists in the same directory
+3. If `package-lock.json` is missing, generate it:
+
+```bash
+cd ./src/<service>
+npm install --package-lock-only
+```
+
+**Then build:**
+
 ```bash
 docker build -t <image>:test ./src/<service>
 ```
