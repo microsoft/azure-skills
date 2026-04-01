@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Azure Prepare
@@ -106,8 +106,9 @@ Execute the approved plan. Update `.azure/deployment-plan.md` status after each 
 | 2 | **Confirm Azure Context** — Detect and confirm subscription + location and check the resource provisioning limit | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
-| 5 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/deployment-plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/deployment-plan.md` |
-| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 5 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
+| 5 | **Functional Verification** — Verify the app works (UI + backend), locally if possible | [functional-verification.md](references/functional-verification.md) |
+| 6 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/deployment-plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/deployment-plan.md` |
+| 7 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 6 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
 
 ---
 
