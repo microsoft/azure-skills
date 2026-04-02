@@ -103,6 +103,59 @@ The Azure MCP extension will also install a companion extension that brings the 
 /plugin marketplace update azure-skills
 ```
 
+### IntelliJ IDEA
+
+#### Step 1: Install GitHub Copilot Plugin
+
+1. Open IntelliJ IDEA
+2. Go to **File** > **Settings** (on Windows/Linux) or **IntelliJ IDEA** > **Preferences** (on macOS)
+3. Navigate to **Plugins** in the left sidebar
+4. Search for "GitHub Copilot" in the Marketplace tab
+5. Install the [GitHub Copilot plugin](https://plugins.jetbrains.com/plugin/17718-github-copilot--your-ai-pair-programmer) (requires version 1.5.64-242 or higher)
+6. Restart IntelliJ IDEA when prompted
+
+#### Step 2: Enable Skills for GitHub Copilot
+
+1. Open IntelliJ IDEA settings/preferences again
+2. Navigate to **Tools** > **GitHub Copilot** > **Chat**
+3. Check the **"Enable Skills"** checkbox
+4. Click **Apply** and **OK**
+
+#### Step 3: Install Azure Skills
+
+You have two options to add Azure skills to your IntelliJ IDEA environment:
+
+**Option A: Manual Installation (Recommended)**
+
+1. **Prerequisites**: Ensure Git is installed on your system
+2. **Clone the repository**: Open a terminal/command prompt and run:
+   ```bash
+   git clone https://github.com/microsoft/azure-skills.git
+   ```
+
+3. **Copy skills to the appropriate directory**:
+
+   **On Windows:**
+   - Create directory: `%USERPROFILE%\.agents` (if it doesn't exist)
+   - Copy skills: 
+     ```cmd
+     xcopy /E /I azure-skills\skills %USERPROFILE%\.agents\skills
+     ```
+   
+   **On macOS/Linux:**
+   - Create directory: `~/.agents` (if it doesn't exist)
+   - Copy skills:
+     ```bash
+     cp -r azure-skills/skills ~/.agents/
+     ```
+
+   **Alternative directories**: You can also copy the skills to `~/.copilot` or `~/.claude` instead of `~/.agents`
+
+**Option B: Use VS Code Extension (If Available)**
+
+If you have VS Code installed with the Azure MCP extension (mentioned in the VS Code section above), the Azure skills are automatically added to your `~/.agents` directory and will be available in IntelliJ IDEA without additional setup.
+
+
 ## Verify the installation
 
 After install, try three quick checks.
