@@ -52,7 +52,7 @@ If the user shares an Azure VM name or resource ID, attempt to use the azure-res
 
 ### Phase 2: Route to Solution
 
-Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) and find the **Symptoms → Solutions** table that matches the user's category. Narrow down to the specific row matching their symptom.
+Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) and use its routing table to identify the symptom category and open the matching sub-reference for the full **Symptoms → Solutions** table and Quick Commands.
 
 If additional details are needed to narrow to a specific solution row, ask the user. For example:
 - "What error message do you see in the RDP dialog?"

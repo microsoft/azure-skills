@@ -26,33 +26,21 @@ Automate via `postprovision` hook in `azure.yaml`:
 ```yaml
 hooks:
   postprovision:
-    shell: sh
-    run: ./scripts/apply-migrations.sh
+    posix:
+      shell: sh
+      run: ./scripts/apply-migrations.sh
+    windows:
+      shell: pwsh
+      run: ./scripts/apply-migrations.ps1
 ```
 
-**scripts/apply-migrations.sh:**
+**Copy the pre-built scripts** — Read [scripts/apply-migrations.sh](scripts/apply-migrations.sh) and [scripts/apply-migrations.ps1](scripts/apply-migrations.ps1) and write them verbatim to the project's `scripts/` folder. Adjust `APP_PROJECT_PATH` / `$AppProjectPath` in the script to the location of the `.csproj` directory.
 
-```bash
-#!/bin/bash
-set -e
-eval $(azd env get-values)
-CONNECTION_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Database=${SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
-cd src/api  # Adjust path
-dotnet ef database update --connection "$CONNECTION_STRING"
-```
-
-**scripts/apply-migrations.ps1:**
-
-```powershell
-$ErrorActionPreference = 'Stop'
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
-$ConnectionString = "Server=tcp:${env:SQL_SERVER}.database.windows.net,1433;Database=${env:SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
-Set-Location src/api  # Adjust path
-dotnet ef database update --connection $ConnectionString
-```
+Key behaviours of the scripts:
+- Loads `azd env get-values` safely (no `eval`)
+- Installs `dotnet-ef` automatically when not present; no-op when already installed
+- Fails on genuine install errors (network failure, missing SDK)
+- Adds `~/.dotnet/tools` to `PATH` so the tool is immediately available
 
 > 💡 Make executable: `chmod +x scripts/*.sh`.
 
@@ -88,96 +76,22 @@ if (app.Environment.IsDevelopment()) {
 
 ## Combined Hook: SQL Access + Migrations
 
-Combine both steps — see [sql-managed-identity.md](sql-managed-identity.md) for SQL grant commands.
+Combine both steps in a single `postprovision` hook using the pre-built combined scripts:
 
-```bash
-#!/bin/bash
-set -e
-eval $(azd env get-values)
-
-# Grant SQL access
-az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
-  --auth-mode ActiveDirectoryDefault --queries "
-    IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$SERVICE_API_NAME')
-      CREATE USER [$SERVICE_API_NAME] FROM EXTERNAL PROVIDER;
-    
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_datareader' AND m.name = '$SERVICE_API_NAME'
-    )
-      ALTER ROLE db_datareader ADD MEMBER [$SERVICE_API_NAME];
-    
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_datawriter' AND m.name = '$SERVICE_API_NAME'
-    )
-      ALTER ROLE db_datawriter ADD MEMBER [$SERVICE_API_NAME];
-    
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_ddladmin' AND m.name = '$SERVICE_API_NAME'
-    )
-      ALTER ROLE db_ddladmin ADD MEMBER [$SERVICE_API_NAME];
-  "
-
-# Apply migrations
-cd src/api
-CONNECTION_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Database=${SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
-dotnet ef database update --connection "$CONNECTION_STRING"
+```yaml
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./scripts/grant-and-migrate.sh
+    windows:
+      shell: pwsh
+      run: ./scripts/grant-and-migrate.ps1
 ```
 
-**PowerShell equivalent:**
-```powershell
-$ErrorActionPreference = 'Stop'
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
+**Copy the pre-built scripts** — Read [scripts/grant-and-migrate.sh](scripts/grant-and-migrate.sh) and [scripts/grant-and-migrate.ps1](scripts/grant-and-migrate.ps1) and write them verbatim to the project's `scripts/` folder. Adjust `APP_PROJECT_PATH` / `$AppProjectPath` in the script to the location of the `.csproj` directory.
 
-# Grant SQL access
-$SqlQuery = @"
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$($env:SERVICE_API_NAME)')
-  CREATE USER [$($env:SERVICE_API_NAME)] FROM EXTERNAL PROVIDER;
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datareader' AND m.name = '$($env:SERVICE_API_NAME)'
-)
-  ALTER ROLE db_datareader ADD MEMBER [$($env:SERVICE_API_NAME)];
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datawriter' AND m.name = '$($env:SERVICE_API_NAME)'
-)
-  ALTER ROLE db_datawriter ADD MEMBER [$($env:SERVICE_API_NAME)];
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_ddladmin' AND m.name = '$($env:SERVICE_API_NAME)'
-)
-  ALTER ROLE db_ddladmin ADD MEMBER [$($env:SERVICE_API_NAME)];
-"@
-
-az sql db query --server $env:SQL_SERVER --database $env:SQL_DATABASE `
-  --auth-mode ActiveDirectoryDefault --queries $SqlQuery
-
-# Apply migrations
-Set-Location src/api
-$ConnectionString = "Server=tcp:$($env:SQL_SERVER).database.windows.net,1433;Database=$($env:SQL_DATABASE);Authentication=Active Directory Default;Encrypt=True;"
-dotnet ef database update --connection $ConnectionString
-```
+> 💡 Make executable: `chmod +x scripts/*.sh`
 
 ## Prerequisites
 

@@ -2,6 +2,8 @@
 
 ## Basic Resource
 
+> ⚠️ **REQUIRED: `azd-service-name` tag** — The `tags` property MUST include `union(tags, { 'azd-service-name': serviceName })` so that `azd deploy` can locate the resource. Without this tag, `azd deploy` fails with `resource not found: unable to find a resource tagged with 'azd-service-name: web'`.
+
 ```bicep
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: '${resourcePrefix}-plan-${uniqueHash}'
@@ -18,6 +20,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
 resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
   location: location
+  tags: union(tags, { 'azd-service-name': serviceName })  // REQUIRED for azd deploy
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {

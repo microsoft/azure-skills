@@ -107,6 +107,39 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 }
 ```
 
+## ⛔ MANDATORY: SQL Data-Plane Access via postprovision Hook
+
+> **CRITICAL:** ARM/Bicep role assignments (`SQL DB Contributor`) only grant **control-plane** access. They do **not** grant the app **data-plane** access to the database. Without the T-SQL grant below, apps using `Authentication=Active Directory Default` will crash on startup with a login failure.
+>
+> **When you generate SQL + Managed Identity infrastructure you MUST also:**
+> 1. Add a `postprovision` hook to `azure.yaml` that runs the SQL grant script
+> 2. Copy the pre-built scripts from [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) to `scripts/` in the user's project root
+
+**azure.yaml hooks section (add or merge):**
+
+```yaml
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./scripts/grant-sql-access.sh
+    windows:
+      shell: pwsh
+      run: ./scripts/grant-sql-access.ps1
+```
+
+**Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
+
+Key behaviours of the scripts:
+- Loads `azd env get-values` safely (no `eval`)
+- Grants `db_datareader` + `db_datawriter` by default (idempotent)
+- Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)
+- `SERVICE_WEB_NAME` takes priority over `SERVICE_API_NAME` when resolving the app identity
+
+> 💡 Make executable: `chmod +x scripts/*.sh`
+
+> 💡 If the app also uses EF Core migrations, combine this with the migration hook — see the `azure-deploy` skill's `references/recipes/azd/sql-managed-identity.md`.
+
 ## Legacy SQL Authentication (⛔ DO NOT USE)
 
 > ❌ **DEPRECATED — DO NOT generate `administratorLogin` or `administratorLoginPassword` properties.**
