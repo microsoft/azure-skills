@@ -103,6 +103,14 @@ The Azure MCP extension will also install a companion extension that brings the 
 /plugin marketplace update azure-skills
 ```
 
+### Gemini CLI
+
+**Install the extension**:
+
+```bash
+gemini extensions install https://github.com/microsoft/azure-skills
+```
+
 ### IntelliJ IDEA
 
 #### Prerequisites
