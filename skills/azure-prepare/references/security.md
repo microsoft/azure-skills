@@ -60,7 +60,7 @@ az identity list --output table
 - [ ] Enable MFA for all users
 - [ ] Apply least privilege RBAC
 - [ ] Use Microsoft Entra ID for authentication
-- [ ] SQL Server: Entra-only auth — do NOT generate `administratorLogin` or `administratorLoginPassword` (see [sql-database/auth.md](services/sql-database/auth.md))
+- [ ] SQL Server: Entra-only auth — NEVER generate `administratorLogin` or `administratorLoginPassword` anywhere in Bicep, including inside conditional branches (see [sql-database/auth.md](services/sql-database/auth.md))
 - [ ] Review access regularly
 
 ### Managed Identity
