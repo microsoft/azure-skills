@@ -72,11 +72,11 @@ mcp_azure_mcp_group_list
   subscription: <subscription-id>
 ```
 
-Then check if `rg-<environment-name>` exists in the results.
+Then check if `rg-<env-name>` exists in the results.
 
 **CLI fallback:**
 ```bash
-az group show --name rg-<environment-name> --query "{location:location}" -o json 2>&1
+az group show --name rg-<env-name> --query "{location:location}" -o json 2>&1
 ```
 
 **If RG exists:**
@@ -99,6 +99,89 @@ Check for each service in `azure.yaml`. If duplicates exist **in the target RG**
 
 1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
 2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
+
+## Step 5a: Check for Existing Container Apps Environments (Container Apps only)
+
+> ⛔ **MANDATORY for Container Apps deployments** — Skip this and `azd up` may silently create a new Container Apps environment with an unexpected name (e.g. `"deployment-prod"`), causing a much longer deployment and environment drift.
+
+**Only run this step if the resource group `rg-<env-name>` already exists (confirmed in Step 4).** If the resource group does not exist yet, skip to Step 6.
+
+If `azure.yaml` includes a Container Apps service and the resource group exists, check for existing Container Apps environments **before** running `azd up`:
+
+```bash
+az containerapp env list \
+  --resource-group rg-<env-name> \
+  --query "[].{name:name, location:location, provisioningState:properties.provisioningState}" \
+  -o table
+```
+
+**PowerShell:**
+```powershell
+az containerapp env list `
+  --resource-group rg-<env-name> `
+  --query "[].{name:name, location:location, provisioningState:properties.provisioningState}" `
+  -o table
+```
+
+**If no existing environments are found:** No action needed — proceed to Step 6.
+
+**If existing environments are found:** Check the `provisioningState` column in the output. Environments with a state of `Failed` or `Deleting` are not usable — treat them the same as no conflict (proceed to Step 6), or use option 3 below to delete the stuck environment first.
+
+For environments with a `provisioningState` of `Succeeded`, use `ask_user` to present the conflict and offer choices:
+
+```
+ask_user(
+  question: "I found existing Container Apps environment(s) in rg-<env-name>:
+    <environment-list>
+  Proceeding without resolving this conflict may cause azd to create an additional environment.
+  How would you like to proceed?",
+  choices: [
+    "Use the existing environment — select the matching AZD environment (Recommended)",
+    "Choose a different AZD environment name to deploy to a new resource group",
+    "Delete the existing Container Apps environment and start fresh (DESTRUCTIVE)"
+  ]
+)
+```
+
+**Resolution per choice:**
+
+1. **Use existing environment** — First check if the matching AZD environment exists locally:
+   ```bash
+   azd env list
+   ```
+   - **If the environment exists locally**, select it:
+     ```bash
+     azd env select <matching-env-name>
+     ```
+   - **If the environment does NOT exist locally** (e.g., it was provisioned on a different machine or has been cleaned up), create it and configure it to target the existing resource group:
+     ```bash
+     azd env new <matching-env-name>
+     azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+     azd env set AZURE_LOCATION <location-of-existing-rg>
+     ```
+
+2. **Choose a different name** — Create a new AZD environment:
+   ```bash
+   azd env new <new-unique-env-name>
+   azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+   # Then restart from Step 4 with the new environment name
+   ```
+
+3. **Delete and start fresh** — Delete the conflicting environment (requires `ask_user` confirmation per global-rules):
+   ```bash
+   az containerapp env delete \
+     --name <environment-name> \
+     --resource-group rg-<env-name> \
+     --yes
+   ```
+
+   **PowerShell:**
+   ```powershell
+   az containerapp env delete `
+     --name <environment-name> `
+     --resource-group rg-<env-name> `
+     --yes
+   ```
 
 ## Step 6: Prompt User for Location
 
@@ -151,7 +234,8 @@ azd up --no-prompt
 | `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
 | Running `azd up` without environment | `azd env new <name>` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
-| Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env>` before deploy |
+| Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env-name>` before deploy |
+| Skipping Container Apps environment check | Run `az containerapp env list --resource-group rg-<env-name>` before deploy (Step 5a) |
 
 ---
 
@@ -163,8 +247,10 @@ azd up --no-prompt
 
 This check is **required** when ALL of the following are true:
 - `azure.yaml` includes a Container App service
-- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR
+- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR using the two-phase deployment pattern
 - Infrastructure was just provisioned with `azd provision` and application deployment has not yet started
+
+> 💡 **Two-phase Bicep pattern:** With the recommended two-phase deployment pattern, `azd provision` succeeds immediately because the Container App is provisioned with a public placeholder image (not an ACR image). The AcrPull role assignment is deployed in a separate module with no circular dependency. `azd deploy` then configures the registry/identity link (the equivalent CLI step is `az containerapp registry set --name <app-name> --resource-group rg-<environment-name> --server <acr-login-server> --identity system`) and pushes the real image via the Azure API — but the AcrPull role still needs time to propagate before this succeeds.
 
 **Required flow for this scenario:**
 1. Run `azd provision`
@@ -175,7 +261,7 @@ This check is **required** when ALL of the following are true:
 ```bash
 PRINCIPAL_ID=$(az containerapp identity show \
   --name <app-name> \
-  --resource-group rg-<environment-name> \
+  --resource-group rg-<env-name> \
   --query principalId -o tsv)
 ```
 
@@ -183,7 +269,7 @@ PRINCIPAL_ID=$(az containerapp identity show \
 ```powershell
 $PrincipalId = az containerapp identity show `
   --name <app-name> `
-  --resource-group rg-<environment-name> `
+  --resource-group rg-<env-name> `
   --query principalId -o tsv
 ```
 
@@ -192,7 +278,7 @@ $PrincipalId = az containerapp identity show `
 ```bash
 ACR_ID=$(az acr show \
   --name <acr-name> \
-  --resource-group rg-<environment-name> \
+  --resource-group rg-<env-name> \
   --query id -o tsv)
 ```
 
@@ -200,7 +286,7 @@ ACR_ID=$(az acr show \
 ```powershell
 $AcrId = az acr show `
   --name <acr-name> `
-  --resource-group rg-<environment-name> `
+  --resource-group rg-<env-name> `
   --query id -o tsv
 ```
 

@@ -1,10 +1,10 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion guidance. Supports AWS, GCP, and other providers. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert AWS serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, cross-cloud migration."
+description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions and GCP Cloud Run→Container Apps. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, Cloud Run to Container Apps, Cloud Run migration assessment."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Cloud Migrate
@@ -24,7 +24,8 @@ metadata:
 
 | Source | Target | Reference |
 |--------|--------|-----------|
-| AWS Lambda | Azure Functions | [lambda-to-functions.md](references/services/functions/lambda-to-functions.md) |
+| AWS Lambda | Azure Functions | [lambda-to-functions.md](references/services/functions/lambda-to-functions.md) ([assessment](references/services/functions/assessment.md), [code-migration](references/services/functions/code-migration.md)) |
+| GCP Cloud Run | Azure Container Apps | [cloudrun-to-container-apps.md](references/services/container-apps/cloudrun-to-container-apps.md) |
 
 > No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_bestpractices` tools.
 
@@ -35,8 +36,8 @@ All output goes to `<source-folder>-azure/` at workspace root. Never modify the 
 ## Steps
 
 1. **Create** `<source-folder>-azure/` at workspace root
-2. **Assess** — Analyze source, map services, generate report → [assessment.md](references/services/functions/assessment.md)
-3. **Migrate** — Convert code using target programming model → [code-migration.md](references/services/functions/code-migration.md)
+2. **Assess** — Analyze source, map services, generate report using scenario-specific assessment guide
+3. **Migrate** — Convert code/config using scenario-specific migration guide
 4. **Ask User** — "Migration complete. Test locally or deploy to Azure?"
 5. **Hand off** to azure-prepare for infrastructure, testing, and deployment
 

@@ -95,7 +95,7 @@ project-root/
 - Use Key Vault for sensitive values
 - Managed Identity for service auth
 - HTTPS only, TLS 1.2+
-- SQL Server Bicep must use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely (see [services/sql-database/bicep.md](services/sql-database/bicep.md))
+- SQL Server Bicep MUST use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely, including from conditional/ternary branches (see [services/sql-database/bicep.md](services/sql-database/bicep.md)). These property names must not appear anywhere in a generated `.bicep` file.
 - **SQL + Managed Identity: MUST add postprovision hook** — ARM role assignments only grant control-plane access; you MUST also generate `scripts/grant-sql-access.sh` + `.ps1` and add a `postprovision` hook in `azure.yaml` to run T-SQL grants. See [services/sql-database/bicep.md](services/sql-database/bicep.md).
 - **App Service Bicep: MUST include `azd-service-name` tag** — Every App Service `Microsoft.Web/sites` resource MUST have `tags: union(tags, { 'azd-service-name': serviceName })`. Without this tag, `azd deploy` cannot locate the resource. See [services/app-service/bicep.md](services/app-service/bicep.md).
 
