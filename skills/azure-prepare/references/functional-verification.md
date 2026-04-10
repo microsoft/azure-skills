@@ -65,7 +65,7 @@ For apps that can run locally, help the user start the app based on the detected
 
 ## Record in Plan
 
-After functional verification, add a note to `.azure/plan.md`:
+After functional verification, add a note to `.azure/deployment-plan.md`:
 
 ```markdown
 ## Functional Verification

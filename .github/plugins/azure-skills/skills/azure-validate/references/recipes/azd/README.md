@@ -106,6 +106,20 @@ azd provision --preview --no-prompt
 
 > 💡 **Note:** This works for both Bicep and Terraform. azd will automatically detect the provider from `azure.yaml` and run the appropriate validation (`bicep build` or `terraform plan`).
 
+**If `azd provision --preview` fails with `unsupported resource type`:**
+
+⛔ **Stop deployment immediately.** Do NOT attempt to fix or work around the error.
+
+This error means the Aspire AppHost contains custom resource types that have no Azure deployment target (e.g., `HealthChecksUI`, custom child resources, or local-only integrations). These resources are intentionally designed for local development tooling and cannot be meaningfully deployed to Azure.
+
+**Required actions:**
+1. ⛔ **Do NOT modify source code** to suppress the error (e.g., do not add `.ExcludeFromManifest()`).
+2. ⛔ **Do NOT proceed with `azd provision` or `azd deploy`.**
+3. ✅ Inform the user: "This application contains custom Aspire resource types (`unsupported resource type: <type-name>`) that cannot be deployed to Azure. The application is designed for local development only."
+4. ✅ Record a blocker: "Deployment blocked — AppHost contains unsupported resource types with no Azure deployment target."
+
+> ⚠️ Adding `.ExcludeFromManifest()` to suppress the error may allow provisioning to proceed, but the resulting deployment will not represent the application's actual functionality and is not a valid deployment.
+
 ### 8. Build Verification
 
 Build the project and verify there are no errors. If the build fails, fix the issues and re-build until it succeeds. Do NOT proceed to packaging or deployment with build errors.

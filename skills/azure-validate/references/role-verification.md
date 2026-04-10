@@ -64,7 +64,7 @@ For local testing:
 
 ## Record in Plan
 
-After role verification, update `.azure/plan.md`:
+After role verification, update `.azure/deployment-plan.md`:
 
 ```markdown
 ## Role Assignment Verification

@@ -55,7 +55,7 @@ mcp_azure_mcp_policy(command: "policy_assignment_list", subscription: "<subscrip
 
 > ⚠️ **Warning:** Skipping this step can cause deployment failures when Azure Policy denies resource creation. Checking policies here prevents wasted work in architecture and generation phases.
 
-Record discovered policy constraints in `.azure/plan.md` under a **Policy Constraints** section so they feed into architecture decisions.
+Record discovered policy constraints in `.azure/deployment-plan.md` under a **Policy Constraints** section so they feed into architecture decisions.
 
 ## Gather via Conversation
 

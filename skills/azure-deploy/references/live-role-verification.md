@@ -90,7 +90,7 @@ Resources provisioned?
 
 ## Record in Deployment Verification
 
-Add live role verification results to the deployment log in `.azure/plan.md`:
+Add live role verification results to the deployment log in `.azure/deployment-plan.md`:
 
 ```markdown
 ### Live Role Verification
