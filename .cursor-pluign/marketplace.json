@@ -1,0 +1,16 @@
+{
+  "name": "azure-skills",
+  "owner": {
+    "name": "Microsoft"
+  },
+  "metadata": {
+    "description": "Microsoft Azure MCP and Skills integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from Cursor."
+  },
+  "plugins": [
+    {
+      "name": "azure",
+      "description": "Microsoft Azure MCP and Skills integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from Cursor.",
+      "source": "./.github/plugins/azure-skills"
+    }
+  ]
+}
