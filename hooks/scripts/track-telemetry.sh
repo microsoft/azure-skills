@@ -10,7 +10,7 @@
 #   - Tool names:     lowercase (skill, view)
 #   - MCP prefix:     azure-<command>  (e.g., azure-documentation)
 #   - Skill prefix:   none (skill name as-is)
-#   - Detection:      no "hook_event_name" field, has "toolArgs" field
+#   - Detection:      COPILOT_CLI env var is "1" (>=0.0.421); fallback: "toolArgs" without "hook_event_name" (<0.0.421)
 #
 # Claude Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -128,10 +128,13 @@ fi
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Detect client name based on input format
+# Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
+# Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
-# Copilot CLI: has toolName/toolArgs (camelCase), no hook_event_name
-if echo "$rawInput" | grep -q '"hook_event_name"'; then
+if [ "$COPILOT_CLI" = "1" ]; then
+    clientName="copilot-cli"
+elif echo "$rawInput" | grep -q '"hook_event_name"'; then
     toolUseId=$(extract_json_field "$rawInput" "tool_use_id")
     transcriptPath=$(extract_json_field "$rawInput" "transcript_path")
     # Normalize backslashes to forward slashes for consistent matching
@@ -150,6 +153,8 @@ if echo "$rawInput" | grep -q '"hook_event_name"'; then
         clientName="claude-code"
     fi
 elif echo "$rawInput" | grep -q '"toolArgs"'; then
+    # Backward compat: old Copilot CLI (<0.0.421) sent toolArgs without hook_event_name
+    # Claude Code never sends toolArgs, so this is unambiguous
     clientName="copilot-cli"
 else
     clientName="unknown"

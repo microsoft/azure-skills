@@ -93,7 +93,7 @@ services:
 
 ### Container App with Custom Docker Context
 
-When the Dockerfile expects files relative to a specific directory (e.g., Aspire `AddDockerfile` with custom context):
+When a **non-Aspire** project has a Dockerfile that expects files relative to a specific directory:
 
 ```yaml
 name: myapp
@@ -109,17 +109,12 @@ services:
 ```
 
 > 💡 **Tip:** The `context` field specifies the Docker build context directory. This is crucial for:
-> - **Aspire apps** using `AddDockerfile("service", "./path")` - use the second parameter as `context`
 > - Dockerfiles with `COPY` commands expecting files relative to a subdirectory
 > - Multi-service repos where each service has its own context
 
-> ⚠️ **Important:** For Aspire apps, extract the Docker context from:
-> 1. AppHost code: Second parameter of `AddDockerfile("name", "./context")`
-> 2. Aspire manifest: `build.context` field (generated via `dotnet run apphost.cs -- --publisher manifest`)
->
-> 📖 **See [aspire.md](aspire.md) for complete .NET Aspire deployment guide**
+> ⚠️ **Aspire projects:** Do NOT manually add per-service entries with `docker.context` for Aspire `AddDockerfile()` resources. Aspire handles container builds at runtime through the AppHost. The generated `azure.yaml` should contain only a single `app` service pointing to the AppHost. See [aspire.md](aspire.md) for details.
 
-> ⚠️ **Language Field:** When using the `docker` section, the `language` field should be **omitted** or set to the language that azd will use for framework-specific behaviors. For containerized apps with custom Dockerfiles (including Aspire `AddDockerfile`), the language is not used by azd since the build is handled by Docker. Only include `language` if you need azd to perform additional framework-specific actions beyond Docker build.
+> ⚠️ **Language Field:** When using the `docker` section, the `language` field should be **omitted** or set to the language that azd will use for framework-specific behaviors. For containerized apps with custom Dockerfiles, the language is not used by azd since the build is handled by Docker. Only include `language` if you need azd to perform additional framework-specific actions beyond Docker build.
 
 ### Azure Functions
 

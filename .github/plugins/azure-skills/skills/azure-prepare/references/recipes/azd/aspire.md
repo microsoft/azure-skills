@@ -44,6 +44,8 @@ services:
     host: containerapp
 ```
 
+> 💡 **AddDockerfile services:** If the AppHost uses `AddDockerfile()` (e.g., `builder.AddDockerfile("ginapp", "./ginapp")`), do NOT add separate service entries for those resources. Aspire handles container builds for `AddDockerfile` resources at runtime through the AppHost. The `azure.yaml` should contain only the single `app` service pointing to the AppHost.
+
 ## Command Flags
 
 | Flag | Required | Purpose |
@@ -98,192 +100,6 @@ builder.AddDockerfile("ginapp", "./ginapp")
 > ⚠️ **Do NOT skip this step for container-build projects.** If the AppHost passes an `AddParameter` result to `WithBuildArg`, apply this fix immediately before running `azd init` or `azd up`.
 
 ---
-
-## ⛔ Post-Init: Verify and Fix Docker Context for AddDockerfile Services
-
-> **MANDATORY** — After `azd init --from-code` completes, you **MUST** check the generated `azure.yaml` for correct `docker.context` on every `AddDockerfile()` service. `azd init` often omits or misconfigures the `docker.context` property, which causes build failures at deploy time.
-
-### Step 1: Identify AddDockerfile services in the AppHost
-
-Scan the AppHost source (e.g., `apphost.cs` or `Program.cs`) for `AddDockerfile` calls:
-
-```csharp
-// Pattern: builder.AddDockerfile("<name>", "<context-path>");
-builder.AddDockerfile("ginapp", "./ginapp");
-//                     ^^^^^^    ^^^^^^^^
-//                     service   context path (relative to AppHost dir)
-```
-
-### Step 2: Check azure.yaml for each service
-
-For **every** `AddDockerfile("<name>", "<path>")` call found in Step 1, verify the generated `azure.yaml` contains a matching service entry with `docker.context`:
-
-```yaml
-services:
-  <name>:
-    host: containerapp
-    docker:
-      path: <path>/Dockerfile
-      context: <path>
-```
-
-### Step 3: Patch azure.yaml if docker.context is missing or wrong
-
-If `azure.yaml` is missing the service, or has an incorrect/missing `docker.context`, use the `edit` tool to fix it.
-
-**Example — service missing entirely:** If the AppHost has `builder.AddDockerfile("ginapp", "./ginapp")` but `azure.yaml` has no `ginapp` service, add it:
-
-```yaml
-services:
-  ginapp:
-    host: containerapp
-    docker:
-      path: ./ginapp/Dockerfile
-      context: ./ginapp
-```
-
-**Example — docker.context missing:** If `azure.yaml` has the service but no `docker.context`, add the `docker` block with correct `path` and `context` values derived from the `AddDockerfile` call.
-
-> ⚠️ **Do NOT skip this step.** The `azd init --from-code` output for Aspire `AddDockerfile` services is unreliable. Always verify and patch.
-
-## Docker Context (AddDockerfile Services)
-
-When an Aspire app uses `AddDockerfile()`, the second parameter specifies the Docker build context:
-
-```csharp
-builder.AddDockerfile("servicename", "./path/to/context")
-//                                    ^^^^^^^^^^^^^^^^
-//                                    This is the Docker build context
-```
-
-The build context determines:
-- Where Docker looks for files during `COPY` commands
-- The base directory for all Dockerfile operations
-- What `azd init --from-code` sets as `docker.context` in azure.yaml
-
-**Generated azure.yaml includes context:**
-```yaml
-services:
-  ginapp:
-    docker:
-      path: ./ginapp/Dockerfile
-      context: ./ginapp
-```
-
-### Aspire Manifest (for verification)
-
-Generate the manifest to verify the exact build configuration:
-
-```bash
-dotnet run <apphost-project> -- --publisher manifest --output-path manifest.json
-```
-
-Manifest structure for Dockerfile-based services:
-```json
-{
-  "resources": {
-    "servicename": {
-      "type": "container.v1",
-      "build": {
-        "context": "path/to/context",
-        "dockerfile": "path/to/context/Dockerfile"
-      }
-    }
-  }
-}
-```
-
-### Common Docker Patterns
-
-**Single Dockerfile service:**
-```csharp
-builder.AddDockerfile("api", "./src/api")
-```
-Generated azure.yaml:
-```yaml
-services:
-  api:
-    project: .
-    host: containerapp
-    image: api
-    docker:
-      path: src/api/Dockerfile
-      context: src/api
-```
-
-**Multiple Dockerfile services:**
-```csharp
-builder.AddDockerfile("frontend", "./src/frontend");
-builder.AddDockerfile("backend", "./src/backend");
-```
-Generated azure.yaml:
-```yaml
-services:
-  frontend:
-    project: .
-    host: containerapp
-    image: frontend
-    docker:
-      path: src/frontend/Dockerfile
-      context: src/frontend
-  backend:
-    project: .
-    host: containerapp
-    image: backend
-    docker:
-      path: src/backend/Dockerfile
-      context: src/backend
-```
-
-**Root context:**
-```csharp
-builder.AddDockerfile("app", ".")
-```
-Generated azure.yaml:
-```yaml
-services:
-  app:
-    project: .
-    host: containerapp
-    image: app
-    docker:
-      path: Dockerfile
-      context: .
-```
-
-### azure.yaml Rules for Docker Services
-
-| Rule | Explanation |
-|------|-------------|
-| **Omit `language`** | Docker handles the build; azd doesn't need language-specific behavior |
-| **Use relative paths** | All paths in azure.yaml are relative to project root |
-| **Extract from manifest** | When in doubt, generate the Aspire manifest and use `build.context` |
-| **Match Dockerfile expectations** | The `context` must match what the Dockerfile's `COPY` commands expect |
-
-### ❌ Common Docker Mistakes
-
-**Missing context causes build failures:**
-```yaml
-services:
-  ginapp:
-    project: .
-    host: containerapp
-    docker:
-      path: ginapp/Dockerfile
-      # ❌ Missing context - COPY commands will fail
-```
-
-**Unnecessary language field:**
-```yaml
-services:
-  ginapp:
-    project: .
-    language: go              # ❌ Not needed for Docker builds
-    host: containerapp
-    docker:
-      path: ginapp/Dockerfile
-      context: ginapp
-```
 
 ## Troubleshooting
 
@@ -367,13 +183,11 @@ builder.AddDockerfile("ginapp", "./ginapp")
 
 ## Validation Steps
 
-1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#-post-init-fix-addparameter-used-with-withbuildarg)
-2. Verify azure.yaml has services section
-3. **⛔ Verify `docker.context` for every `AddDockerfile()` service** — see [Post-Init: Verify and Fix Docker Context](#post-init-verify-and-fix-docker-context-for-adddockerfile-services)
-4. Check Dockerfile COPY paths are relative to the specified context
-5. Generate manifest to verify `build.context` matches azure.yaml
-6. Run `azd package` to validate Docker build succeeds
-7. Review generated infra/ (don't modify)
+1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#-after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy)
+2. Verify azure.yaml has a non-empty services section
+3. Do NOT add separate service entries for `AddDockerfile()` resources — Aspire handles container builds at runtime through the AppHost
+4. Run `azd package` to validate Docker build succeeds
+5. Review generated infra/ (don't modify)
 
 ## Next Steps
 

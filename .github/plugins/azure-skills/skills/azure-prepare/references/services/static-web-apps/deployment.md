@@ -43,3 +43,26 @@ az keyvault secret set --vault-name <vault-name> --name swa-deployment-token --v
 // ❌ INSECURE - token visible in deployment history
 // output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
 ```
+
+## Terraform Deployment
+
+> ⚠️ **Use `azurerm_static_web_app`** — NOT Storage Account `static_website`.
+> Storage Account static websites require anonymous blob access, which is blocked
+> by enterprise Azure Policies. See [terraform.md](terraform.md) for correct patterns.
+
+Terraform-based deployments use `azd deploy` the same way as Bicep:
+
+```bash
+azd deploy
+```
+
+The `azd-service-name` tag on the `azurerm_static_web_app` resource tells azd where to deploy.
+
+**Do NOT do this** (exposes token in Terraform state):
+```hcl
+# ❌ INSECURE - token stored in Terraform state
+# output "deployment_token" {
+#   value     = azurerm_static_web_app.web.api_key
+#   sensitive = true
+# }
+```
