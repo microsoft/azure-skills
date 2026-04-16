@@ -8,22 +8,24 @@ Select a VM family by matching the user's workload to the right category. Famili
 
 ## Family Selection Table
 
-| Workload                             | Family                | Series                             | Why                                                   |
-| ------------------------------------ | --------------------- | ---------------------------------- | ----------------------------------------------------- |
-| Web servers, dev/test, microservices | **General Purpose**   | D-series (Dsv5, Ddsv5, Dasv5)      | Balanced CPU:memory ratio                             |
-| Burstable / intermittent loads       | **General Purpose**   | B-series (Bsv2, Basv2)             | Low baseline CPU, credits for bursts; cheapest option |
-| CI/CD, batch, gaming servers         | **Compute Optimized** | F-series (Fsv2, Fasv6)             | High CPU:memory ratio                                 |
-| Relational DBs, in-memory caches     | **Memory Optimized**  | E-series (Esv5, Edsv5, Easv5)      | High memory:CPU ratio                                 |
-| SAP HANA, very large DBs             | **Memory Optimized**  | M-series (Msv3, Mdsv3)             | Extreme memory (up to 4 TB)                           |
-| Big Data, NoSQL, data warehousing    | **Storage Optimized** | L-series (Lsv3, Lasv3)             | High disk throughput and IOPS                         |
-| ML training, inference, rendering    | **GPU**               | NC-series (NCadsH100v5, NCasT4v3)  | NVIDIA GPU compute                                    |
-| Large-scale AI/ML training           | **GPU**               | ND-series (ND_MI300X_v5, NDH100v5) | Multi-GPU, high memory                                |
-| Virtual desktop, cloud gaming        | **GPU**               | NV-series (NVadsA10v5)             | GPU graphics/visualization                            |
-| Cloud gaming, VDI (AMD GPU)          | **GPU**               | NG-series (NGadsV620v1)            | AMD Radeon GPU; cost-effective graphics               |
-| Confidential workloads               | **Confidential**      | DC-series (DCasv5, DCadsv5)        | Hardware-based TEE isolation                          |
-| Confidential + encrypted memory      | **Confidential**      | EC-series (ECasv5, ECadsv5)        | TEE isolation with memory encryption                  |
-| CFD, weather simulation, FEA         | **HPC**               | HB/HC-series (HBv4, HBv5)          | InfiniBand, high memory bandwidth                     |
-| EDA, large memory HPC                | **HPC**               | HX-series                          | Very large memory capacity                            |
+| Workload                             | Family                | Series                             | Quota Resource Name                       | Why                                                   |
+| ------------------------------------ | --------------------- | ---------------------------------- | ----------------------------------------- | ----------------------------------------------------- |
+| Web servers, dev/test, microservices | **General Purpose**   | D-series (Dsv5, Ddsv5, Dasv5)      | `standardDSv5Family` / `standardDDSv5Family` | Balanced CPU:memory ratio                             |
+| Burstable / intermittent loads       | **General Purpose**   | B-series (Bsv2, Basv2)             | `standardBsv2Family` / `standardBasv2Family` | Low baseline CPU, credits for bursts; cheapest option |
+| CI/CD, batch, gaming servers         | **Compute Optimized** | F-series (Fsv2, Fasv6)             | `standardFSv2Family`                      | High CPU:memory ratio                                 |
+| Relational DBs, in-memory caches     | **Memory Optimized**  | E-series (Esv5, Edsv5, Easv5)      | `standardESv5Family` / `standardEDSv5Family` | High memory:CPU ratio                                 |
+| SAP HANA, very large DBs             | **Memory Optimized**  | M-series (Msv3, Mdsv3)             | `standardMSMediumMemoryv3Family`          | Extreme memory (up to 4 TB)                           |
+| Big Data, NoSQL, data warehousing    | **Storage Optimized** | L-series (Lsv3, Lasv3)             | `standardLSv3Family`                      | High disk throughput and IOPS                         |
+| ML training, inference, rendering    | **GPU**               | NC-series (NCadsH100v5, NCasT4v3)  | `StandardNCadsH100v5Family`               | NVIDIA GPU compute                                    |
+| Large-scale AI/ML training           | **GPU**               | ND-series (ND_MI300X_v5, NDH100v5) | `standardNDSH100v5Family`                 | Multi-GPU, high memory                                |
+| Virtual desktop, cloud gaming        | **GPU**               | NV-series (NVadsA10v5)             | `StandardNVADSA10v5Family`                | GPU graphics/visualization                            |
+| Cloud gaming, VDI (AMD GPU)          | **GPU**               | NG-series (NGadsV620v1)            | `StandardNGADSV620v1Family`               | AMD Radeon GPU; cost-effective graphics               |
+| Confidential workloads               | **Confidential**      | DC-series (DCasv5, DCadsv5)        | `standardDCASv5Family`                    | Hardware-based TEE isolation                          |
+| Confidential + encrypted memory      | **Confidential**      | EC-series (ECasv5, ECadsv5)        | `standardECASv5Family`                    | TEE isolation with memory encryption                  |
+| CFD, weather simulation, FEA         | **HPC**               | HB/HC-series (HBv4, HBv5)          | `standardHBv4Family` / `standardHBv5Family` | InfiniBand, high memory bandwidth                     |
+| EDA, large memory HPC                | **HPC**               | HX-series                          | `standardHXFamily`                        | Very large memory capacity                            |
+
+> ⚠️ **Do not normalize quota name casing.** The mixed casing (e.g., `standard` vs `Standard`) matches the exact values returned by `az vm list-usage`. Changing them will break quota lookups.
 
 ## Decision Tree
 

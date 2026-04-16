@@ -17,16 +17,18 @@ Guest OS firewall (Windows Firewall or Linux iptables/firewalld) is blocking inb
 
 ## Quick Commands — Windows
 
+> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Reset RDP config (re-enables RDP, creates firewall rule for 3389)
+# ⚡ Reset RDP config (re-enables RDP, creates firewall rule for 3389)
 az vm user reset-remote-desktop --name <vm-name> -g <resource-group>
 
-# Query Windows Firewall rules via Run Command
+# ⚡ Query Windows Firewall rules via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunPowerShellScript \
   --scripts "netsh advfirewall firewall show rule name='Remote Desktop - User Mode (TCP-In)'"
 
-# Enable Remote Desktop firewall rule via Run Command
+# ⚡ Enable Remote Desktop firewall rule via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunPowerShellScript \
   --scripts "netsh advfirewall firewall set rule group='Remote Desktop' new enable=yes"
@@ -34,16 +36,18 @@ az vm run-command invoke --name <vm-name> -g <resource-group> \
 
 ## Quick Commands — Linux
 
+> ⚠️ **Warning:** Commands below use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Check iptables rules via Run Command
+# ⚡ Check iptables rules via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "iptables -L -n --line-numbers"
 
-# Allow SSH through iptables via Run Command
+# ⚡ Allow SSH through iptables via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "iptables -I INPUT -p tcp --dport 22 -j ACCEPT"
 
-# Check firewalld status and open SSH via Run Command
+# ⚡ Check firewalld status and open SSH via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript \
   --scripts "firewall-cmd --state && firewall-cmd --add-service=ssh --permanent && firewall-cmd --reload"

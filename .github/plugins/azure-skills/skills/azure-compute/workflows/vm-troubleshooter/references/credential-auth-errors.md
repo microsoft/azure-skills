@@ -26,26 +26,30 @@ User can reach the VM but authentication fails.
 
 ## Quick Commands — Windows
 
+> ⚠️ **Warning:** Commands below use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Reset password
+# ⚡ Reset password
 az vm user update --name <vm-name> -g <resource-group> -u <username> -p '<new-password>'
 
-# Reset RDP configuration (also re-enables NLA)
+# ⚡ Reset RDP configuration (also re-enables NLA)
 az vm user reset-remote-desktop --name <vm-name> -g <resource-group>
 ```
 
 ## Quick Commands — Linux
 
+> ⚠️ **Warning:** Commands below use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Reset SSH public key
+# ⚡ Reset SSH public key
 az vm user update --name <vm-name> -g <resource-group> \
   -u <username> --ssh-key-value "<ssh-public-key>"
 
-# Reset password for Linux VM
+# ⚡ Reset password for Linux VM
 az vm user update --name <vm-name> -g <resource-group> \
   -u <username> -p '<new-password>'
 
-# Unlock a locked account via Run Command
+# ⚡ Unlock a locked account via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "passwd -u <username>"
 ```

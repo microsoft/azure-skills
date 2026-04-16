@@ -85,7 +85,12 @@ Also generate `docker-compose.yml` and `.env` files for local development.
 
 **IMPORTANT**: You MUST always generate image tag as current timestamp (e.g., `myagent:202401011230`) to ensure uniqueness and avoid conflicts with existing images in ACR. DO NOT use static tags like `latest` or `v1`.
 
-Collect ACR details from project context. Let the user choose the build method:
+Collect ACR details from project context.
+
+- If an ACR already exists, use it, then verify that the Foundry project managed identity has pull permissions (for example, `Container Registry Repository Reader` or equivalent) on the target repository/registry. If the role assignment is missing, add it.
+- If no ACR exists, create a new one with ABAC repository permissions mode, and assign `Container Registry Repository Reader` to the Foundry project managed identity. Foundry hosted agents use ABAC mode that requires repository-scoped roles, not the registry-level `AcrPull` role.
+
+Let the user choose the build method:
 
 **Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
 ```bash
@@ -385,6 +390,7 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 | Docker not running | Docker Desktop not started or not installed | Start Docker Desktop, or use Cloud Build (ACR Tasks) instead |
 | ACR login failed | Not authenticated to Azure | Run `az login` first, then `az acr login --name <acr-name>` |
 | Build/push failed | Dockerfile errors or insufficient ACR permissions | Check Dockerfile syntax, verify Contributor or AcrPush role on registry |
+| ACR build log crash | `UnicodeEncodeError` when `az acr build` streams remote logs | The remote build continues independently — do not assume failure. Get the `<run-id>` from the earlier `az acr build` output and check status with `az acr task show-run -r <acr-name> --run-id <run-id> --query status`. |
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
 | Container start failed | Image not accessible or invalid configuration | Verify ACR image path, check cpu/memory values, confirm ACR permissions |
 | Container status: Failed | Runtime error in container | Check container logs, verify environment variables, ensure image runs correctly |

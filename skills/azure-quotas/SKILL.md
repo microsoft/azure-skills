@@ -4,7 +4,7 @@ description: "Check/manage Azure quotas and usage across providers. For deployme
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.7"
 ---
 
 
@@ -47,33 +47,14 @@ Invoke this skill when:
 | **Complete CLI Reference** | [commands.md](./references/commands.md) |
 | **Azure Portal** | [My quotas](https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas) - Use only as fallback |
 | **REST API** | Microsoft.Quota provider - **Unreliable, do NOT use first** |
+| **MCP Server** | `azure-quota` MCP server — **NEVER use this. It is unreliable. Always use `az quota` CLI instead.** |
 | **Required Permission** | Reader (view) or Quota Request Operator (manage) |
 
-> **⚠️ CRITICAL: ALWAYS USE CLI FIRST**
+> **⚠️ ALWAYS USE CLI FIRST**
 >
-> **Azure CLI (`az quota`) is the ONLY reliable method** for checking quotas. **Use CLI FIRST, always.**
+> REST API and Portal can show misleading "No Limit" values — this does **not** mean unlimited capacity. It means the quota API doesn't support that resource type. Always start with `az quota` commands; fall back to [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) if CLI returns `BadRequest`.
 >
-> **DO NOT use REST API or Portal as your first approach.** They are unreliable and misleading.
->
-> **Why you must use CLI first:**
-> - REST API is unreliable and shows misleading results
-> - REST API "No Limit" or "Unlimited" values **DO NOT mean unlimited capacity**
-> - "No Limit" typically means the resource doesn't support quota API (not unlimited!)
-> - CLI provides clear `BadRequest` errors when providers aren't supported
-> - CLI has consistent output format and better error messages
-> - Portal may show incomplete or cached data
->
-> **Mandatory workflow:**
-> 1. **FIRST:** Try `az quota list` / `az quota show` / `az quota usage show`
-> 2. **If CLI returns `BadRequest`:** Then use [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-> 3. **Never start with REST API or Portal** - only use as last resort
->
-> **If you see "No Limit" in REST API/Portal:** This is NOT unlimited capacity. It means:
-> - The quota API doesn't support that resource type, OR
-> - The quota isn't enforced via the API, OR  
-> - Service-specific limits still apply (check documentation)
->
-> For complete CLI command reference and examples, see [commands.md](./references/commands.md).
+> For complete CLI reference, see [commands.md](./references/commands.md).
 
 ## Quota Types
 
@@ -113,7 +94,7 @@ Invoke this skill when:
    az quota usage show --resource-name ManagedEnvironmentCount --scope ...
    ```
 
-> **📖 Detailed mapping examples and workflow:** See [commands.md - Understanding Resource Name Mapping](./references/commands.md#understanding-resource-name-mapping)
+> **📖 Detailed mapping examples and workflow:** See [commands.md - Resource Name Mapping](./references/commands.md#resource-name-mapping)
 
 ## Core Workflows
 
@@ -180,7 +161,7 @@ for region in "${REGIONS[@]}"; do
 done
 ```
 
-> **📖 See also:** [Multi-region comparison scripts](./references/commands.md#multi-region-comparison) (Bash & PowerShell)
+> **📖 See also:** [commands.md](./references/commands.md#az-quota-show) for full scripted multi-region loop patterns
 
 ### Workflow 3: Request Quota Increase
 
@@ -204,7 +185,7 @@ az quota request status list \
 - Some requests require manual review (hours to days)
 - Non-adjustable quotas require Azure Support ticket
 
-> **📖 See also:** [az quota update](./references/commands.md#az-quota-update), [az quota request status](./references/commands.md#az-quota-request-status-list)
+> **📖 See also:** [az quota update](./references/commands.md#az-quota-update), [az quota request status](./references/advanced-commands.md#az-quota-request-status-list)
 
 ### Workflow 4: List All Quotas for Planning
 
@@ -235,13 +216,13 @@ az quota list \
 
 | **Error** | **Cause** | **Solution** |
 |-----------|-----------|--------------|
-| REST API "No Limit" | REST API showing misleading "unlimited" values | **CRITICAL: "No Limit" ≠ unlimited!** Use CLI instead. See warning above. Check [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
-| REST API failures | REST API unreliable and misleading | **Always use Azure CLI** - See [commands.md](./references/commands.md) for complete CLI reference |
+| REST API "No Limit" | Misleading — not unlimited | Use CLI instead; see warning in Quick Reference |
 | `ExtensionNotFound` | Quota extension not installed | `az extension add --name quota` |
-| `BadRequest` | Resource provider not supported by quota API | Use CLI (preferred) or [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
+| `BadRequest` | Resource provider not supported by quota API | Check [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
 | `MissingRegistration` | Microsoft.Quota provider not registered | `az provider register --namespace Microsoft.Quota` |
 | `QuotaExceeded` | Deployment would exceed quota | Request increase or choose different region |
 | `InvalidScope` | Incorrect scope format | Use pattern: `/subscriptions/<id>/providers/<namespace>/locations/<region>` |
+| CLI commands fail entirely | Auth, extension, or environment issue | Verify Azure CLI login (`az account show`), reinstall quota extension, check network. Do NOT use the `azure-quota` MCP server — it is unreliable. |
 
 ### Unsupported Resource Providers
 
@@ -274,50 +255,4 @@ az quota list \
 3. ✅ **Compare regions** - Find regions with available capacity
 4. ✅ **Account for growth** - Request 20% buffer above immediate needs
 5. ✅ **Use table output for overview** - `--output table` for quick scanning
-6. ✅ **Document quota sources** - Track whether from quota API or official docs
-7. ✅ **Monitor usage trends** - Set up alerts at 80% threshold (via Portal)
-
-## Workflow Summary
-
-```
-┌─────────────────────────────────────────┐
-│  1. Install quota extension             │
-│     az extension add --name quota       │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  2. Discover quota resource names       │
-│     az quota list --scope ...           │
-│     (Match by localizedValue)           │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  3. Check current usage                 │
-│     az quota usage show                 │
-│     --resource-name <name>              │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  4. Check quota limit                   │
-│     az quota show                       │
-│     --resource-name <name>              │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────┐
-│  5. Validate capacity                   │
-│     Available = Limit - (Usage + Need)  │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-         ┌────────┴────────┐
-         │                 │
-    ✅ Sufficient     ❌ Insufficient
-         │                 │
-         ▼                 ▼
-    Proceed          Request increase
-                     or change region
-```
+6. ✅ **Monitor usage trends** - Set up alerts at 80% threshold (via Portal)

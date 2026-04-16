@@ -24,6 +24,8 @@ User is trying to RDP into a Windows VM but the connection fails (timeout, refus
 
 ## Quick Commands
 
+> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
 # Check VM power state
 az vm get-instance-view --name <vm-name> -g <resource-group> \
@@ -32,10 +34,10 @@ az vm get-instance-view --name <vm-name> -g <resource-group> \
 # Check NSG rules
 az network nsg rule list --nsg-name <nsg-name> -g <resource-group> -o table
 
-# Reset RDP configuration to defaults (re-enables RDP, resets port, restarts TermService)
+# ⚡ Reset RDP configuration to defaults (re-enables RDP, resets port, restarts TermService)
 az vm user reset-remote-desktop --name <vm-name> -g <resource-group>
 
-# Reset VM password
+# ⚡ Reset VM password
 az vm user update --name <vm-name> -g <resource-group> -u <username> -p '<new-password>'
 
 # IP Flow Verify — test if NSG allows traffic

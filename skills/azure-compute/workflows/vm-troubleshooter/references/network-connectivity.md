@@ -45,12 +45,14 @@ az vm repair reset-nic --name <vm-name> -g <resource-group> --yes
 
 ## Quick Commands — Linux
 
+> ⚠️ **Warning:** Commands below use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Check network interface status via Run Command
+# ⚡ Check network interface status via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "ip link show; ip addr show"
 
-# Bring interface up via Run Command
+# ⚡ Bring interface up via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "ip link set eth0 up && dhclient eth0"
 ```
