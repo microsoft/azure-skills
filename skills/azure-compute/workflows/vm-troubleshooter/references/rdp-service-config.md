@@ -16,17 +16,19 @@ VM is reachable but the RDP service itself is broken or misconfigured.
 
 ## Quick Commands
 
+> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Reset all RDP configuration to defaults
+# ⚡ Reset all RDP configuration to defaults
 az vm user reset-remote-desktop --name <vm-name> -g <resource-group>
 
-# Check TermService status via Run Command
+# ⚡ Check TermService status via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunPowerShellScript --scripts "Get-Service TermService | Select-Object Status, StartType"
 
-# Restart VM (if RDP service is unrecoverable)
+# Restart VM (if RDP service is unrecoverable — requires user approval)
 az vm restart --name <vm-name> -g <resource-group>
 
-# Redeploy VM (moves to new host — last resort)
+# Redeploy VM (moves to new host — last resort, requires user approval)
 az vm redeploy --name <vm-name> -g <resource-group>
 ```

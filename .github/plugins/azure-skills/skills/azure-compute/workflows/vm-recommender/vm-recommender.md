@@ -107,7 +107,23 @@ Query the Azure Retail Prices API — [Retail Prices API Guide](../../references
 
 > **Tip:** VMSS has no extra charge — pricing is per-VM instance. Use the same VM pricing from the API and multiply by the expected instance count to estimate VMSS cost. For autoscaling workloads, estimate cost at both the minimum and maximum instance count.
 
-### Step 5: Present Recommendations
+### Step 5: Validate Quota Availability
+
+> **GATE — Do not present recommendations until quota is validated.**
+
+If the user has an Azure subscription and region, follow the [VM Quota Validation Guide](../../references/vm-quotas.md) to check vCPU capacity for each candidate VM family. Skip this step if no subscription — add a note that quota should be checked before deployment.
+
+| Outcome | Action |
+|---|---|
+| ✅ Sufficient | Proceed to Step 6 |
+| ⚠️ Near limit (>80%) | Proceed but warn; suggest requesting increase |
+| ❌ Insufficient | Request increase, swap family, or try another region |
+
+Include a "Quota Status" column (✅/⚠️/❌) in the recommendation table.
+
+> 📖 **Full details:** See [VM Quota Validation Guide](../../references/vm-quotas.md) for quota structure, CLI commands, VMSS considerations, and fallback methods.
+
+### Step 6: Present Recommendations
 
 Provide **2–3 options** with trade-offs:
 
@@ -128,7 +144,7 @@ For VMSS recommendations, also mention:
 - Autoscale strategy (metric-based, schedule-based, or both)
 - Load balancer type (Azure Load Balancer for L4, Application Gateway for L7/TLS)
 
-### Step 6: Offer Next Steps
+### Step 7: Offer Next Steps
 
 - Compare reservation / savings plan pricing (query API with `priceType eq 'Reservation'`)
 - Suggest [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for full estimates
@@ -149,3 +165,4 @@ For VMSS recommendations, also mention:
 - [VM Family Guide](../../references/vm-families.md) — Family-to-workload mapping and selection
 - [Retail Prices API Guide](../../references/retail-prices-api.md) — Query patterns, filters, and examples
 - [VMSS Guide](../../references/vmss-guide.md) — When to use VMSS, orchestration modes, and autoscale patterns
+- [VM Quota Validation Guide](../../references/vm-quotas.md) — vCPU quota checks, CLI commands, and capacity planning

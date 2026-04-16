@@ -20,27 +20,29 @@ User is trying to SSH into a Linux VM but the connection fails.
 
 ## Quick Commands
 
+> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+
 ```bash
-# Reset SSH configuration to defaults (resets sshd_config, restarts sshd)
+# ⚡ Reset SSH configuration to defaults (resets sshd_config, restarts sshd)
 az vm user reset-ssh --name <vm-name> -g <resource-group>
 
-# Reset SSH public key for a user
+# ⚡ Reset SSH public key for a user
 az vm user update --name <vm-name> -g <resource-group> \
   -u <username> --ssh-key-value "<ssh-public-key>"
 
-# Reset password for Linux VM
+# ⚡ Reset password for Linux VM
 az vm user update --name <vm-name> -g <resource-group> \
   -u <username> -p '<new-password>'
 
-# Check if sshd is running via Run Command
+# ⚡ Check if sshd is running via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "systemctl status sshd"
 
-# Check SELinux status via Run Command
+# ⚡ Check SELinux status via Run Command
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "getenforce"
 
-# Set SELinux to permissive mode (temporary — survives until reboot)
+# ⚡ Set SELinux to permissive mode (temporary — survives until reboot)
 az vm run-command invoke --name <vm-name> -g <resource-group> \
   --command-id RunShellScript --scripts "setenforce 0"
 ```
