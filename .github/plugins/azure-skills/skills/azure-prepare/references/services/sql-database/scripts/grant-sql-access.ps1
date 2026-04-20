@@ -74,6 +74,16 @@ IF NOT EXISTS (
 "@
 }
 
+# Ensure the rdbms-connect extension is installed (provides 'az sql db query')
+az extension show --name rdbms-connect *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Azure CLI extension 'rdbms-connect' is not installed. Installing..."
+    az extension add --name rdbms-connect --yes
+    if ($LASTEXITCODE -ne 0) {
+        throw "ERROR: Failed to install Azure CLI extension 'rdbms-connect'. Cannot continue because 'az sql db query' requires it."
+    }
+}
+
 az sql db query `
   --server $env:SQL_SERVER `
   --database $env:SQL_DATABASE `

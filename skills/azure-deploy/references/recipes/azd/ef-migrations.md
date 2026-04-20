@@ -48,6 +48,8 @@ Key behaviours of the scripts:
 
 Generate idempotent script for review before applying:
 
+> ⚠️ **Warning:** `az sql db query` requires the `rdbms-connect` extension: `az extension add --name rdbms-connect --yes`
+
 ```bash
 dotnet ef migrations script --idempotent --output migrations.sql
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \

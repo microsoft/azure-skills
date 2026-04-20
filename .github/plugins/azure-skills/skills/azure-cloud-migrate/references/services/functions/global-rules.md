@@ -21,7 +21,7 @@ Always use `ask_user` before:
 
 ## Best Practices
 
-- Always use `mcp_azure_mcp_get_bestpractices` tool before generating Azure code
+- Always use `mcp_azure_mcp_get_azure_bestpractices` tool before generating Azure code
 - Prefer managed identity over connection strings
 - **Always use the latest supported language runtime** — check [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) for the newest GA version. Never default to older versions
 - **Always prefer bindings over SDKs** — use `input.storageBlob()`, `output.storageBlob()`, `app.storageQueue()`, etc. instead of `BlobServiceClient`, `QueueClient`, or other SDK clients. Only use SDK when no binding exists for the service

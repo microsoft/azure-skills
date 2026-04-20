@@ -71,6 +71,15 @@ IF NOT EXISTS (
   ALTER ROLE db_ddladmin ADD MEMBER [$AppName];
 "@
 
+# Ensure the rdbms-connect extension is installed (provides 'az sql db query')
+az extension show --name rdbms-connect 1>$null 2>$null
+if ($LASTEXITCODE -ne 0) {
+    az extension add --name rdbms-connect --yes
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install Azure CLI extension 'rdbms-connect', which is required for 'az sql db query'."
+    }
+}
+
 az sql db query `
   --server $env:SQL_SERVER `
   --database $env:SQL_DATABASE `

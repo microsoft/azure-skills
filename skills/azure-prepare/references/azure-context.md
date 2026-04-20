@@ -142,7 +142,7 @@ After confirmation, record in `.azure/deployment-plan.md`:
 
 ## Step 6: Apply to AZD Environment
 
-> **⛔ CRITICAL for Aspire and azd projects**: After user confirms subscription and location, you **MUST** set these values in the azd environment immediately after running `azd init` or `azd env new`.
+> **⛔ CRITICAL for Aspire and azd projects**: After user confirms subscription and location, you **MUST** set these values in the azd environment immediately after running `azd init` or `azd env new`. Always use `--no-prompt` with these commands to prevent interactive prompts from blocking execution.
 >
 > **DO NOT** wait until validation or deployment. The Azure CLI and azd maintain separate configuration contexts.
 
@@ -150,7 +150,7 @@ After confirmation, record in `.azure/deployment-plan.md`:
 
 ```bash
 # 1. Run azd init
-azd init --from-code -e <environment-name>
+azd init --from-code -e <environment-name> --no-prompt
 
 # 2. IMMEDIATELY set the user-confirmed subscription
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
@@ -166,7 +166,7 @@ azd env get-values
 
 ```bash
 # 1. Create environment
-azd env new <environment-name>
+azd env new <environment-name> --no-prompt
 
 # 2. IMMEDIATELY set the user-confirmed subscription
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>

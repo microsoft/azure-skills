@@ -29,6 +29,10 @@ services:
 
 ## Runtime Stacks
 
+> 💡 **Tip:** Prefer Linux App Service Plans for Node.js, Python, and Java. Use Windows only when explicitly required (e.g. .NET Framework). See [Bicep Patterns](bicep.md) for Linux vs Windows configuration.
+
+### Linux (recommended)
+
 | Language | linuxFxVersion |
 |----------|----------------|
 | Node.js 18 | `NODE\|18-lts` |
@@ -36,6 +40,13 @@ services:
 | Python 3.11 | `PYTHON\|3.11` |
 | .NET 8 | `DOTNETCORE\|8.0` |
 | Java 17 | `JAVA\|17-java17` |
+
+### Windows
+
+| Language | Setting |
+|----------|---------|
+| Node.js | `WEBSITE_NODE_DEFAULT_VERSION: '~20'` (app setting) |
+| .NET 8 | Built-in (no extra config) |
 
 ## SKU Selection
 

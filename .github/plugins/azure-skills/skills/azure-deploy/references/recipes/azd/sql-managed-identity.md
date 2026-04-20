@@ -8,6 +8,7 @@ Grant Azure managed identities database permissions on Azure SQL with Entra auth
 - App Service/Container App with system-assigned managed identity
 - Your account is Entra ID admin on SQL Server
 - Azure CLI: `az login`
+- Azure CLI `rdbms-connect` extension: `az extension add --name rdbms-connect --yes`
 
 ## Quick Grant
 

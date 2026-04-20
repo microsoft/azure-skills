@@ -7,10 +7,13 @@ Quick reference for Azure SQL Database Entra authentication in post-deployment s
 Azure SQL Server must be configured with Entra-only authentication during provisioning. The signed-in user must be set as Entra admin:
 
 ```bicep
+@allowed(['User', 'Group', 'Application'])
+param principalType string = 'User'
+
 properties: {
   administrators: {
     administratorType: 'ActiveDirectory'
-    principalType: 'User'
+    principalType: principalType  // 'User' for interactive, 'Application' for CI/CD
     login: principalName
     sid: principalId
     tenantId: subscription().tenantId
@@ -19,9 +22,13 @@ properties: {
 }
 ```
 
+> ⚠️ **Warning:** Hardcoding `principalType: 'User'` causes `UnmatchedPrincipalType` errors when deploying from CI/CD with a service principal. Use a parameter instead.
+
 ## Connection Patterns
 
 ### Azure CLI (Recommended for Scripts)
+
+> ⚠️ **Warning:** `az sql db query` requires the `rdbms-connect` extension. Install it first: `az extension add --name rdbms-connect --yes`
 
 ```bash
 az sql db query \

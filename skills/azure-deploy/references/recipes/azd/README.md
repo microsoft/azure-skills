@@ -35,7 +35,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 |----------|-------------|
 | `azd up --location eastus2` | `--location` is not a valid flag for `azd up` |
 | `azd up` without `azd env new` | Prompts for input, fails with `--no-prompt` |
-| `mkdir .azure` then `azd env new` | Creates env folder structure incorrectly |
+| `mkdir .azure` then `azd env new --no-prompt` | Creates env folder structure incorrectly |
 | Setting AZURE_LOCATION without checking RG | "Invalid resource group location" if RG exists elsewhere |
 | Ignoring `azd-service-name` tag conflicts in same RG | "found '2' resources tagged with..." error |
 | `language: html` or `language: static` | Not valid - use `language: js` with `dist: .` for static sites |

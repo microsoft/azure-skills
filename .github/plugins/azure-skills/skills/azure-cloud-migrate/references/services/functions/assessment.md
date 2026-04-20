@@ -151,4 +151,4 @@ The report MUST be saved as `migration-assessment-report.md` inside the output d
 - [ ] Hand off to azure-prepare for IaC generation
 ```
 
-> 💡 **Tip:** Use `mcp_azure_mcp_get_bestpractices` tool to learn Azure Functions project structure best practices for the comparison.
+> 💡 **Tip:** Use `mcp_azure_mcp_get_azure_bestpractices` tool to learn Azure Functions project structure best practices for the comparison.

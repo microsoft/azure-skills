@@ -47,12 +47,12 @@ ask_user(
 
 **For new projects (no azure.yaml):**
 ```bash
-azd init -e <environment-name>
+azd init -e <environment-name> --no-prompt
 ```
 
 **For existing projects (azure.yaml exists):**
 ```bash
-azd env new <environment-name>
+azd env new <environment-name> --no-prompt
 ```
 
 Both commands create:
@@ -97,7 +97,7 @@ az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-
 
 Check for each service in `azure.yaml`. If duplicates exist **in the target RG**:
 
-1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
+1. **Preferred — Fresh environment**: Run `azd env new <new-name> --no-prompt` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
 2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
 
 ## Step 5a: Check for Existing Container Apps Environments (Container Apps only)
@@ -155,14 +155,14 @@ ask_user(
      ```
    - **If the environment does NOT exist locally** (e.g., it was provisioned on a different machine or has been cleaned up), create it and configure it to target the existing resource group:
      ```bash
-     azd env new <matching-env-name>
+     azd env new <matching-env-name> --no-prompt
      azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
      azd env set AZURE_LOCATION <location-of-existing-rg>
      ```
 
 2. **Choose a different name** — Create a new AZD environment:
    ```bash
-   azd env new <new-unique-env-name>
+   azd env new <new-unique-env-name> --no-prompt
    azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
    # Then restart from Step 4 with the new environment name
    ```
@@ -241,7 +241,7 @@ fi
 
 ```bash
 # 1. Create environment FIRST
-azd env new myapp-dev
+azd env new myapp-dev --no-prompt
 
 # 2. Set subscription
 azd env set AZURE_SUBSCRIPTION_ID 25fd0362-...
@@ -261,7 +261,7 @@ azd up --no-prompt
 | ❌ Wrong | ✅ Correct |
 |----------|-----------|
 | `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
-| Running `azd up` without environment | `azd env new <name>` first |
+| Running `azd up` without environment | `azd env new <name> --no-prompt` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
 | Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env-name>` before deploy |
 | Skipping Container Apps environment check | Run `az containerapp env list --resource-group rg-<env-name>` before deploy (Step 5a) |

@@ -116,4 +116,4 @@ The report MUST be saved as `upgrade-assessment-report.md` in the workspace root
 - [ ] Proceed to automated upgrade (Phase 3-4)
 ```
 
-> 💡 **Tip:** Use `mcp_azure_mcp_get_bestpractices` to get the latest recommendations for the target hosting plan.
+> 💡 **Tip:** Use `mcp_azure_mcp_get_azure_bestpractices` to get the latest recommendations for the target hosting plan.

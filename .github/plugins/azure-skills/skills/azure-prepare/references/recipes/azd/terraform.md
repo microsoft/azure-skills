@@ -230,7 +230,7 @@ resource "azurerm_resource_group" "main" {
 
 ```bash
 # 1. Create azd environment
-azd env new dev
+azd env new dev --no-prompt
 
 # 2. Set required variables
 azd env set AZURE_LOCATION eastus2

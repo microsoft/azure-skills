@@ -78,6 +78,8 @@ For deployments with Azure SQL Database and managed identity:
 
 ### Verify SQL Access
 
+> ⚠️ **Warning:** `az sql db query` requires the `rdbms-connect` extension: `az extension add --name rdbms-connect --yes`
+
 ```bash
 # Load environment variables
 eval $(azd env get-values)

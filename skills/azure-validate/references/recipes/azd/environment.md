@@ -70,7 +70,7 @@ Would you like to use this name or enter a custom one?
 
 After user confirms:
 ```bash
-azd env new <environment-name>
+azd env new <environment-name> --no-prompt
 ```
 
 ---

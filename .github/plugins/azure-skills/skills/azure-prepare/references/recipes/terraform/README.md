@@ -41,7 +41,7 @@ Use azd+Terraform (the default) when:
 | Artifact | Research Action |
 |----------|-----------------|
 | Terraform patterns | Call `mcp_azure_mcp_azureterraformbestpractices` |
-| Azure best practices | Call `mcp_azure_mcp_get_bestpractices` |
+| Azure best practices | Call `mcp_azure_mcp_get_azure_bestpractices` |
 
 ## Generation Steps
 

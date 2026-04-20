@@ -23,7 +23,7 @@ Always use `ask_user` before:
 
 ## Best Practices
 
-- Always use `mcp_azure_mcp_get_bestpractices` tool before generating upgrade commands
+- Always use `mcp_azure_mcp_get_azure_bestpractices` tool before generating upgrade commands
 - Prefer managed identity over connection strings — upgrades are a good time to improve security
 - **Always target the latest supported runtime version** — check Azure docs for the newest GA version
 - Keep the original app/service running until the upgraded one is fully validated
