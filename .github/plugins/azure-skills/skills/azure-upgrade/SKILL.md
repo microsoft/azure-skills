@@ -4,7 +4,7 @@ description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs w
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.1.1"
 ---
 
 # Azure Upgrade

@@ -4,7 +4,7 @@ description: "Unified Azure cost management: query historical costs, forecast fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.2.1"
 ---
 
 # Azure Cost Management Skill
