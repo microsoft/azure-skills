@@ -4,7 +4,7 @@ description: "Assess and migrate cross-cloud workloads to Azure with migration r
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.1.1"
 ---
 
 # Azure Cloud Migrate

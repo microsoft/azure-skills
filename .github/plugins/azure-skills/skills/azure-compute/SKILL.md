@@ -4,7 +4,7 @@ description: "Azure VM and VMSS router for recommendations, pricing, autoscale, 
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.4.0"
+  version: "2.4.1"
 ---
 
 # Azure Compute Skill

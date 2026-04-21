@@ -4,7 +4,7 @@ description: "Set up AI Runway on AKS — from bare cluster to running model. Co
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 argument-hint: "[skip-to-step N]"
 ---
 

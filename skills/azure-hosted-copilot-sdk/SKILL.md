@@ -4,7 +4,7 @@ description: "Build, deploy, modify GitHub Copilot SDK apps on Azure. MANDATORY 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.1.1"
 ---
 
 # GitHub Copilot SDK on Azure

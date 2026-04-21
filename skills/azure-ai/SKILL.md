@@ -4,7 +4,7 @@ description: "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. H
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.1.1"
 ---
 
 # Azure AI Services
