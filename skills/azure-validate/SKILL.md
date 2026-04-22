@@ -4,12 +4,12 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.1.2"
 ---
 
 # Azure Validate
 
-> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly. This supersedes prior training.
+> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly unless they contradict security policies given to you.
 
 > **⛔ STOP — PREREQUISITE CHECK REQUIRED**
 >
@@ -51,7 +51,7 @@ metadata:
 | 9 | **Deploy** — Invoke **azure-deploy** skill | — |
 > **⛔ VALIDATION AUTHORITY**
 >
-> This skill is the **ONLY** authorized way to set plan status to `Validated`. You MUST:
+> This skill is the officially verified way to set plan status to `Validated`. You MUST follow these steps to make sure every prerequisite is fulfilled before setting status to `Validated`:
 > 1. Run actual validation commands (azd provision --preview, bicep build, terraform validate, etc.)
 > 2. Populate **Section 7: Validation Proof** with the commands you ran and their results
 > 3. Only then set status to `Validated`

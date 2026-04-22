@@ -4,7 +4,7 @@ description: "Query and analyze data in Azure Data Explorer (Kusto/ADX) using KQ
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.1.1"
 ---
 
 # Azure Data Explorer (Kusto) Query & Analytics
