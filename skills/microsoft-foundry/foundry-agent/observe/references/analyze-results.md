@@ -118,7 +118,7 @@ Produce a prioritized action table:
 
 | Priority | Cluster | Suggested Action |
 |----------|---------|------------------|
-| P0 | Runtime errors or failing `P0` test cases | Check container logs or fix blockers first |
+| P0 | Runtime errors or failing `P0` test cases | Check hosted-agent logs or fix blockers first |
 | P1 | Incorrect answers on key flows | Optimize prompt or tool instructions |
 | P2 | Incomplete answers or broader quality gaps | Optimize prompt or expand context |
 | P3 | Tool call failures | Fix tool definitions or instructions |

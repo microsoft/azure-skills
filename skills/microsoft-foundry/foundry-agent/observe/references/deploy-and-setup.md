@@ -2,7 +2,7 @@
 
 > **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), `.foundry` cache and metadata may already be configured. Check `.foundry/evaluators/`, `.foundry/datasets/`, and `.foundry/agent-metadata.yaml` for existing artifacts before re-creating them.
 >
-> If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, container startup, and auto-creates `.foundry` cache after a successful deployment.
+> If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, verification, and auto-creates `.foundry` cache after a successful deployment.
 
 ## Auto-Create Evaluators & Dataset
 

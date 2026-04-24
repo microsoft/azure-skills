@@ -13,7 +13,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
+| Key Foundry MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 | Local cache | `.foundry/agent-metadata.yaml`, `.foundry/evaluators/`, `.foundry/datasets/`, `.foundry/results/` |
 
@@ -34,7 +34,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 ## Before Starting — Detect Current State
 
 1. Resolve the target agent root and environment from `.foundry/agent-metadata.yaml`.
-2. Use `agent_get` and `agent_container_status_get` to verify the environment's agent exists and is running.
+2. Use `agent_get` to verify the environment's agent exists and is running.
 3. Inspect the selected environment's `testCases[]` plus cached files under `.foundry/evaluators/` and `.foundry/datasets/`.
 4. Use `evaluation_get` to check for existing eval runs.
 5. Jump to the appropriate entry point.
@@ -105,5 +105,5 @@ promptText: |
 | User Intent | Skill |
 |-------------|-------|
 | "Analyze production traces" / "Search conversations" / "Find errors in App Insights" | [trace skill](../trace/trace.md) |
-| "Debug container issues" / "Container logs" | [troubleshoot skill](../troubleshoot/troubleshoot.md) |
+| "Debug hosted agent issues" / "Hosted-agent logs" | [troubleshoot skill](../troubleshoot/troubleshoot.md) |
 | "Deploy or redeploy agent" | [deploy skill](../deploy/deploy.md) |

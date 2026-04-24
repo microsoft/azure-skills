@@ -1,37 +1,34 @@
 # Foundry Agent Deploy
 
-Create and manage agent deployments in Azure AI Foundry. For hosted agents, this includes the full workflow from containerizing the project to starting the agent container.
+Create and manage agent deployments in Azure AI Foundry. For hosted agents, this includes the full workflow from containerizing the project to verifying the deployed agent.
 
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
-| Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
+| Agent types | Prompt (LLM-based), Hosted |
 | MCP server | `azure` |
-| Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
+| Key Foundry MCP tools | `agent_definition_schema_get`, `agent_update`, `agent_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
-| Container protocols | `a2a`, `responses`, `mcp` |
+| Container protocols | `a2a`, `responses`, `invocations`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
 
 ## When to Use This Skill
 
-USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, start agent container, stop agent container, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
 
-> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, `agent_update`, or `agent_container_control` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → container startup → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, status polling).
+> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, or `agent_update` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, RBAC setup, invocation verification).
 
 ## MCP Tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `agent_definition_schema_get` | Get JSON schema for agent definitions | `projectEndpoint` (required), `schemaType` (`prompt`, `hosted`, `tools`, `all`) |
-| `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName`, `creationOptions` (JSON with `description` and `metadata`) |
+| `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName` |
 | `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
-| `agent_delete` | Delete an agent with container cleanup | `projectEndpoint`, `agentName` (required) |
-| `agent_container_control` | Start or stop a hosted agent container | `projectEndpoint`, `agentName`, `action` (`start`/`stop`) (required); `agentVersion`, `minReplicas`, `maxReplicas` |
-| `agent_container_status_get` | Check container running status | `projectEndpoint`, `agentName` (required); `agentVersion` |
+| `agent_delete` | Delete an agent and clean up hosted-agent runtime resources | `projectEndpoint`, `agentName` (required) |
 
 ## Workflow: Hosted Agent Deployment
-There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. You must use vNext experience only when user explicitly asks you to deploy the agent to vNext (or v2, or v-next, or similar words). For all other cases, use the ACA based deployment flow.
 
 
 ### Step 1: Detect and Scan Project
@@ -121,13 +118,10 @@ Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the curr
 
 ### Step 6: Create the Agent
 
-> **VNext Experience:** You MUST pass `enableVnextExperience = true` in the `metadata` field of `creationOptions`. This is required for vNext deployments.
-
 Use `agent_update` with the agent definition:
 
 > ⚠️ **Protocol version source of truth:** Do NOT copy the protocol version from `agent_definition_schema_get` examples. Use the protocol version declared by the agent source itself (for example, `agent.yaml` or `agent.manifest.yaml`).
 
-For ACA one:
 ```json
 {
   "command": "agent_update",
@@ -149,54 +143,27 @@ For ACA one:
 }
 ```
 
-For vNext one:
-```json
-{
-  "command": "agent_update",
-  "intent": "Update a hosted agent with a new docker image",
-  "parameters": {
-    "projectEndpoint": "<project-endpoint>",
-    "agentName": "<agent-name>",
-    "agentDefinition": {
-      "kind": "hosted",
-      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-      "cpu": "<cpu-cores>",
-      "memory": "<memory>",
-      "container_protocol_versions": [
-        { "protocol": "<protocol>", "version": "<version>" }
-      ],
-      "environment_variables": { "<var>": "<value>" }
-    },
-    "creationOptions": {
-      "metadata": {
-        "enableVnextExperience": "true"
-      }
-    }
-  }
-}
-```
+Capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
 
-### Step 7: Start Agent Container
+### Step 7: Test the Agent
 
-Use `agent_container_control` with `action: start` to start the container.
+For a newly deployed hosted agent, before invocation testing, first check whether the agent's instance identity already has the minimum RBAC required for invocation:
+- Required role: `Cognitive Services User`
+- Identity: the agent's instance identity (managed identity `principal_id` from the agent creation response)
+- Scope: the Azure AI Services resource (formerly Cognitive Services account)
+- Only the instance identity needs this role assignment. The blueprint identity does not need any role.
 
-### Step 8: Verify Agent Status
+If this role assignment is missing, add it before invocation testing.
 
-Delegate status polling to a sub-agent. Provide the project endpoint, agent name, and instruct it to use `agent_container_status_get` repeatedly until the status is `Running` or `Failed`.
+If the current user account does not have permission to create this role assignment when it is needed, stop the deployment workflow here. Explain to the user that agent invocation requires the `Cognitive Services User` role on the instance identity at the Azure AI Services resource scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants that role.
 
-**Container status values:**
-- `Starting` — Container is initializing
-- `Running` — Container is active and ready ✅
-- `Stopped` — Container has been stopped
-- `Failed` — Container failed to start ❌
+After this RBAC check is complete, read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about required hosted-agent session handling.
 
-### Step 9: Test the Agent
+If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
-Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
+> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 10 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
-
-### Step 10: Auto-Create Evaluators & Dataset
+### Step 8: Auto-Create Evaluators & Dataset
 
 Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
 
@@ -374,14 +341,13 @@ Each test case should bundle one dataset with the evaluator list, thresholds, an
 | `tools` | array | | Tool configurations |
 | `rai_config` | object | | Responsible AI configuration |
 
-> **Reminder:** Always pass `creationOptions.metadata.enableVnextExperience: "true"` when creating vNext hosted agents.
-
 ### Container Protocols
 
 | Protocol | Description |
 |----------|-------------|
 | `a2a` | Agent-to-Agent protocol |
 | `responses` | OpenAI Responses API |
+| `invocations` | Invocation payload protocol for arbitrary request bodies and custom SSE behavior |
 | `mcp` | Model Context Protocol |
 
 ## Agent Management Operations
@@ -392,7 +358,7 @@ Use `agent_update` with `isCloneRequest: true` and `cloneTargetAgentName` to cre
 
 ### Delete an Agent
 
-Use `agent_delete` — automatically cleans up containers for hosted agents.
+Use `agent_delete` — automatically cleans up hosted-agent runtime resources.
 
 ### List Agents
 
@@ -408,8 +374,9 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 | Build/push failed | Dockerfile errors or insufficient ACR permissions | Check Dockerfile syntax, verify Contributor or AcrPush role on registry |
 | ACR build log crash | `UnicodeEncodeError` when `az acr build` streams remote logs | The remote build continues independently — do not assume failure. Get the `<run-id>` from the earlier `az acr build` output and check status with `az acr task show-run -r <acr-name> --run-id <run-id> --query status`. |
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
-| Container start failed | Image not accessible or invalid configuration | Verify ACR image path, check cpu/memory values, confirm ACR permissions |
-| Container status: Failed | Runtime error in container | Check container logs, verify environment variables, ensure image runs correctly |
+| Hosted agent not running after creation | Provisioning failed or the image is not usable | Verify ACR image path, check cpu/memory values, confirm ACR permissions, then inspect hosted-agent logs with the troubleshoot skill |
+| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that agent invocation requires `Cognitive Services User` on the instance identity at the Azure AI Services resource scope |
+| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the instance identity | Check whether `Cognitive Services User` is already assigned to the instance identity at the Azure AI Services resource scope; if missing, assign it, then retry invocation |
 | Permission denied | Insufficient Foundry project permissions | Verify Azure AI Owner or Contributor role on the project |
 | Schema fetch failed | Invalid project endpoint | Verify project endpoint URL format: `https://<resource>.services.ai.azure.com/api/projects/<project>` |
 
@@ -419,7 +386,7 @@ When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode)
 
 - **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
 - **Agent name** — Must be provided in the initial user message or derived sensibly from the project context; if missing, the skill fails with an error instead of prompting
-- **Container lifecycle** — Automatically starts the container and polls for `Running` status without user confirmation
+- **Hosted agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
 
 > ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, ACR image) are provided upfront in the user message or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
 

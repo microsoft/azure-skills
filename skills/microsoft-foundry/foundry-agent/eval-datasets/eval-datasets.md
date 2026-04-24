@@ -15,7 +15,7 @@ USE FOR: create dataset from traces, harvest traces into dataset, build test dat
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key MCP tools | `evaluation_dataset_create`, `evaluation_dataset_get`, `evaluation_dataset_versions_get`, `evaluation_get`, `evaluation_comparison_create`, `evaluation_comparison_get` |
+| Key Foundry MCP tools | `evaluation_dataset_create`, `evaluation_dataset_get`, `evaluation_dataset_versions_get`, `evaluation_get`, `evaluation_comparison_create`, `evaluation_comparison_get` |
 | Storage tools | `project_connection_list` (discover `AzureStorageAccount` connection), `project_connection_create` (add storage connection) |
 | Azure services | Application Insights (via `monitor_resource_log_query`), Azure Blob Storage (dataset sync) |
 | Prerequisites | Agent deployed, `.foundry/agent-metadata.yaml` available, App Insights connected |

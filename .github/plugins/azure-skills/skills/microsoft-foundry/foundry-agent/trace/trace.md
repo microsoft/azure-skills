@@ -16,7 +16,7 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 |----------|-------|
 | Data source | Application Insights (App Insights) |
 | Query language | KQL (Kusto Query Language) |
-| Related skills | `troubleshoot` (container logs), `eval-datasets` (trace harvesting) |
+| Related skills | `troubleshoot` (hosted-agent logs), `eval-datasets` (trace harvesting) |
 | Preferred query tool | `monitor_resource_log_query` (Azure MCP) - use for App Insights KQL queries |
 | OTel conventions | [GenAI Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/), [Agent Spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/) |
 | Local metadata | `.foundry/agent-metadata.yaml` |

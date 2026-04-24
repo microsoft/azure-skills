@@ -24,8 +24,8 @@ Use **`prompt_optimize`** with:
 After approval:
 
 1. Use **`agent_update`** to create a new agent version with the optimized prompt
-2. Start the container with **`agent_container_control`** (action: `start`)
-3. Poll **`agent_container_status_get`** in a **background terminal** until status is `Running`
+2. Use **`agent_get`** to verify the updated version is `running`
+3. If the updated version is not `running`, read and follow the [troubleshoot skill](../../troubleshoot/troubleshoot.md) before continuing
 
 ## Next Steps
 
