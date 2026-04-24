@@ -85,22 +85,20 @@ The Azure MCP extension will also install a companion extension that brings the 
 
 ### Claude Code
 
-**Add the marketplace** (first time only):
+**Install the plugin** — either run:
 
 ```bash
-/plugin marketplace add microsoft/azure-skills
+/plugin install azure@claude-plugins-official
 ```
 
-**Install the plugin**:
+Or run `/plugin` and search for "azure" in the marketplace:
+
+![Claude Code plugin discovery showing the Azure plugin](assets/azure-plugin-in-claude.png)
+
+**Update the plugin**:
 
 ```bash
-/plugin install azure@azure-skills
-```
-
-**Update**:
-
-```bash
-/plugin marketplace update azure-skills
+/plugin update azure@claude-plugins-official
 ```
 
 ### Gemini CLI
