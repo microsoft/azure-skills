@@ -117,6 +117,30 @@ You can install the Azure plugin from the [Cursor Marketplace](https://cursor.co
 
 ![Cursor Plugins](assets/cursor-plugins.png)
 
+### Codex CLI
+
+**Add the marketplace** (first time only):
+
+```bash
+codex plugin marketplace add microsoft/azure-skills
+```
+
+**Install the plugin**:
+
+Browse plugins using `/plugins` and install `azure-skills`:
+
+![Codex Plugins](assets/codex-plugins.png)
+
+![Codex Install Plugin](assets/codex-install-plugin.png)
+
+**Enable or disable skills**:
+
+You can choose to enable or disable specific skills by running `/skills` in Codex and selecting the appropriate option:
+
+![Codex Enable Disable Skills](assets/codex-enable-disable-skills.png)
+
+> **Note:** A plugin installed from Codex CLI is also available in the Codex app.
+
 ### IntelliJ IDEA
 
 #### Prerequisites
