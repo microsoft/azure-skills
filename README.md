@@ -127,7 +127,7 @@ codex plugin marketplace add microsoft/azure-skills
 
 **Install the plugin**:
 
-Browse plugins using `/plugins` and install `azure-skills`:
+Browse plugins using `/plugins` and install `azure`:
 
 ![Codex Plugins](assets/codex-plugins.png)
 
