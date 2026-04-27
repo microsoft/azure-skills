@@ -8,12 +8,12 @@ Azure work is not just a code problem. It is a decision problem: which service f
 
 ### Azure skills: the brain
 
-This plugin ships **20 curated Azure skills** that teach an agent how Azure work gets done. They provide workflows, decision trees, and guardrails for scenarios such as:
+This plugin ships **25 curated Azure skills** that teach an agent how Azure work gets done. They provide workflows, decision trees, and guardrails for scenarios such as:
 
-- **Build and deploy** with `azure-prepare`, `azure-validate`, and `azure-deploy`
-- **Troubleshoot and operate** with `azure-diagnostics`, `azure-observability`, and `azure-compliance`
-- **Optimize and design** with `azure-cost-optimization`, `azure-compute`, and `azure-resource-visualizer`
-- **Work across data, AI, and platform services** with `azure-ai`, `azure-aigateway`, `azure-storage`, `azure-kusto`, `azure-rbac`, `azure-cloud-migrate`, `entra-app-registration`, and `microsoft-foundry`
+- **Build, deploy, and evolve** with `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-upgrade`, `azure-enterprise-infra-planner`, `azure-hosted-copilot-sdk`, `azure-kubernetes`, and `airunway-aks-setup`
+- **Troubleshoot, monitor, and govern** with `azure-diagnostics`, `appinsights-instrumentation`, `azure-compliance`, `azure-resource-lookup`, and `azure-quotas`
+- **Optimize architecture and cost** with `azure-cost`, `azure-compute`, `azure-resource-visualizer`, and `azure-cloud-migrate`
+- **Work across data, AI, identity, and platform services** with `azure-ai`, `azure-aigateway`, `azure-storage`, `azure-kusto`, `azure-messaging`, `azure-rbac`, `entra-app-registration`, and `microsoft-foundry`
 
 ### Azure MCP Server: the hands
 
