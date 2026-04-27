@@ -46,6 +46,8 @@ services:
 
 > 💡 **AddDockerfile services:** If the AppHost uses `AddDockerfile()` (e.g., `builder.AddDockerfile("ginapp", "./ginapp")`), do NOT add separate service entries for those resources. Aspire handles container builds for `AddDockerfile` resources at runtime through the AppHost. The `azure.yaml` should contain only the single `app` service pointing to the AppHost.
 
+> ⛔ **BEFORE continuing:** Complete the mandatory [AddParameter + WithBuildArg scan](#after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy) below. Skipping this step is the #1 cause of failed Aspire container-build deployments.
+
 ## Command Flags
 
 | Flag | Required | Purpose |
@@ -61,19 +63,21 @@ services:
 
 ## ⛔ After `azd init`: Fix AddParameter Used with WithBuildArg Before Build/Deploy
 
-> **MANDATORY** — After running `azd init --from-code`, but before `azd package`, `azd up`, or any Docker image build/deploy step, scan the AppHost source for `AddParameter` calls that are passed to `WithBuildArg`. This pattern triggers an azd bug (`parameter infra.parameters.<name> not found`) that causes Docker builds to fail even when the parameter has a default value.
+> **MANDATORY** — After running `azd init --from-code`, but before `azd package`, `azd up`, or any Docker image build/deploy step, scan the AppHost source for `AddParameter` calls that are passed to `WithBuildArg` or `WithBuildSecret`. This pattern triggers an azd bug that causes Docker builds to fail.
+
+.NET Aspire [external parameters](https://aspire.dev/fundamentals/external-parameters/) let apps request values from the deployment environment. Each `AddParameter()` call generates a Bicep parameter in the deployment manifest. However, azd cannot resolve these Bicep parameters during the Docker image build phase, producing the error `parameter infra.parameters.<name> not found`. This bug has been present across all azd versions tested (including 1.24.0).
 
 ### Scan for the pattern
 
 **Bash:**
 ```bash
-grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg" <path/to/AppHost>
+grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg|WithBuildSecret" <path/to/AppHost>
 ```
 
 **PowerShell:**
 ```powershell
 Get-ChildItem -Path "<path/to/AppHost>" -Recurse -Filter "*.cs" |
-  Select-String -Pattern "AddParameter|WithBuildArg"
+  Select-String -Pattern "AddParameter|WithBuildArg|WithBuildSecret"
 ```
 
 **Problematic pattern:**
@@ -84,7 +88,7 @@ builder.AddDockerfile("ginapp", "./ginapp")
     .WithBuildArg("GO_VERSION", goVersion);
 ```
 
-### Fix: Replace AddParameter with a constant
+### Fix Option A: Replace AddParameter with a constant (preferred)
 
 For every `AddParameter(name, defaultValue, ...)` whose result is used **only** as a `WithBuildArg` argument, replace it with a `const string` (or `string`) constant:
 
@@ -95,9 +99,24 @@ builder.AddDockerfile("ginapp", "./ginapp")
     .WithBuildArg("GO_VERSION", goVersion);
 ```
 
-**Why:** azd generates a Bicep parameter for every `AddParameter()` call and tries to resolve that parameter during Docker builds. In azd ≤1.23.14, this resolution fails during the container image build phase. Using a constant avoids the parameter lookup entirely.
+**Why:** This eliminates the parameter from Bicep output entirely, so azd never attempts to resolve it during Docker builds. Use this when the build arg value does not need to vary per deployment environment.
 
-> ⚠️ **Do NOT skip this step for container-build projects.** If the AppHost passes an `AddParameter` result to `WithBuildArg`, apply this fix immediately before running `azd init` or `azd up`.
+### Fix Option B: Pre-set parameter in azd environment config
+
+If the value must remain an [external parameter](https://aspire.dev/fundamentals/external-parameters/) (e.g., it varies per environment), pre-set it in the azd environment config immediately after `azd init`:
+
+```bash
+azd env config set infra.parameters.<name> <value>
+```
+
+**Example:**
+```bash
+azd env config set infra.parameters.goversion 1.25.4
+```
+
+**Why:** This writes the parameter value into `.azure/<env>/config.json` so azd can find it during Docker builds without modifying AppHost source code. Use this when the build arg value must be configurable per environment.
+
+> ⚠️ **Do NOT skip this step for container-build projects.** If the AppHost passes an `AddParameter` result to `WithBuildArg`, apply one of these fixes before running `azd up`.
 
 ---
 
@@ -123,14 +142,14 @@ azd init --from-code -e "$ENV_NAME"
 
 ### Error: "parameter infra.parameters.<name> not found"
 
-**Cause:** The AppHost uses `AddParameter()` as a `WithBuildArg` argument, and azd ≤1.23.14 cannot resolve infrastructure parameters during Docker builds.
+**Cause:** The AppHost uses `AddParameter()` as a `WithBuildArg` argument. azd cannot resolve Aspire [external parameters](https://aspire.dev/fundamentals/external-parameters/) during Docker builds, regardless of azd version.
 
 **Example error:**
 ```
 ERROR: building service 'ginapp': parameter infra.parameters.goversion not found
 ```
 
-**Fix:** In the AppHost source, replace the `AddParameter(...)` call with a constant:
+**Fix (Option A — preferred):** In the AppHost source, replace the `AddParameter(...)` call with a constant:
 
 ```csharp
 // ❌ Before (causes the error)
@@ -142,6 +161,11 @@ builder.AddDockerfile("ginapp", "./ginapp")
 const string goVersion = "1.25.4";
 builder.AddDockerfile("ginapp", "./ginapp")
     .WithBuildArg("GO_VERSION", goVersion);
+```
+
+**Fix (Option B):** Pre-set the parameter in azd environment config:
+```bash
+azd env config set infra.parameters.goversion 1.25.4
 ```
 
 ### AppHost Not Detected
@@ -183,7 +207,7 @@ builder.AddDockerfile("ginapp", "./ginapp")
 
 ## Validation Steps
 
-1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#-after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy)
+1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy)
 2. Verify azure.yaml has a non-empty services section
 3. Do NOT add separate service entries for `AddDockerfile()` resources — Aspire handles container builds at runtime through the AppHost
 4. Run `azd package` to validate Docker build succeeds
@@ -197,6 +221,7 @@ builder.AddDockerfile("ginapp", "./ginapp")
 
 ## References
 
+- [.NET Aspire External Parameters](https://aspire.dev/fundamentals/external-parameters/)
 - [.NET Aspire Docs](https://learn.microsoft.com/dotnet/aspire/)
 - [azd + Aspire](https://learn.microsoft.com/dotnet/aspire/deployment/azure/aca-deployment-azd-in-depth)
 - [Samples](https://github.com/dotnet/aspire-samples)

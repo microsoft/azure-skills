@@ -14,6 +14,23 @@ Maintain a `migration-status.md` file in the output directory (`<workspace-root-
 
 Update status: ⬜ Not Started → 🔄 In Progress → ✅ Complete → ❌ Failed
 
+## User Progress Updates
+
+During long-running operations (Azure deployments, image pushes, environment provisioning), **proactively report progress** so the user is never left waiting without feedback:
+
+1. **Resource-level status table** — After submitting a deployment, poll `az resource list` or `az deployment operation group list` and present a status table:
+   ```
+   | Resource | Status |
+   |----------|--------|
+   | VNet     | ✅ Created |
+   | ACR      | ✅ Created |
+   | Container Apps Env | 🔄 Provisioning |
+   | order-service | ⬜ Waiting |
+   ```
+2. **Explain what's slow** — If a resource takes >2 minutes (e.g., Container Apps Environment with VNet), tell the user *why* ("VNet integration provisions internal load balancers and DNS — this typically takes 3-5 min").
+3. **Don't go silent** — If a single `az deployment group create` covers all resources, poll `az resource list -g <rg>` periodically and update the user on newly created resources.
+4. **Announce each phase transition** — When moving between skill phases (assess → migrate → deploy → validate), clearly tell the user what just completed and what's next.
+
 ## Error Handling
 
 | Error | Cause | Remediation |

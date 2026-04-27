@@ -88,6 +88,8 @@ If the user has specified what they want the agent to do, choose the most releva
 
 If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
 
+> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples. These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource and must configure its endpoint/auth as described in [references/toolbox.md](references/toolbox.md) (see Step 1).
+
 ### Step 4: Download Sample Files
 
 Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
@@ -274,6 +276,8 @@ Apply these to both greenfield and brownfield projects:
 4. **Framework-specific best practices** — When using Microsoft Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
 
 5. **Deploy handoff** — After the agent has been created and local verification succeeds, explicitly tell the user that they can deploy the agent if they want, and ask them to say `deploy agent to foundry` to continue with the deploy sub-skill.
+
+6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
 ## Coding Tips
 

@@ -1,39 +1,35 @@
-# Blob + EventGrid Recipe - Python Eval
+# blob-eventgrid Recipe - Python Eval
 
-## Test Summary
+## MCP Template Validation
 
-| Test | Status | Notes |
-|------|--------|-------|
-| Code Syntax | ✅ PASS | Python v2 model decorator pattern |
-| EventGrid Trigger | ✅ PASS | Uses `@app.event_grid_trigger` |
-| Blob Input | ✅ PASS | `@app.blob_input` for reading |
-| Blob Output | ✅ PASS | `@app.blob_output` for writing |
-| Event Filtering | ✅ PASS | Filters BlobCreated events |
+| Criteria | Expected | Status |
+|----------|----------|--------|
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Filter by resource | `resource == "blob"` finds matches | ✅ PASS |
+| Template scaffolded | `blob-eventgrid-trigger-python-azd` | ✅ PASS |
+| Has trigger code | `@app.blob_trigger` decorator in output | ✅ PASS |
+| Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
+| Has RBAC | Appropriate role assignment | ✅ PASS |
 
-## Code Validation
+## Agent Behavior Validation
 
-```python
-# Validated patterns:
-# - @app.event_grid_trigger for blob events
-# - @app.blob_input with {data.url} binding
-# - @app.blob_output for processed output
-# - EventGrid event parsing
+```text
+1. Agent calls: functions_template_get(language: "python")
+2. Agent scans templateList.triggers[] descriptions and resource field
+3. Agent selects: template where resource == "blob" → blob-eventgrid-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "blob-eventgrid-trigger-python-azd")
+5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
-## Configuration Validated
+## Notes
 
-- `BlobConnection__blobServiceUri` - UAMI binding
-- EventGrid subscription for blob events
-- Uses extension bundle v4
-
-## Grounding Source
-
-[Azure-Samples/functions-quickstart-python-azd-eventgrid-blob](https://github.com/Azure-Samples/functions-quickstart-python-azd-eventgrid-blob)
+- Template names may vary - use `resource` field or `description` to match
+- Never hardcode template names - always discover via list call first
 
 ## Test Date
 
-2025-02-18
+2026-04-22
 
 ## Verdict
 
-**PASS** - Blob + EventGrid recipe correctly implements event-driven blob processing following the official AZD template patterns.
+**PASS** - MCP template provides complete blob-eventgrid trigger with IaC, RBAC, and UAMI binding.

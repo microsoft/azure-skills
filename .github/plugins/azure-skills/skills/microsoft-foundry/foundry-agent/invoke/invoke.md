@@ -62,7 +62,7 @@ Rules:
 
 This is different from `conversationId`, which tracks conversation history. `sessionId` controls which compute instance handles the request.
 
-If invocation fails with a permission-related error, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Verify that `Cognitive Services User` is assigned to the instance identity at the Azure AI Services resource scope.
+If hosted-agent invocation fails with a permission-related error, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Verify that `Azure AI User` is assigned to the per-agent identity and the project-level agent identity at the Cognitive Services account scope.
 
 #### Fallback for Hosted Agents Using `invocations` Protocol Only
 
@@ -134,7 +134,7 @@ Each invocation with the same `conversationId` continues the existing conversati
 | Hosted agent not active | The requested hosted agent version is still provisioning or failed | Use `agent_get` to inspect version status, then follow the troubleshoot skill if it does not become `active` |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
 | `agent_invoke` fails for an `invocations` protocol hosted agent | Current MCP tool path does not work correctly for that protocol | Use the direct REST fallback in Step 2 against `.../endpoint/protocols/invocations` with `api-version=v1`, a sticky `session_id`, and `Foundry-Features: HostedAgents=V1Preview` |
-| Invocation failed with permission error | Missing or incorrect invocation RBAC for the instance identity | Read and follow the troubleshoot skill, verify `Cognitive Services User` on the instance identity at the Azure AI Services resource scope, then retry invocation |
+| Invocation failed with permission error | Missing or incorrect invocation RBAC for the per-agent identity or project-level agent identity | Read and follow the troubleshoot skill, verify `Azure AI User` on the per-agent identity and project-level agent identity at the Cognitive Services account scope, then retry invocation |
 | Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
 | Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |
 

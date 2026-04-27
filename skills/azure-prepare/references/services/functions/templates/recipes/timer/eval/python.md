@@ -1,49 +1,35 @@
-# Timer Recipe Evaluation
+# Timer Recipe - Python Eval
 
-**Date:** 2026-02-19T04:18:00Z
-**Recipe:** timer
-**Language:** Python
-**Status:** ✅ PASS
+## MCP Template Validation
 
-## Deployment
+| Criteria | Expected | Status |
+|----------|----------|--------|
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Filter by resource | `resource == "timer"` finds matches | ✅ PASS |
+| Template scaffolded | `timer-trigger-python-azd` | ✅ PASS |
+| Has trigger code | `@app.timer_trigger` decorator in output | ✅ PASS |
+| Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
 
-| Property | Value |
-|----------|-------|
-| Function App | `func-api-gxlcc37knhe2m` |
-| Resource Group | `rg-timer-func-dev` |
-| Region | eastus2 |
-| Base Template | `functions-quickstart-python-http-azd` |
+## Agent Behavior Validation
 
-## Test Results
-
-### Health Endpoint
-```bash
-curl "https://func-api-gxlcc37knhe2m.azurewebsites.net/api/health?code=<key>"
+```text
+1. Agent calls: functions_template_get(language: "python")
+2. Agent scans templateList.triggers[] descriptions and resource field
+3. Agent selects: template where resource == "timer" → timer-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "timer-trigger-python-azd")
+5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
-**Response:**
-```json
-{"status": "healthy", "schedule": "0 */5 * * * *"}
-```
+## Code Indicators Verified
 
-### Functions Deployed
-- `timer_trigger` - TimerTrigger (every 5 minutes)
-- `health_check` - HTTP GET /health
+- `@app.timer_trigger` with schedule parameter
+- `TIMER_SCHEDULE` app setting reference (`%TIMER_SCHEDULE%`)
+- 6-part cron expression (with seconds)
 
-## Configuration Applied
+## Test Date
 
-### App Settings
-```
-TIMER_SCHEDULE: "0 */5 * * * *"
-```
-
-### Source Code
-- Replaced `function_app.py` with timer trigger code
-- No IaC changes required (uses base Storage)
+2026-04-22
 
 ## Verdict
 
-✅ **PASS** - Timer recipe works correctly:
-- Timer trigger registered with correct schedule
-- Health endpoint returns configured schedule
-- No additional Azure resources required
+**PASS** - MCP template provides complete timer trigger with configurable schedule and IaC.

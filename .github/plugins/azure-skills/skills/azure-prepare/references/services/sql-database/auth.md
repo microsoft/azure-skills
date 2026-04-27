@@ -88,6 +88,8 @@ ALTER ROLE db_datawriter ADD MEMBER [my-container-app];
 
 ### Entra ID Authentication (Recommended)
 
+> ⚠️ **MANDATORY**: When generating SQL connection strings for apps with Entra-only auth, ALWAYS include an `Authentication` parameter. Use `Authentication=Active Directory Default` for general scenarios (App Service, local dev) or `Authentication=Active Directory Managed Identity` when a user-assigned managed identity with a specific `User Id` is required (e.g., Azure Functions SQL bindings). Do NOT use manual `AccessToken` assignment, `DefaultAzureCredential().GetToken()` patterns, or bare connection strings without an authentication parameter. The `Authentication` parameter is required in both the Bicep infrastructure output (e.g., App Service `connectionStrings` property) and in any application configuration files (e.g., `appsettings.json`).
+
 ```
 Server=tcp:{server}.database.windows.net,1433;Database={database};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;
 ```
@@ -101,4 +103,4 @@ Server=tcp:{server}.database.windows.net,1433;Database={database};Authentication
 > ❌ **PROHIBITED — NEVER generate connection strings with `User ID` and `Password` parameters, and NEVER generate `administratorLogin` or `administratorLoginPassword` Bicep properties.**
 > This applies unconditionally — do not include them in any conditional, ternary, or optional branch.
 > SQL admin authentication is disabled in all subscriptions with Entra-only policies and violates Azure security best practices.
-> Always use the Entra ID `Authentication=Active Directory Default` connection string above.
+> Always use an Entra ID `Authentication=Active Directory Default` or `Authentication=Active Directory Managed Identity` connection string above.

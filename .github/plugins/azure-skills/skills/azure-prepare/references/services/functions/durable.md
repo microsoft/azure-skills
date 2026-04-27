@@ -21,34 +21,12 @@ Durable Functions requires a storage backend to persist orchestration state, que
 - Human interaction workflows
 - Long-running processes
 
-## Orchestrator Pattern
+## Get Durable Templates
 
-```javascript
-const df = require('durable-functions');
+Use the [Azure Functions Templates workflow](templates/README.md) to discover and fetch durable samples:
 
-module.exports = df.orchestrator(function* (context) {
-    const result1 = yield context.df.callActivity('Step1');
-    const result2 = yield context.df.callActivity('Step2', result1);
-    return result2;
-});
-```
+**MCP Tool:** `functions_template_get(language)` → filter `resource == "durable"`
 
-## Activity Function
+**Fallback:** CDN manifest → filter `resource == "durable"`
 
-```javascript
-module.exports = async function (context, input) {
-    return `Processed: ${input}`;
-};
-```
-
-## Client Starter
-
-```javascript
-const df = require('durable-functions');
-
-module.exports = async function (context, req) {
-    const client = df.getClient(context);
-    const instanceId = await client.startNew('OrchestratorFunction', undefined, req.body);
-    return client.createCheckStatusResponse(context.bindingData.req, instanceId);
-};
-```
+Available patterns: Fan-out/Fan-in, Order Processing (with Bicep), Distributed Tracing, Large Payload, Saga, AI Travel Planner, PDF Summarizer, .NET Aspire integration.

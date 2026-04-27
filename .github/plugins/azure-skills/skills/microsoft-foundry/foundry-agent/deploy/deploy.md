@@ -143,19 +143,20 @@ Use `agent_update` with the agent definition:
 }
 ```
 
-Capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
+Capture the per-agent identity from the agent creation response, then retrieve the project-level agent identity from the project resource after creation. You will need both identities to assign the minimum RBAC required for invocation before running invoke tests.
 
 ### Step 7: Test the Agent
 
-For a newly deployed hosted agent, before invocation testing, first check whether the agent's instance identity already has the minimum RBAC required for invocation:
-- Required role: `Cognitive Services User`
-- Identity: the agent's instance identity (managed identity `principal_id` from the agent creation response)
-- Scope: the Azure AI Services resource (formerly Cognitive Services account)
-- Only the instance identity needs this role assignment. The blueprint identity does not need any role.
+For a newly deployed hosted agent, before invocation testing, first check whether the per-agent identity and project-level agent identity already have the minimum RBAC required for invocation.
 
-If this role assignment is missing, add it before invocation testing.
+Required role assignment:
+- `Azure AI User`
 
-If the current user account does not have permission to create this role assignment when it is needed, stop the deployment workflow here. Explain to the user that agent invocation requires the `Cognitive Services User` role on the instance identity at the Azure AI Services resource scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants that role.
+Required scope: the Cognitive Services account, not the project.
+
+Check existing assignments before creating any new assignment. If the required role assignment is missing for either identity, assign it before invocation testing.
+
+If the current user account does not have permission to create a missing role assignment, stop the deployment workflow here. Explain to the user that hosted-agent invocation requires `Azure AI User` on the per-agent identity and project-level agent identity at the Cognitive Services account scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants the missing role.
 
 After this RBAC check is complete, read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about required hosted-agent session handling.
 
@@ -375,8 +376,8 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 | ACR build log crash | `UnicodeEncodeError` when `az acr build` streams remote logs | The remote build continues independently — do not assume failure. Get the `<run-id>` from the earlier `az acr build` output and check status with `az acr task show-run -r <acr-name> --run-id <run-id> --query status`. |
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
 | Hosted agent not running after creation | Provisioning failed or the image is not usable | Verify ACR image path, check cpu/memory values, confirm ACR permissions, then inspect hosted-agent logs with the troubleshoot skill |
-| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that agent invocation requires `Cognitive Services User` on the instance identity at the Azure AI Services resource scope |
-| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the instance identity | Check whether `Cognitive Services User` is already assigned to the instance identity at the Azure AI Services resource scope; if missing, assign it, then retry invocation |
+| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that hosted-agent invocation requires `Azure AI User` on the per-agent identity and project-level agent identity at the Cognitive Services account scope |
+| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the per-agent identity or project-level agent identity | Check whether `Azure AI User` is assigned to the per-agent identity and project-level agent identity at the Cognitive Services account scope; assign missing role assignments, then retry invocation |
 | Permission denied | Insufficient Foundry project permissions | Verify Azure AI Owner or Contributor role on the project |
 | Schema fetch failed | Invalid project endpoint | Verify project endpoint URL format: `https://<resource>.services.ai.azure.com/api/projects/<project>` |
 

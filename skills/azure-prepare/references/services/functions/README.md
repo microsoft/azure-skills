@@ -92,6 +92,5 @@ services:
 - [AZD Templates](templates/README.md) — Template overview
 - [Bicep Patterns](bicep.md)
 - [Terraform Patterns](terraform.md)
-- [Trigger Types](triggers.md)
 - [Durable Functions](durable.md)
 - [Aspire + Container Apps](aspire-containerapps.md)

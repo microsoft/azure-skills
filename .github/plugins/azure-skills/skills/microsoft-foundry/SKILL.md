@@ -4,7 +4,7 @@ description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker bui
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.3"
+  version: "1.1.5"
 ---
 
 # Microsoft Foundry Skill

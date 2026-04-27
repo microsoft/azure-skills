@@ -7,7 +7,7 @@
 >
 > 1. Load `templates/selection.md` to choose the correct base template
 > 2. Follow `templates/recipes/composition.md` for the exact algorithm
-> 3. Run `azd init -t <template>` to get proven, tested IaC
+> 3. Use `functions_template_get` MCP tool to list and fetch templates and write `functionFiles[]` + `projectFiles[]` directly — NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found
 >
 > Hand-writing Bicep from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
@@ -124,6 +124,7 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 ```
 
 > 💡 **Key Points:**
+>
 > - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `allowSharedKeyAccess: false` for enhanced security
 > - Use `SystemAssignedIdentity` for deployment authentication
@@ -138,6 +139,7 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 **⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
 
 > 💡 **OS and Slots Matter for Consumption:**
+>
 > - **Linux Consumption** (`kind: 'functionapp,linux'`, `reserved: true`): Does **not** support deployment slots.
 > - **Windows Consumption** (`kind: 'functionapp'`, no `reserved`): Supports **1 staging slot** (2 total including production).
 >   If a user specifically needs Windows Consumption with a slot, that is supported — use the Windows pattern below.
@@ -308,6 +310,7 @@ resource serviceBusSenderRole 'Microsoft.Authorization/roleAssignments@2022-04-0
 ```
 
 > 💡 **Key Points:**
+>
 > - Use `SERVICEBUS__fullyQualifiedNamespace` (double underscore) for managed identity
 > - Grant `Service Bus Data Receiver` role for reading messages
 > - Grant `Service Bus Data Sender` role for sending messages (if needed)

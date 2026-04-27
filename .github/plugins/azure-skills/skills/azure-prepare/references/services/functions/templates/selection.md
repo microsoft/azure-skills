@@ -1,82 +1,77 @@
-# Template Selection Decision Tree
+# Template Selection Guide
 
-**CRITICAL**: Check for specific integration indicators IN ORDER before defaulting to HTTP.
+Map user intent to MCP template `resource` filter.
 
-**Architecture**: All deployments start from an [HTTP base template](http.md) per language/IaC combo. Integrations are applied as [composable recipes](recipes/README.md) on top of the base. See [composition.md](recipes/composition.md) for the merge algorithm.
+> **NEVER hardcode template names** — names can change. Always use `functions_template_get(language)` to discover available templates, then filter by `resource` field.
 
-Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com/en-us/azure/azure-functions/functions-scenarios) and [official AZD gallery templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions).
+## Intent → Resource Mapping
+
+| User Says | Code Indicators (existing projects) | Resource Filter | Recipe Reference |
+|-----------|-------------------------------------|-----------------|------------------|
+| "HTTP", "REST", "API", "webhook" | `HttpTrigger`, `@app.route`, `req: HttpRequest` | `http` | — |
+| "timer", "schedule", "cron", "periodic" | `TimerTrigger`, `@app.schedule`, `TimerInfo` | `timer` | [recipes/timer/README.md](recipes/timer/README.md) |
+| "Cosmos", "CosmosDB", "document DB" | `CosmosDBTrigger`, `@app.cosmos_db`, `cosmos_db_input` | `cosmos` | [recipes/cosmosdb/README.md](recipes/cosmosdb/README.md) |
+| "Event Hub", "streaming", "events" | `EventHubTrigger`, `@app.event_hub`, `event_hub_output` | `eventhub` | [recipes/eventhubs/README.md](recipes/eventhubs/README.md) |
+| "Service Bus", "queue", "message" | `ServiceBusTrigger`, `@app.service_bus_queue` | `servicebus` | [recipes/servicebus/README.md](recipes/servicebus/README.md) |
+| "blob", "file", "storage trigger" | `BlobTrigger`, `@app.blob`, `blob_input`, `blob_output` | `blob` | [recipes/blob-eventgrid/README.md](recipes/blob-eventgrid/README.md) |
+| "SQL", "database trigger" | `SqlTrigger`, `@app.sql`, `sql_input`, `SqlOutput` | `sql` | [recipes/sql/README.md](recipes/sql/README.md) |
+| "MCP", "MCP server", "tools" | `McpToolTrigger`, `@app.mcp_tool`, `mcp` in project | `mcp` | [recipes/mcp/README.md](recipes/mcp/README.md) |
+| "durable", "workflow", "orchestration" | `DurableOrchestrationTrigger`, `orchestrator`, `durable_functions` | `durable` | [recipes/durable/README.md](recipes/durable/README.md) |
+| "AI", "agent", "chatbot", "OpenAI" | `openai`, `AzureOpenAI`, `langchain`, `semantic_kernel` | `http` | Scan description for "AI", "agent", "Copilot SDK" |
+| **No specific trigger / intent unclear** | — | `http` (default) | — |
+
+## Selection Algorithm
 
 ```
-1. Is this an MCP server?
-   Indicators: mcp_tool_trigger, MCPTrigger, @app.mcp_tool, "mcp" in project name
-   └─► YES → HTTP base + MCP source snippet (toggle enableQueue in base)
-   Recipe: recipes/mcp/ ✅ Available
-
-2. Does it use Cosmos DB?
-   Indicators: CosmosDBTrigger, @app.cosmos_db, cosmos_db_input, cosmos_db_output
-   └─► YES → HTTP base + cosmosdb recipe (IaC + RBAC + networking + source)
-   Recipe: recipes/cosmosdb/ ✅ Available
-
-3. Does it use Azure SQL?
-   Indicators: SqlTrigger, @app.sql, sql_input, sql_output, SqlInput, SqlOutput
-   └─► YES → HTTP base + sql recipe (use AZD templates)
-   Recipe: recipes/sql/ ✅ Available
-
-4. Does it use AI/OpenAI?
-   Indicators: openai, AzureOpenAI, azure-ai-openai, langchain, langgraph,
-               semantic_kernel, Microsoft.Agents, azure-ai-projects,
-               CognitiveServices, text_completion, embeddings_input,
-               ChatCompletions, azure.ai.inference, @azure/openai
-   └─► YES → Use AI Template from Awesome AZD (complex, not yet recipe-ized)
-
-5. Is it a full-stack app with SWA?
-   Indicators: staticwebapp.config.json, swa-cli, @azure/static-web-apps
-   └─► YES → Use SWA+Functions Template (see integrations.md)
-
-6. Does it use Service Bus?
-   Indicators: ServiceBusTrigger, @app.service_bus_queue, @app.service_bus_topic
-   └─► YES → HTTP base + servicebus recipe (IaC + RBAC + networking + source)
-   Recipe: recipes/servicebus/ ✅ Available
-
-7. Is it for orchestration or workflows?
-   Code indicators: DurableOrchestrationTrigger, orchestrator, durable_functions
-   Natural language indicators (NEW projects): workflow, multi-step, pipeline,
-     orchestration, fan-out, fan-in, long-running process, chaining, state machine,
-     saga, order processing, approval flow
-   └─► YES → HTTP base + durable recipe (IaC: Durable Task Scheduler + task hub + RBAC + source)
-   ⛔ REQUIRED: Generate Microsoft.DurableTask/schedulers + taskHubs Bicep resources
-   Recipe: recipes/durable/ ✅ Available
-   References: [durable.md](../../functions/durable.md) for storage backend rules,
-     [Durable Task Scheduler](../../durable-task-scheduler/README.md) for Bicep patterns and connection string
-
-8. Does it use Event Hubs?
-   Indicators: EventHubTrigger, @app.event_hub, event_hub_output
-   └─► YES → HTTP base + eventhubs recipe (IaC + RBAC + networking + source)
-   Recipe: recipes/eventhubs/ ✅ Available
-
-9. Does it use Event Grid?
-   Indicators: EventGridTrigger, @app.event_grid, event_grid_output
-   └─► YES → HTTP base + blob-eventgrid recipe (use AZD templates)
-   Recipe: recipes/blob-eventgrid/ ✅ Available
-
-10. Is it for file processing with Blob Storage?
-    Indicators: BlobTrigger, @app.blob, blob_input, blob_output
-    └─► YES → HTTP base + blob-eventgrid recipe (use AZD templates)
-    Recipe: recipes/blob-eventgrid/ ✅ Available
-
-11. Is it for scheduled tasks?
-    Indicators: TimerTrigger, @app.schedule, cron, scheduled task
-    └─► YES → HTTP base + timer source snippet (no IaC delta)
-    Recipe: recipes/timer/ ✅ Available
-
-12. DEFAULT → HTTP base template by runtime (see http.md)
+1. DISCOVER: functions_template_get(language) → template list
+2. DETECT (existing code): Scan for code indicators above → map to resource
+3. MATCH (new projects): Scan template descriptions for user intent
+4. FILTER: resource == mapped_resource AND infrastructure == user_iac_choice
+5. PREFER: AZD-enabled (infrastructure: "bicep" or "terraform")
+6. SELECT: Template whose description best matches user intent
+7. DEFAULT: If intent unclear or no trigger specified → use `http`
 ```
 
-## Recipe Types
+## Output: Working Function App
 
-| Type | IaC Delta? | Examples |
-|------|-----------|----------|
-| **Full recipe** | Yes — Bicep module + Terraform module + RBAC + networking | cosmosdb, servicebus, eventhubs |
-| **Full recipe (Bicep only)** | Yes — Bicep module + RBAC | durable |
-| **AZD template** | Use dedicated AZD template from Awesome AZD | sql, blob-eventgrid |
-| **Source-only** | No — only replace function source code (may toggle storage params) | timer, mcp |
+MCP templates return **complete, deployable projects** — each array entry has `{ path, content }`:
+
+| Array | Contents | Action |
+|-------|----------|--------|
+| `functionFiles[]` | Function source code (triggers, bindings, business logic), infra and other files | Create directories from `path`, write `content` to each file |
+| `projectFiles[]` | settings.json, host.json, dependencies files | Create directories from `path`, write `content` to each file |
+
+> Write files from the array output above. NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found.
+
+For deployment steps, see [README.md](README.md#step-5-deploy).
+
+## Default Behavior
+
+**When user intent is ambiguous or no specific trigger is mentioned**, default to HTTP:
+
+- User says "create a function" with no trigger → HTTP
+- User describes business logic without specifying trigger → HTTP
+- Intent cannot be determined from context → HTTP
+
+HTTP is the safest default because it's the most common trigger type and provides a simple request/response pattern that works for most use cases.
+
+## IaC Selection
+
+| User Says | Filter By |
+|-----------|-----------|
+| Nothing specified | `infrastructure: "bicep"` (default) |
+| "terraform", "use terraform" | `infrastructure: "terraform"` |
+| "bicep", "use bicep" | `infrastructure: "bicep"` |
+
+## Non-AZD Fallback
+
+If specific trigger/binding has no AZD template:
+
+1. Use non-AZD template for **function code** only
+2. Find related AZD template as **IaC reference**:
+
+| Non-AZD Resource | Related AZD Reference |
+|-----------------|----------------------|
+| RabbitMQ, Kafka | EventHub AZD |
+| SendGrid, Twilio, Webhook | HTTP AZD |
+| IoT Hub | EventHub AZD |

@@ -1,99 +1,38 @@
 # MCP (Model Context Protocol) Recipe
 
-Adds MCP tool endpoints to an Azure Functions base template for AI agent integration.
+MCP tool endpoints for AI agent integration via the JSON-RPC 2.0 protocol.
 
-## Overview
+## Template Selection
 
-This recipe creates Azure Functions that expose tools via the Model Context Protocol (MCP),
-enabling AI agents (like GitHub Copilot, Claude, etc.) to invoke your functions as tools.
+Resource filter: `mcp`  
+Discover templates via MCP or CDN manifest where `resource == "mcp"` and `language` matches user request.
 
-## Integration Type
+## Protocol
 
-| Aspect | Value |
-|--------|-------|
-| **Trigger** | HTTP (MCP protocol) |
-| **Protocol** | JSON-RPC 2.0 over HTTP |
-| **Auth** | Function key or Entra ID |
-| **IaC** | ⚠️ Set `enableQueue: true` in main.bicep |
+MCP uses the **JSON-RPC 2.0** protocol. Two template types with different transport support:
 
-## Storage Endpoint Flags
+- **Extension-based** (`mcp-server-remote-*`) supports both Streamable HTTP and SSE transports
+- **Self-hosted** (`mcp-sdk-hosting-*`) — supports Streamable HTTP only
 
-MCP uses Queue storage for state management and backplane. Set the flag in main.bicep:
+See [MCP Specification](https://modelcontextprotocol.io/) for protocol details.
 
-```bicep
-module storage './shared/storage.bicep' = {
-  params: {
-    enableBlob: true    // Default - deployment packages
-    enableQueue: true   // Required for MCP - state management and backplane
-  }
-}
-```
+## Troubleshooting
 
-## Composition Steps
+### Transport Mismatch
 
-Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
+**Cause:** Client and server using different transports — SSE client gets `404`/`405`, HTTP client gets unexpected `text/event-stream`.  
+**Solution:** Extension-based templates support both Streamable HTTP and SSE. Self-hosted templates support Streamable HTTP only. In VS Code `mcp.json`, set `"type": "sse"` or `"type": "http"` to match the server.
 
-| # | Step | Details |
-|---|------|---------|
-| 1 | **Replace source code** | Add MCP tool handlers from `source/{lang}.md` |
-| 2 | **Configure host.json** | Enable HTTP/2 for streaming (optional) |
+### Missing App Settings After Deploy
 
-## MCP Tool Pattern
+**Cause:** Required app settings not configured on the function app.  
+**Solution:** Ensure protected resource metadata settings are present. For C# self-hosted servers, verify `host.json` `arguments` points to the compiled DLL path.
 
-Each MCP tool is a function that:
-1. Receives JSON-RPC request with tool name and arguments
-2. Executes the tool logic
-3. Returns JSON-RPC response with result
+See [MCP extension trigger and bindings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-mcp) for extension-based servers, [Self-hosted MCP servers](https://learn.microsoft.com/en-us/azure/azure-functions/self-hosted-mcp-servers) for self-hosted architecture, and [MCP tutorial troubleshooting](https://learn.microsoft.com/en-us/azure/azure-functions/functions-mcp-tutorial?tabs=self-hosted#troubleshooting) for self-hosted deployment issues.
 
-## Files
+## Eval
 
 | Path | Description |
 |------|-------------|
-| [source/python.md](source/python.md) | Python MCP tools using `@app.mcp_tool` decorator |
-| [source/typescript.md](source/typescript.md) | TypeScript MCP tools |
-| [source/javascript.md](source/javascript.md) | JavaScript MCP tools |
-| [source/dotnet.md](source/dotnet.md) | C# (.NET) MCP tools |
-| [source/java.md](source/java.md) | Java MCP tools |
-| [source/powershell.md](source/powershell.md) | PowerShell MCP tools |
 | [eval/summary.md](eval/summary.md) | Evaluation summary |
 | [eval/python.md](eval/python.md) | Python evaluation results |
-
-## Example Tools Included
-
-| Tool | Description |
-|------|-------------|
-| `get_weather` | Returns weather for a city (demo) |
-| `search_docs` | Searches documentation (demo) |
-| `run_query` | Executes a database query (demo) |
-
-## MCP Configuration
-
-Add to your MCP client config (e.g., `.copilot/mcp-config.json`):
-
-```json
-{
-  "servers": {
-    "my-azure-tools": {
-      "type": "http",
-      "url": "https://<func-app>.azurewebsites.net/api/mcp",
-      "headers": {
-        "x-functions-key": "<function-key>"
-      }
-    }
-  }
-}
-```
-
-## Common Issues
-
-### Tool Not Discovered
-
-**Cause:** MCP client can't reach the function endpoint.
-
-**Solution:** Verify function URL and authentication key.
-
-### Timeout on Long Operations
-
-**Cause:** Default HTTP timeout exceeded.
-
-**Solution:** Use streaming responses or async patterns for long operations.

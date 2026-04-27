@@ -1,35 +1,37 @@
 # Service Bus Recipe - Python Eval
 
-## Test Summary
+## MCP Template Validation
 
-| Test | Status | Notes |
-|------|--------|-------|
-| Code Syntax | ✅ PASS | Python v2 model decorator pattern |
-| Queue Trigger | ✅ PASS | Uses `@app.service_bus_queue_trigger` |
-| Output Binding | ✅ PASS | `@app.service_bus_queue_output` decorator |
-| Health Endpoint | ✅ PASS | Returns queue name |
-| Message Metadata | ✅ PASS | Logs message_id, delivery_count |
+| Criteria | Expected | Status |
+|----------|----------|--------|
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Filter by resource | `resource == "servicebus"` finds matches | ✅ PASS |
+| Template scaffolded | `servicebus-trigger-python-azd` | ✅ PASS |
+| Has trigger code | `@app.service_bus_queue_trigger` decorator in output | ✅ PASS |
+| Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
+| Has RBAC | Service Bus Data Receiver/Sender role | ✅ PASS |
 
-## Code Validation
+## Agent Behavior Validation
 
-```python
-# Validated patterns:
-# - @app.service_bus_queue_trigger with queue_name
-# - @app.service_bus_queue_output for sending
-# - func.ServiceBusMessage with metadata access
-# - connection="ServiceBusConnection" (UAMI pattern)
+```text
+1. Agent calls: functions_template_get(language: "python")
+2. Agent scans templateList.triggers[] descriptions and resource field
+3. Agent selects: template where resource == "servicebus" → servicebus-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "servicebus-trigger-python-azd")
+5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
-## Configuration Validated
+## Code Indicators Verified
 
-- `ServiceBusConnection__fullyQualifiedNamespace` - UAMI binding
-- `%SERVICEBUS_QUEUE_NAME%` - Runtime config
-- Uses extension bundle v4
+- `@app.service_bus_queue_trigger` with queue_name
+- `connection="ServiceBusConnection"` (UAMI pattern)
+- `ServiceBusConnection__fullyQualifiedNamespace` binding
+- Extension bundle v4
 
 ## Test Date
 
-2025-02-18
+2026-04-22
 
 ## Verdict
 
-**PASS** - Service Bus recipe correctly implements queue trigger and output binding with proper UAMI authentication pattern.
+**PASS** - MCP template provides complete Service Bus trigger with IaC, RBAC, and UAMI binding.

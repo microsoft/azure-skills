@@ -1,36 +1,35 @@
-# Event Hubs Recipe - Python Eval
+# eventhubs Recipe - Python Eval
 
-## Test Summary
+## MCP Template Validation
 
-| Test | Status | Notes |
-|------|--------|-------|
-| Code Syntax | ✅ PASS | Python v2 model decorator pattern |
-| Event Hub Trigger | ✅ PASS | Uses `@app.event_hub_message_trigger` |
-| Batch Processing | ✅ PASS | Cardinality.MANY for throughput |
-| Output Binding | ✅ PASS | `@app.event_hub_output` decorator |
-| Health Endpoint | ✅ PASS | Anonymous auth |
+| Criteria | Expected | Status |
+|----------|----------|--------|
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Filter by resource | `resource == "eventhub"` finds matches | ✅ PASS |
+| Template scaffolded | `eventhub-trigger-python-azd` | ✅ PASS |
+| Has trigger code | `@app.event_hub_message_trigger` decorator in output | ✅ PASS |
+| Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
+| Has RBAC | Appropriate role assignment | ✅ PASS |
 
-## Code Validation
+## Agent Behavior Validation
 
-```python
-# Validated patterns:
-# - @app.event_hub_message_trigger with consumer_group
-# - @app.event_hub_output for sending events
-# - List[func.EventHubEvent] for batch processing
-# - Proper event metadata logging (partition, sequence)
+```text
+1. Agent calls: functions_template_get(language: "python")
+2. Agent scans templateList.triggers[] descriptions and resource field
+3. Agent selects: template where resource == "eventhub" → eventhub-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "eventhub-trigger-python-azd")
+5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
-## Configuration Validated
+## Notes
 
-- `EventHubConnection__fullyQualifiedNamespace` - UAMI binding
-- `%EVENTHUB_NAME%` - Runtime config
-- `%EVENTHUB_CONSUMER_GROUP%` - Consumer group
-- Uses extension bundle v4
+- Template names may vary - use `resource` field or `description` to match
+- Never hardcode template names - always discover via list call first
 
 ## Test Date
 
-2025-02-18
+2026-04-22
 
 ## Verdict
 
-**PASS** - Event Hubs recipe correctly implements both trigger and output bindings with proper batch processing and UAMI pattern.
+**PASS** - MCP template provides complete eventhubs trigger with IaC, RBAC, and UAMI binding.

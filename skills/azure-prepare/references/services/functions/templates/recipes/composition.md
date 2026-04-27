@@ -1,253 +1,231 @@
 # Composition Algorithm
 
-Step-by-step algorithm for composing a base HTTP template with an integration recipe.
+Combine multiple templates into a single deployable project.
 
-> **This is the authoritative process. Follow it exactly.**
-
-> ⛔ **CRITICAL: Read [common/uami-bindings.md](common/uami-bindings.md) before any deployment.**
-> Base templates use User Assigned Managed Identity (UAMI). ALL service bindings require
-> explicit `credential` and `clientId` app settings. Failure to include these causes
-> 500/401/403 errors at runtime.
-
-## Algorithm
+## Azure MCP Path
 
 ```
-INPUT:
-  - language:    dotnet | typescript | javascript | python | java | powershell
-  - integration: http | cosmosdb | sql | servicebus | eventhubs | timer | blob | durable | mcp
-  - iac:         bicep | terraform
+INPUT: language, user_requirements
+OUTPUT: Complete project ready for `azd up`
 
-OUTPUT:
-  - Complete project directory ready for `azd up`
+1. DISCOVER
+   functions_template_get(language) → template list with descriptions
+
+2. CHECK SINGLE-TEMPLATE MATCH
+   If one template's description covers ALL requirements → use it alone
+
+3. SELECT TEMPLATES
+   - Trigger template (REQUIRED) — base project with IaC
+   - Binding templates (OPTIONAL) — extract patterns only
+
+4. FETCH TEMPLATES
+   - Single match: 1 call
+   - Multiple: parallel calls
+
+5. COMPOSE
+   - Use trigger template as BASE (functionFiles + projectFiles)
+   - EXTRACT binding patterns from binding templates
+   - MERGE IaC resources and RBAC roles
+   - ADD user's custom business logic
+
+6. TRIM unused demo code (keep AzureWebJobsStorage)
+
+7. WRITE files — for each entry { path, content } in functionFiles[] AND projectFiles[]:
+      a. Create parent directories from path
+      b. Write content to path
+      NEVER hand-write Bicep/Terraform and use azd init -t/func init/func new as fallback when composing multiple recipes and required templates are not found
+
+8. DEPLOY: azd up --no-prompt
 ```
 
-### Step 1: Fetch Base Template
-
-```bash
-# Determine template name
-IF iac == 'bicep':
-  TEMPLATE = base_templates[language].bicep    # e.g., functions-quickstart-dotnet-azd
-ELSE IF iac == 'terraform':
-  TEMPLATE = base_templates[language].terraform # e.g., functions-quickstart-dotnet-azd-tf
-
-# Non-interactive init
-ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
-azd init -t $TEMPLATE -e "$ENV_NAME" --no-prompt
-```
-
-### Step 2: Check if Recipe Needed
+## Fallback Path (Azure MCP Unavailable)
 
 ```
-IF integration IN [http]:
-  → DONE. Base template is complete.
+INPUT: language, user_requirements
+OUTPUT: Complete project ready for `azd up`
 
-IF integration IN [timer]:
-  → Source-only recipe. Skip to Step 5.
+1. FETCH MANIFEST
+   GET https://cdn.functions.azure.com/public/templates-manifest/manifest.json
+   If fetch fails → fall back to: https://github.com/Azure/azure-functions-templates/blob/dev/Functions.Templates/Template-Manifest/manifest.json
+   If both fail → fall back to known-good Azure-Samples/functions-quickstart-* repos by language+resource
+   If all fail → report error and ask user to retry later
 
-IF integration IN [mcp]:
-  → Source-only recipe with storage configuration:
-    - Set `enableQueue: true` in main.bicep (required for MCP)
-    Note: These are minimal parameter toggles, not structural changes to IaC.
-  → Then skip to Step 5.
+2. FILTER TEMPLATES
+   Filter by: language, resource (from selection.md), iac
 
-IF integration IN [durable]:
-  → Full recipe with Durable Task Scheduler backend:
-    - Add DTS IaC module (scheduler + task hub + RBAC). Continue to Step 3.
-    - Reference: [Durable Task Scheduler](../../../durable-task-scheduler/README.md) and [Bicep patterns](../../../durable-task-scheduler/bicep.md).
-    - Do NOT use Azure Storage queues/tables as the durable backend — always use Durable Task Scheduler.
-  → Continue to Step 3.
+3. CHECK SINGLE-TEMPLATE MATCH
+   If one template covers ALL requirements → use it alone
 
-IF integration IN [cosmosdb, sql, servicebus, eventhubs, blob]:
-  → Full recipe. Continue to Step 3.
+4. SELECT TEMPLATES
+   - Trigger template (REQUIRED) — base project
+   - Binding templates (OPTIONAL) — extract patterns only
+
+5. DOWNLOAD TEMPLATES
+   For each template:
+   - If folderPath == "." → ZIP download + unzip
+   - If folderPath != "." → fetch tree + raw github url file downloads
+   - Fallback: git clone --depth 1
+
+6. COMPOSE
+   - Use trigger template as BASE
+   - EXTRACT binding patterns from binding templates
+   - MERGE IaC resources, RBAC roles and settings, README and other files.
+   - ADD user's custom business logic
+
+7. TRIM unused demo code (keep AzureWebJobsStorage)
+
+8. WRITE all files
+
+9. DEPLOY: azd up --no-prompt
 ```
 
-### Step 3: Add IaC Module (for full recipes only)
+## Example (MCP)
 
-**Bicep:**
-1. Copy `recipes/{integration}/bicep/*.bicep` → `infra/app/`
-2. Add module reference in `infra/main.bicep`:
-   ```bicep
-   module cosmos './app/cosmos.bicep' = {
-     name: 'cosmos'
-     scope: rg
-     params: {
-       name: name
-       location: location
-       tags: tags
-       functionAppPrincipalId: app.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
-     }
-   }
-   ```
-3. If VNET_ENABLED, also add the network module:
-   ```bicep
-   module cosmosNetwork './app/cosmos-network.bicep' = if (vnetEnabled) { ... }
-   ```
+**User:** "HTTP function that writes to Cosmos DB"
 
-**Terraform:**
-1. Copy `recipes/{integration}/terraform/*.tf` → `infra/`
-2. Merge `locals.{integration}_app_settings` into function app's `app_setting` block in `main.tf`
-3. Networking is conditional (uses `count = var.vnet_enabled ? 1 : 0`)
+```
+1. Discover: functions_template_get(language: "python") → returns template list
+2. Check: No single template description mentions BOTH HTTP trigger AND Cosmos output
+3. Select from discovered list:
+   - Template with resource: "http" (trigger, base)
+   - Template with resource: "cosmos" and description mentioning "output" (binding)
+4. Fetch both templates by templateName from discovery results
+5. Compose:
+   - Base: HTTP template (has IaC, azure.yaml)
+   - Extract: Cosmos output binding + RBAC from cosmos template
+   - Merge: Add Cosmos module to infra/main.bicep
+6. Trim: Remove HTTP demo response code
+7. Write files
+8. Deploy
+```
 
-### Step 4: Add App Settings
+## Example (Fallback)
 
-Read the recipe's `README.md` for required app settings. Add them to the function app config.
+**User:** "HTTP function that writes to Cosmos DB"
 
-> **CRITICAL: User Assigned Managed Identity (UAMI) Configuration**
->
-> The base templates use UAMI, not System Assigned MI. For service bindings (Event Hubs, Service Bus, etc.),
-> you MUST include `credential` and `clientId` settings alongside the endpoint:
->
-> ```bicep
-> appSettings: {
->   // Endpoint
->   EventHubConnection__fullyQualifiedNamespace: eventhubs.outputs.fullyQualifiedNamespace
->   // UAMI credentials - REQUIRED
->   EventHubConnection__credential: 'managedidentity'
->   EventHubConnection__clientId: apiUserAssignedIdentity.outputs.clientId
-> }
-> ```
->
-> Without these, the function will fail with 500/Unauthorized errors.
+```
+1. Fetch: GET manifest.json from CDN
+2. Filter: language=Python, resource=http OR resource=cosmos, iac=bicep
+3. Check: No single template covers both
+4. Select:
+   - http-trigger-python-azd (trigger, base) → repositoryUrl + folderPath
+   - cosmos-trigger-python-azd (binding) → repositoryUrl + folderPath
+5. Download: ZIP download both repos (folderPath = ".")
+6. Compose:
+   - Base: HTTP template (has infra/, azure.yaml)
+   - Extract: Cosmos IaC module + RBAC from cosmos template
+   - Merge: Add cosmos.bicep to infra/app/, wire into main.bicep
+7. Trim: Remove demo code
+8. Write files
+9. Deploy
+```
 
-**Bicep Example (Cosmos DB):**
+## Critical Rules
+
+1. **NEVER hardcode template names** — always discover/fetch manifest first
+2. **PRESERVE generated IaC patterns** — keep RBAC roles, managed identity config, and security settings intact when merging
+3. **ALWAYS keep AzureWebJobsStorage** — runtime requires it
+4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
+5. **ALWAYS include ALL THREE UAMI settings for every binding** — see UAMI Configuration below
+6. **ALWAYS wait for RBAC propagation** — use two-phase deploy if 403 errors occur
+7. **NEVER enable `allowSharedKeyAccess: true`** — correct solution is waiting for RBAC, not disabling security
+
+## IaC Merge Guidelines
+
+When composing multiple templates:
+
+| Action | Allowed | Not Allowed |
+|--------|---------|-------------|
+| Add resource modules from binding templates | ✅ | |
+| Add RBAC role assignments from binding templates | ✅ | |
+| Merge environment variables | ✅ | |
+| Remove RBAC roles | | ❌ |
+| Change managed identity to connection strings | | ❌ |
+| Remove security configurations | | ❌ |
+| Modify resource SKUs without user request | | ❌ |
+
+**Merge = additive combination, not modification of security patterns.**
+
+## UAMI Configuration (CRITICAL)
+
+Templates use User Assigned Managed Identity (UAMI). ALL service bindings require explicit `credential` and `clientId` app settings. Missing these causes 500/401/403 errors at runtime.
+
+**Required pattern for EVERY service binding:**
+
 ```bicep
 appSettings: {
-  COSMOS_CONNECTION__accountEndpoint: cosmos.outputs.cosmosAccountEndpoint
-  COSMOS_CONNECTION__credential: 'managedidentity'
-  COSMOS_CONNECTION__clientId: apiUserAssignedIdentity.outputs.clientId
-  COSMOS_DATABASE_NAME: cosmos.outputs.cosmosDatabaseName
-  COSMOS_CONTAINER_NAME: cosmos.outputs.cosmosContainerName
-}
-```
-
-**Bicep Example (Event Hubs):**
-```bicep
-appSettings: {
+  // Endpoint (varies by service)
   EventHubConnection__fullyQualifiedNamespace: eventhubs.outputs.fullyQualifiedNamespace
+  // UAMI credentials - REQUIRED, prefix vary by example
   EventHubConnection__credential: 'managedidentity'
   EventHubConnection__clientId: apiUserAssignedIdentity.outputs.clientId
-  EVENTHUB_NAME: eventhubs.outputs.eventHubName
-  EVENTHUB_CONSUMER_GROUP: eventhubs.outputs.consumerGroupName
 }
 ```
 
-**Terraform:** Merge recipe locals into function app:
-```hcl
-app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
-```
+**Validation Checklist (MANDATORY before deploy):**
 
-### Step 4.5: VALIDATE App Settings (MANDATORY)
-
-**Before proceeding, verify these UAMI settings exist for EVERY service binding:**
-
-| Setting Pattern | Required? | Example |
-|-----------------|-----------|---------|
-| `{Connection}__fullyQualifiedNamespace` or `{Connection}__accountEndpoint` | ✅ Yes | `EventHubConnection__fullyQualifiedNamespace` |
-| `{Connection}__credential` | ✅ Yes | `EventHubConnection__credential: 'managedidentity'` |
-| `{Connection}__clientId` | ✅ Yes | `EventHubConnection__clientId: uamiClientId` |
-
-**Validation Checklist:**
-- [ ] Each service binding has all THREE settings (namespace/endpoint + credential + clientId)
-- [ ] `credential` value is exactly `'managedidentity'` (not `'ManagedIdentity'` or other)
-- [ ] `clientId` references the UAMI from base template (e.g., `apiUserAssignedIdentity.outputs.clientId`)
-- [ ] No connection strings or SAS keys are used
+| Setting Pattern | Required | Example |
+|-----------------|:--------:|---------|
+| `{Connection}__fullyQualifiedNamespace` or `{Connection}__accountEndpoint` | ✅ | `EventHubConnection__fullyQualifiedNamespace` |
+| `{Connection}__credential` | ✅ | `'managedidentity'` (exact case) |
+| `{Connection}__clientId` | ✅ | `apiUserAssignedIdentity.outputs.clientId` |
 
 > ⛔ **STOP if any check fails.** The function WILL fail at runtime with 500/Unauthorized errors.
 
-### Step 5: Replace Source Code
+## Language-Specific Entry Points
 
-1. Read `recipes/{integration}/source/{language}.md`
-2. Create the new trigger file(s) as specified
-3. Remove the HTTP trigger files listed in "Files to Remove"
-4. Add any package dependencies (NuGet, npm, pip, Maven)
+### Node.js (JavaScript/TypeScript)
 
-> ⛔ **Node.js CRITICAL**: Do NOT delete `src/index.js` (JavaScript) or `src/index.ts` (TypeScript).
+> ⛔ **Do NOT delete `src/index.js` (JS) or `src/index.ts` (TS).**
 > This file contains `app.setup()` which initializes the Functions runtime.
 > Without it, functions deploy but return 404 on all endpoints.
-> See [common/nodejs-entry-point.md](common/nodejs-entry-point.md).
 
-> ⛔ **Node.js GLOB PATTERN REQUIRED**: The `package.json` `main` field MUST use the glob pattern:
+> ⛔ **Glob pattern REQUIRED in package.json:**
+>
 > ```json
 > { "main": "src/{index.js,functions/*.js}" }
 > ```
-> Using `"main": "src/index.js"` alone will result in 404 on ALL endpoints because functions won't be discovered.
+>
+> Using `"main": "src/index.js"` alone results in 404 on ALL endpoints.
 
-> ⛔ **Node.js Project Structure**: `package.json` MUST be at project ROOT (same level as `azure.yaml`), NOT inside `src/`.
-> The `azure.yaml` must have `project: .` (not `project: ./src/`).
-> This is the SAME structure for both Bicep and Terraform — source code is IaC-agnostic.
+> ⛔ **package.json must be at project ROOT** (same level as `azure.yaml`), NOT inside `src/`.
 
-> 📦 **TypeScript Build**: Run `npm run build` before deployment to compile to `dist/`.
-> TypeScript `main` field: `"main": "dist/src/{index.js,functions/*.js}"`
+> 📦 **TypeScript:** Run `npm run build` before deployment.
+> Use: `"main": "dist/src/{index.js,functions/*.js}"`
 
-> ⛔ **C# (.NET) CRITICAL**: Do NOT replace `Program.cs` from the base template.
+### C# (.NET)
+
+> ⛔ **Do NOT replace `Program.cs` from the base template.**
 > The base template uses `ConfigureFunctionsWebApplication()` with App Insights integration.
-> Recipes only add trigger function files (`.cs`) and package references (`.csproj`).
-> See [common/dotnet-entry-point.md](common/dotnet-entry-point.md).
+> Recipes only ADD trigger function files (`.cs`) and package references (`.csproj`).
 
-### Step 6: Update azure.yaml (if needed)
-
-Some recipes require hooks (e.g., Cosmos firewall scripts for VNet):
-```yaml
-hooks:
-  postprovision:
-    posix:
-      shell: sh
-      run: ./infra/scripts/add-cosmos-firewall.sh
-    windows:
-      shell: pwsh
-      run: ./infra/scripts/add-cosmos-firewall.ps1
-```
-
-### Step 7: Validate and Deploy
-
-**Required Environment Setup:**
-```bash
-azd env set AZURE_LOCATION eastus2      # Required: deployment region
-azd env set VNET_ENABLED false          # Required: VNet isolation (true/false)
-```
-
-**Deployment Strategy — Two Options:**
+## Deployment Strategy
 
 **Option A: Single command** (fast, may fail on first deploy due to RBAC propagation)
+
 ```bash
 azd up --no-prompt
 ```
 
 **Option B: Two-phase** (recommended for reliability)
+
 ```bash
 azd provision --no-prompt     # Create resources + RBAC assignments
 sleep 60                       # Wait for RBAC propagation (Azure AD needs 30-60s)
 azd deploy --no-prompt        # Deploy code (RBAC now active)
 ```
 
-> **CRITICAL: Never enable `allowSharedKeyAccess: true`** as a workaround for 403 errors.
-> The correct solution is waiting for RBAC propagation, not disabling security.
+## Terraform-Specific Requirements
 
-## Base Template Lookup
+> ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
 
-| Language | Bicep Template | Terraform Template |
-|----------|---------------|-------------------|
-| dotnet | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
-| typescript | `functions-quickstart-typescript-azd` | `functions-quickstart-dotnet-azd-tf` * |
-| javascript | `functions-quickstart-javascript-azd` | `functions-quickstart-dotnet-azd-tf` * |
-| python | `functions-quickstart-python-http-azd` | `functions-quickstart-dotnet-azd-tf` * |
-| java | `azure-functions-java-flex-consumption-azd` | `functions-quickstart-dotnet-azd-tf` * |
-| powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-dotnet-azd-tf` * |
+### Runtime Versions
 
-### Terraform: Language Configuration
-
-\* All languages use `functions-quickstart-dotnet-azd-tf` as base, then modify runtime settings:
-
-```hcl
-# In variables.tf or main.tf - change these values for your language:
-variable "function_runtime" {
-  default = "node"  # dotnet-isolated | node | python | java | powershell
-}
-
-variable "function_runtime_version" {
-  default = "20"    # Query docs for latest - see below
-}
-```
+> ⚠️ **ALWAYS QUERY OFFICIAL DOCUMENTATION** — Do NOT use hardcoded versions.
+>
+> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
+>
+> Query for latest GA/LTS versions before generating IaC.
 
 | Language | `function_runtime` | Version Source |
 |----------|-------------------|----------------|
@@ -257,121 +235,18 @@ variable "function_runtime_version" {
 | Java | `java` | Latest LTS from docs |
 | PowerShell | `powershell` | Latest GA from docs |
 
-> **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION** — Do NOT use hardcoded versions.
->
-> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
->
-> Query for latest GA/LTS versions before generating IaC.
+### Flex Consumption (FC1) Requires azapi
 
-> ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
+> ⚠️ Use `azapi_resource` instead of `azurerm_linux_function_app` for FC1.
+> The AzureRM provider doesn't support FC1's `functionAppConfig` block.
 
-### Terraform: Source Code is IaC-Agnostic
-
-**The application source code is IDENTICAL for Bicep and Terraform deployments.**
-
-When using `functions-quickstart-dotnet-azd-tf` for a non-.NET language:
-
-1. **Change runtime in Terraform** — modify `function_runtime` and `function_runtime_version` in `main.tf` or `variables.tf`
-2. **Replace source code** — delete the `.NET` code in `src/` and add your language's code (JavaScript, Python, etc.)
-3. **Keep project structure** — `package.json` (Node.js) or equivalent at project ROOT, not inside `src/`
-
-**Example: Node.js on Terraform**
-
-```
-project-root/
-├── azure.yaml              # project: .
-├── package.json            # Node.js deps - MUST be at root
-├── host.json
-├── src/
-│   ├── index.js            # Entry point
-│   └── functions/
-│       └── myFunction.js
-└── infra/
-    └── *.tf                # Only difference from Bicep
-```
-
-> ⛔ **If you find yourself changing imports or application code because of IaC choice, something is wrong.**
-> The only changes for Terraform vs Bicep should be in the `infra/` folder.
-
-## Storage Endpoint Requirements
-
-Some integrations require additional storage endpoints. Toggle these in `main.bicep` BEFORE provisioning:
-
-| Integration | enableBlob | enableQueue | enableTable | Notes |
-|-------------|:----------:|:-----------:|:-----------:|-------|
-| HTTP        | ✓          | -           | -           | Default |
-| Timer       | ✓          | -           | -           | Checkpointing uses blob |
-| Cosmos DB   | ✓          | -           | -           | Standard |
-| **Durable** | ✓          | -           | -           | Uses Durable Task Scheduler (not Storage queues/tables) |
-| **MCP**     | ✓          | **✓**       | -           | Queue=state mgmt + backplane |
-
-## Recipe Classification
-
-| Category | Integrations | What Recipe Provides |
-|----------|-------------|---------------------|
-| **Source-only** | timer, mcp | Source code snippet; may require minimal parameter toggles (e.g., `enableQueue`) but no new IaC modules |
-| **Full recipe** | cosmosdb, sql, servicebus, eventhubs, blob, durable | IaC modules + RBAC + networking + source code |
-
-## Critical Rules
-
-1. **NEVER synthesize Bicep or Terraform from scratch** — always start from base template IaC
-2. **Do not restructure or replace base IaC files** — only ADD recipe modules alongside them and perform minimal parameter toggles (e.g., `enableQueue: true`) where the algorithm explicitly requires
-3. **ALWAYS use recipe RBAC role GUIDs** — never let the LLM guess role IDs
-4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
-5. **ALWAYS verify the base template initialized successfully** before applying recipe
-6. **ALWAYS keep `allowSharedKeyAccess: false`** — never enable local auth on storage
-7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB/Event Hubs/Service Bus
-8. **ALWAYS wait for RBAC propagation** — use two-phase deploy if 403 errors occur
-9. **ALWAYS include ALL THREE UAMI settings for every binding** — see [common/uami-bindings.md](common/uami-bindings.md):
-   - `{Connection}__fullyQualifiedNamespace` or `{Connection}__accountEndpoint`
-   - `{Connection}__credential: 'managedidentity'`
-   - `{Connection}__clientId: apiUserAssignedIdentity.outputs.clientId`
-10. **ALWAYS use recipe module's `appSettings` output** — do not manually construct app settings; use `union(baseSettings, recipe.outputs.appSettings)` to prevent missing UAMI settings
-
-## Terraform-Specific Requirements
-
-Validated requirements from production deployments with Azure policy enforcement:
-
-### Storage Account Configuration
-
-```hcl
-resource "azurerm_storage_account" "storage" {
-  # ... standard config ...
-  allow_nested_items_to_be_public = false     # Required by Azure policy
-  local_user_enabled              = false     # Required for RBAC-only
-  shared_access_key_enabled       = false     # Required by Azure policy
-}
-```
-
-### Function App with Managed Identity Storage
-
-> **Note**: For **Flex Consumption (FC1)**, use `azapi_resource` instead of `azurerm_linux_function_app`.
-> The AzureRM provider doesn't yet support FC1's `functionAppConfig` block. See examples below.
-
-**Standard Consumption/Premium (azurerm)**
-```hcl
-provider "azurerm" {
-  features {}
-  storage_use_azuread = true   # Required for MI-based storage access
-}
-
-resource "azurerm_linux_function_app" "function" {
-  # ... standard config ...
-  storage_uses_managed_identity = true   # Use MI instead of access key
-  
-  # When using MI storage, assign RBAC BEFORE creating function:
-  depends_on = [azurerm_role_assignment.storage_blob_owner]
-}
-```
-
-**Flex Consumption FC1 (azapi) — REQUIRED for FC1**
 ```hcl
 resource "azapi_resource" "function_app" {
   type      = "Microsoft.Web/sites@2023-12-01"
   name      = "func-${local.name}"
   location  = azurerm_resource_group.rg.location
   parent_id = azurerm_resource_group.rg.id
-  
+
   body = {
     kind = "functionapp,linux"
     properties = {
@@ -396,18 +271,12 @@ resource "azapi_resource" "function_app" {
 }
 ```
 
-# RBAC for deploying user (required to create function with MI storage)
-resource "azurerm_role_assignment" "storage_blob_owner" {
-  scope                = azurerm_storage_account.storage.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
+### RBAC Propagation Delay
 
-### RBAC Propagation Delay (CRITICAL)
-
-Azure RBAC assignments take 30-60 seconds to propagate through Azure AD. Terraform's `depends_on` only waits for the **resource** to be created, not for RBAC to propagate. This causes 403 errors on first deployment.
+Azure RBAC takes 30-60s to propagate. Terraform's `depends_on` only waits for resource creation, not RBAC propagation.
 
 **Solution 1: Add `time_sleep` resource**
+
 ```hcl
 resource "time_sleep" "rbac_propagation" {
   depends_on      = [azurerm_role_assignment.storage_blob_owner]
@@ -421,6 +290,7 @@ resource "azapi_resource" "function_app" {
 ```
 
 **Solution 2: Create deployment container explicitly**
+
 ```hcl
 resource "azurerm_storage_container" "deployment" {
   name                  = "deploymentpackage"
@@ -431,60 +301,36 @@ resource "azurerm_storage_container" "deployment" {
 ```
 
 > ⚠️ **Common Failures Without These Fixes:**
+>
 > - `403 Forbidden` — RBAC not yet propagated
 > - `404 Container Not Found` — deployment container not created
 > - `Tag Not Found: azd-service-name` — Azure resource tags take time to be queryable
 
-### Service Bus with Disabled Local Auth
-
-```hcl
-resource "azurerm_servicebus_namespace" "sb" {
-  # ... standard config ...
-  local_auth_enabled = false   # Required by Azure policy - RBAC only
-}
-```
-
-### Event Hubs with Disabled Local Auth
-
-```hcl
-resource "azurerm_eventhub_namespace" "main" {
-  # ... standard config ...
-  local_authentication_enabled = false   # Required by Azure policy - RBAC only
-}
-```
-
-### Cosmos DB with Disabled Local Auth
-
-```hcl
-resource "azurerm_cosmosdb_account" "cosmos" {
-  # ... standard config ...
-  local_authentication_disabled = true   # Required by Azure policy - RBAC only
-}
-```
-
 ### Required: azd-service-name Tag
 
 ```hcl
-resource "azurerm_linux_function_app" "function" {
-  # ... standard config ...
-  tags = {
-    "azd-service-name" = "api"   # MUST match service name in azure.yaml
-  }
+tags = {
+  "azd-service-name" = "api"   # MUST match service name in azure.yaml
 }
 ```
 
-> ⚠️ **Without `azd-service-name` tag, `azd deploy` fails with:**
+> ⚠️ **Without this tag, `azd deploy` fails with:**
 > `resource not found: unable to find a resource tagged with 'azd-service-name: api'`
 
-### Terraform Provider Configuration
+### Disabled Local Auth (Policy Required)
+
+Azure Policy often enforces RBAC-only authentication. Always disable local auth (connection strings, SAS keys) and use managed identity instead.
 
 ```hcl
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"   # Use AzureRM 4.x for latest features
-    }
-  }
-}
+# Storage
+shared_access_key_enabled = false
+
+# Service Bus
+local_auth_enabled = false
+
+# Event Hubs
+local_authentication_enabled = false
+
+# Cosmos DB
+local_authentication_disabled = true
 ```

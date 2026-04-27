@@ -1,35 +1,35 @@
 # Cosmos DB Recipe - Python Eval
 
-## Test Summary
+## MCP Template Validation
 
-| Test | Status | Notes |
-|------|--------|-------|
-| Code Syntax | ✅ PASS | Python v2 model decorator pattern |
-| Cosmos DB Trigger | ✅ PASS | Uses `@app.cosmos_db_trigger` decorator |
-| Change Feed | ✅ PASS | Processes DocumentList |
-| Lease Container | ✅ PASS | Auto-creates lease container |
+| Criteria | Expected | Status |
+|----------|----------|--------|
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Filter by resource | `resource == "cosmos"` finds matches | ✅ PASS |
+| Template scaffolded | `cosmos-trigger-python-azd` | ✅ PASS |
+| Has trigger code | `@app.cosmos_db_trigger` decorator in output | ✅ PASS |
+| Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
+| Has RBAC | Cosmos DB Data Contributor role | ✅ PASS |
 
-## Code Validation
+## Agent Behavior Validation
 
-```python
-# Validated patterns:
-# - @app.cosmos_db_trigger with container_name, database_name
-# - connection="COSMOS_CONNECTION" (UAMI binding)
-# - lease_container_name for change feed tracking
-# - Processes func.DocumentList
+```text
+1. Agent calls: functions_template_get(language: "python")
+2. Agent scans templateList.triggers[] descriptions and resource field
+3. Agent selects: template where resource == "cosmos" → cosmos-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "cosmos-trigger-python-azd")
+5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
-## Configuration Validated
+## Notes
 
-- `COSMOS_CONNECTION__accountEndpoint` - Cosmos endpoint
-- `COSMOS_DATABASE_NAME` - Database name  
-- `COSMOS_CONTAINER_NAME` - Container name
-- Uses extension bundle v4 (no pip package needed)
+- Template names may vary - use `resource` field or `description` to match
+- Never hardcode template names - always discover via list call first
 
 ## Test Date
 
-2025-02-18
+2026-04-22
 
 ## Verdict
 
-**PASS** - Cosmos DB recipe correctly implements change feed trigger with proper v2 model decorators and UAMI binding pattern.
+**PASS** - MCP template provides complete Cosmos DB trigger with IaC, RBAC, and UAMI binding.
