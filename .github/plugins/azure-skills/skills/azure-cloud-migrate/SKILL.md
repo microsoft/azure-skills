@@ -1,10 +1,10 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions, Kubernetes→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, convert serverless to Azure, readiness report, from AWS, from GCP, Cloud Run to Container Apps, Kubernetes to Container Apps, Kubernetes to ACA, GKE to Azure, EKS to Container Apps."
+description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports Lambda→Functions, Fargate→Container Apps, Kubernetes→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, convert serverless, readiness report, from AWS, from GCP, Cloud Run migration, Fargate to ACA, ECS to Container Apps, Kubernetes to ACA, GKE to Azure, EKS to Container Apps."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.3"
+  version: "1.1.4"
 ---
 
 # Azure Cloud Migrate
@@ -27,6 +27,7 @@ metadata:
 | Source | Target | Reference |
 |--------|--------|-----------|
 | AWS Lambda | Azure Functions | [lambda-to-functions.md](references/services/functions/lambda-to-functions.md) ([assessment](references/services/functions/assessment.md), [code-migration](references/services/functions/code-migration.md)) |
+| AWS Fargate (ECS) | Azure Container Apps | [fargate-to-container-apps.md](references/services/container-apps/fargate-to-container-apps.md) ([assessment](references/services/container-apps/fargate-assessment-guide.md), [deployment](references/services/container-apps/fargate-deployment-guide.md)) |
 | Kubernetes (GKE/EKS/Self-hosted) | Azure Container Apps | [k8s-to-container-apps.md](references/services/container-apps/k8s-to-container-apps.md) |
 | GCP Cloud Run | Azure Container Apps | [cloudrun-to-container-apps.md](references/services/container-apps/cloudrun-to-container-apps.md) |
 
