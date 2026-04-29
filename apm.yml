@@ -10,6 +10,6 @@ marketplace:
     url: https://www.microsoft.com
   packages:
     - name: azure
-      description: Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from your coding agent harness.
+      description: Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from your agent harness.
       source: ./.github/plugins/azure-skills
       homepage: https://github.com/microsoft/azure-skills
