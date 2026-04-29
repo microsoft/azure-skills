@@ -214,6 +214,14 @@ git --version
 
 3. Wait for the installation to complete. You should see confirmation that the Azure skills have been successfully added.
 
+### All of the above (APM)
+
+**Install once, use everywhere.** [APM](https://github.com/microsoft/apm) resolves azure-skills into GitHub Copilot, Copilot Cowork, Claude Code, Cursor, Codex, Gemini, and OpenCode from one `apm.yml`:
+
+```bash
+apm install microsoft/azure-skills
+```
+
 ## Sovereign Cloud Configuration
 
 By default, the Azure MCP server connects to the Azure Public Cloud. If you use a sovereign cloud (Azure China Cloud or Azure US Government), you need to configure the MCP server to use the appropriate cloud environment.
