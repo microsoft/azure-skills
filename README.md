@@ -214,9 +214,9 @@ git --version
 
 3. Wait for the installation to complete. You should see confirmation that the Azure skills have been successfully added.
 
-### All of the above (APM)
+### APM (one install, multiple hosts)
 
-**Install once, use everywhere.** [APM](https://github.com/microsoft/apm) resolves azure-skills into GitHub Copilot, Copilot Cowork, Claude Code, Cursor, Codex, Gemini, and OpenCode from one `apm.yml`:
+The Azure Skills Plugin is multi-host. If you use [APM](https://github.com/microsoft/apm), one command installs it across GitHub Copilot, Claude Code, Cursor, OpenCode, Codex, and Gemini from a single `apm.yml`:
 
 ```bash
 apm install microsoft/azure-skills
