@@ -33,7 +33,7 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ### Step 1: Detect and Scan Project
 
-Get the project path from the project context (see Common: Project Context Resolution). Detect the project type by checking for these files:
+Get the project path from the selected agent root in the project context (see Common: Project Context Resolution). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
 
 | Project Type | Detection Files |
 |--------------|-----------------|
@@ -44,7 +44,7 @@ Get the project path from the project context (see Common: Project Context Resol
 | Java (Maven) | `pom.xml` |
 | Java (Gradle) | `build.gradle` |
 
-Delegate an environment variable scan to a sub-agent. Provide the project path and project type. Search source files for these patterns:
+Delegate an environment variable scan to a sub-agent. Provide the selected agent root path and project type. Search source files inside that folder only for these patterns:
 
 | Project Type | Patterns to Search |
 |--------------|--------------------|
@@ -221,17 +221,17 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 
 ## Document Deployment Context
 
-After a successful deployment, persist the deployment context to `<agent-root>/.foundry/agent-metadata.yaml` under the selected environment so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
+After a successful deployment, persist the deployment context to the selected metadata file under `<agent-root>/.foundry/` so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. Local/dev flows should default to `agent-metadata.yaml`; prod or CI-targeted flows can point at `agent-metadata.prod.yaml` or another explicit sidecar file. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
 
 | Metadata Field | Purpose | Example |
 |----------------|---------|---------|
 | `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
 | `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
 | `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
-| `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
-| `environments.<env>.testCases[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
+| `environments.<env>.evaluationSuites[]` | Evaluation bundles for datasets, evaluators, tags, and thresholds | `smoke-core`, `trace-regression-suite` |
+| `environments.<env>.evaluationSuites[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
 
-If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
+If the selected metadata file is a preferred single-environment file, update only that one environment block and leave sibling metadata files untouched. If the selected metadata file is a legacy multi-environment file, merge the selected environment instead of overwriting other environments or cached evaluation suites without confirmation. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` when you persist deployment metadata.
 
 ## After Deployment — Auto-Create Evaluators & Dataset
 
@@ -282,21 +282,22 @@ Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/g
 - Coverage distribution targets and generation rules
 - Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
 - Foundry registration steps (blob upload + `evaluation_dataset_create`)
-- Metadata updates for `agent-metadata.yaml` and `manifest.json`
+- Metadata updates for the selected metadata file and `manifest.json`
 
 Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
 
-The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
+The local filename must start with the selected environment's Foundry agent name (`agentName` in the selected metadata file) before adding stage, environment, or version suffixes.
 
 Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
-### 6. Persist Artifacts and Test Cases
+### 6. Persist Artifacts and Evaluation Suites
 
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test cases in `agent-metadata.yaml` for the selected environment:
+Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
   agent-metadata.yaml
+  agent-metadata.prod.yaml
   evaluators/
     <name>.yaml
   datasets/
@@ -304,11 +305,11 @@ Save evaluator definitions, local datasets, and evaluation outputs under `.found
   results/
 ```
 
-Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one `P0` smoke test case after deployment.
+Each evaluation suite should bundle one dataset with the evaluator list, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: seed`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one smoke suite after deployment. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
 ### 7. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.

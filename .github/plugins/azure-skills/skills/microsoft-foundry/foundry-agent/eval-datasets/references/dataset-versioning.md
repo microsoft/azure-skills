@@ -8,7 +8,7 @@ Use the pattern `<agent-name>-<source>-v<N>`:
 
 | Component | Values | Example |
 |-----------|--------|---------|
-| `<agent-name>` | Selected environment's `agentName` from `agent-metadata.yaml` | `support-bot-prod` |
+| `<agent-name>` | Selected environment's `agentName` from the selected metadata file | `support-bot-prod` |
 | `<source>` | `traces`, `synthetic`, `manual`, `combined` | `traces` |
 | `v<N>` | Incremental version number | `v3` |
 

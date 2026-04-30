@@ -3,23 +3,23 @@
 ## Prerequisites
 
 - Agent deployed and running in the selected environment
-- `.foundry/agent-metadata.yaml` loaded for the active agent root
+- Selected `.foundry/agent-metadata*.yaml` file loaded for the active agent root
 - Evaluators configured (from [Step 1](deploy-and-setup.md) or `.foundry/evaluators/`)
-- Local test dataset available (from `.foundry/datasets/`)
-- Test case selected from the environment's `testCases[]`
+- Local test dataset available (from the selected agent root's `.foundry/datasets/`)
+- Evaluation suite selected from the environment's `evaluationSuites[]`
 
 ## Run Evaluation
 
-Use **`evaluation_agent_batch_eval_create`** to run the selected test case's evaluators against the selected environment's agent.
+Use **`evaluation_agent_batch_eval_create`** to run the selected evaluation suite's evaluators against the selected environment's agent.
 
 ### Required Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `projectEndpoint` | Azure AI Project endpoint from `agent-metadata.yaml` |
+| `projectEndpoint` | Azure AI Project endpoint from the selected metadata file |
 | `agentName` | Agent name for the selected environment |
 | `agentVersion` | Agent version (string, for example `"1"`) |
-| `evaluatorNames` | Array of evaluator names from the selected test case |
+| `evaluatorNames` | Array of evaluator names from the selected evaluation suite |
 
 ### Test Data Options
 
@@ -37,9 +37,9 @@ Before setting `deploymentName`, use **`model_deployment_get`** to list the sele
 |-----------|-------------|
 | `deploymentName` | Required for quality evaluators (the LLM-judge model) |
 | `evaluationId` | Pass existing eval group ID to group runs for comparison |
-| `evaluationName` | Name for a new evaluation group; include environment and test-case ID |
+| `evaluationName` | Name for a new evaluation group; include environment and evaluation-suite ID |
 
-> **Important:** Use `evaluationId` on `evaluation_agent_batch_eval_create` (not `evalId`) to group runs. Run `P0` test cases first unless the user chooses a broader priority band.
+> **Important:** Use `evaluationId` on `evaluation_agent_batch_eval_create` (not `evalId`) to group runs. Run suites tagged `tier=smoke` first unless the user chooses a broader suite tag or a specific suite.
 
 > ⚠️ **Eval-group immutability:** Reuse an existing `evaluationId` only when the dataset comparison setup is unchanged for that group: same evaluator list and same thresholds. If evaluator definitions or thresholds change, create a **new** evaluation group instead of adding another run to the old one.
 

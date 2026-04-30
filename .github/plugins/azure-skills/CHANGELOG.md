@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.25
+
+- fix: update toolbox sample link ([#2078](https://github.com/microsoft/azure-skills/pull/2078))
+
 ## 1.1.22
 
 - fix: Remove context7 MCP server from plugin config ([#2100](https://github.com/microsoft/azure-skills/pull/2100))

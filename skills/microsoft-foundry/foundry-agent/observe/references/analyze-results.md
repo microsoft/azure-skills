@@ -116,19 +116,19 @@ Analyze every row in the results. Group failures into clusters:
 
 Produce a prioritized action table:
 
-| Priority | Cluster | Suggested Action |
-|----------|---------|------------------|
-| P0 | Runtime errors or failing `P0` test cases | Check hosted-agent logs or fix blockers first |
-| P1 | Incorrect answers on key flows | Optimize prompt or tool instructions |
-| P2 | Incomplete answers or broader quality gaps | Optimize prompt or expand context |
-| P3 | Tool call failures | Fix tool definitions or instructions |
-| P4 | Safety violations | Add guardrails to instructions |
+| Focus | Cluster | Suggested Action |
+|-------|---------|------------------|
+| Runtime blockers | Runtime errors or failing suites tagged `tier=smoke` | Check container logs or fix blockers first |
+| Key regressions | Incorrect answers on suites tagged `purpose=regression` or `tier=smoke` | Optimize prompt or tool instructions |
+| Broader quality gaps | Incomplete answers or coverage-oriented suites | Optimize prompt or expand context |
+| Tooling issues | Tool call failures | Fix tool definitions or instructions |
+| Safety issues | Safety violations | Add guardrails to instructions |
 
-**Rule:** Prioritize runtime errors first, then sort by test-case priority (`P0` before `P1` before `P2`) and count × severity.
+**Rule:** Prioritize runtime errors first, then suites tagged `tier=smoke`, then suites tagged `purpose=regression`, then broader coverage suites by count × severity.
 
 ## Step 5 — Dive Into Category
 
-When the user wants to inspect a specific cluster, display the individual rows: test-case ID, input query, the agent's original response, evaluator scores, and failure reason. Let the user confirm which category or test case to optimize.
+When the user wants to inspect a specific cluster, display the individual rows: evaluation-suite ID, input query, the agent's original response, evaluator scores, and failure reason. Let the user confirm which category or evaluation suite to optimize.
 
 ## Next Steps
 

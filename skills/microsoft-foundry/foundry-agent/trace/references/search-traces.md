@@ -5,7 +5,7 @@ Search agent traces at the conversation level. Returns summaries grouped by conv
 ## Prerequisites
 
 - App Insights resource resolved (see [trace.md](../trace.md) Before Starting)
-- Selected agent root and environment confirmed from `.foundry/agent-metadata.yaml`
+- Selected agent root, metadata file, and environment confirmed from `.foundry/agent-metadata*.yaml`
 - Time range confirmed with user (default: last 24 hours)
 
 ## Search by Conversation ID
@@ -160,4 +160,4 @@ union dependencies, requests, exceptions, traces
 
 ## After Successful Query
 
-> 📝 **Reminder:** If this is the first trace query in this session, ensure App Insights connection info was persisted to `.foundry/agent-metadata.yaml` for the selected environment (see [trace.md — Before Starting](../trace.md#before-starting--resolve-app-insights-connection)).
+> 📝 **Reminder:** If this is the first trace query in this session, ensure App Insights connection info was persisted to the selected metadata file for the selected environment (see [trace.md — Before Starting](../trace.md#before-starting--resolve-app-insights-connection)).

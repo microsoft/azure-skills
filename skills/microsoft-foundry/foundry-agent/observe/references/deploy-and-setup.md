@@ -1,6 +1,6 @@
 # Step 1 — Auto-Setup Evaluators & Dataset
 
-> **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), `.foundry` cache and metadata may already be configured. Check `.foundry/evaluators/`, `.foundry/datasets/`, and `.foundry/agent-metadata.yaml` for existing artifacts before re-creating them.
+> **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), `.foundry` cache and metadata may already be configured. Check `.foundry/evaluators/`, `.foundry/datasets/`, and the selected metadata file under the selected agent root before re-creating them.
 >
 > If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, verification, and auto-creates `.foundry` cache after a successful deployment.
 
@@ -10,15 +10,15 @@
 
 ### 1. Read Agent Instructions
 
-Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
+Use **`agent_get`** (or local `agent.yaml` in the selected agent root) to understand the agent's purpose and capabilities.
 
 ### 2. Reuse or Refresh Cache
 
-Inspect `.foundry/evaluators/`, `.foundry/datasets/`, and the selected environment's `testCases[]`.
+Inspect `.foundry/evaluators/`, `.foundry/datasets/`, and the selected environment's `evaluationSuites[]` in the selected agent root only. Do **not** merge sibling agent folders. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, normalize that list to evaluation suites first and plan to rewrite that environment as `evaluationSuites[]` when this step persists metadata.
 
 - **Cache is current** -> reuse it and summarize what is already available.
 - **Cache is missing or stale** -> refresh it after confirming with the user.
-- **User explicitly asks for refresh** -> rebuild and rewrite only the selected environment's cache.
+- **User explicitly asks for refresh** -> rebuild and rewrite only the selected environment's cache in the selected agent root.
 
 ### 2.5 Discover Existing Evaluators
 
@@ -64,19 +64,20 @@ Use **`model_deployment_get`** to list the selected project's actual model deplo
 
 ### 6. Generate Local Test Dataset
 
-Generate the seed rows directly from the agent's instructions and tool capabilities you already resolved during setup. Do **not** call the identified chat-capable deployment for dataset generation; reserve that deployment for quality evaluators. Save the initial seed file to `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` with each line containing at minimum `query` and `expected_behavior` fields (optionally `context`, `ground_truth`).
+Generate the seed rows directly from the selected agent root's instructions and tool capabilities you already resolved during setup. Do **not** call the identified chat-capable deployment for dataset generation; reserve that deployment for quality evaluators. Save the initial seed file to `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` with each line containing at minimum `query` and `expected_behavior` fields (optionally `context`, `ground_truth`).
 
-The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
+The local filename must start with the selected environment's Foundry agent name (`agentName` in the selected metadata file) before adding stage, environment, or version suffixes.
 
 Include `expected_behavior` even though Phase 1 uses built-in evaluators only. That field pre-positions the seed dataset for Phase 2 custom evaluators if the first run reveals gaps that need a per-query behavioral rubric.
 
 Use [Generate Seed Evaluation Dataset](../../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
-### 7. Persist Artifacts and Test Cases
+### 7. Persist Artifacts and Evaluation Suites
 
 ```text
 .foundry/
   agent-metadata.yaml
+  agent-metadata.prod.yaml
   evaluators/
     <name>.yaml
   datasets/
@@ -87,9 +88,9 @@ Use [Generate Seed Evaluation Dataset](../../eval-datasets/references/generate-s
         <run-id>.json
 ```
 
-Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.foundry/datasets/*.jsonl`, and create or update test cases in `agent-metadata.yaml` with:
+Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.foundry/datasets/*.jsonl`, and create or update evaluation suites in the selected metadata file with:
 - `id`
-- `priority` (`P0`, `P1`, `P2`)
+- `tags` (freeform key/value map, for example `tier: smoke`, `purpose: baseline`, `stage: seed`)
 - `dataset` (for example, `<agent-name>-eval-seed`)
 - `datasetVersion` (for example, `v1`)
 - `datasetFile` (for example, `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl`)
@@ -97,10 +98,12 @@ Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.
 - tag values for `agent`, `stage`, and `version`
 - evaluator names and thresholds
 
+If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata. Preserve dataset/evaluator fields and map `priority` to `tags.tier` only when `tags.tier` is missing.
+
 > ⚠️ **Show Data Viewer deeplinks (for VS Code runtime only):** Append a Data Viewer deeplink immediately after reference to a dataset file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis".
 
 ### 8. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
 If yes -> proceed to [Step 2: Evaluate](evaluate-step.md). If no -> stop.

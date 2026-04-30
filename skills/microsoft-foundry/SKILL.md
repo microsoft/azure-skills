@@ -1,10 +1,10 @@
 ---
 name: microsoft-foundry
-description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, prompt optimization, prompt optimizer workflows, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, optimize prompt, improve prompt, prompt optimization, prompt optimizer, improve agent instructions, optimize agent instructions, optimize system prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
+description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, continuous eval, prompt optimizer workflows, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, continuous eval, continuous monitoring, continuous eval status, optimize prompt, improve prompt, prompt optimizer, optimize agent instructions, improve agent instructions, optimize system prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.5"
+  version: "1.1.8"
 ---
 
 # Microsoft Foundry Skill
@@ -25,7 +25,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 |-----------|-------------|-----------|
 | **deploy** | Containerize, build, push to ACR, create/update/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
-| **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, and set up CI/CD monitoring | [observe](foundry-agent/observe/observe.md) |
+| **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, set up CI/CD monitoring, and enable continuous production evaluation | [observe](foundry-agent/observe/observe.md) |
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#, across `responses` or `invocations` protocols. | [create](foundry-agent/create/create.md) |
@@ -54,6 +54,7 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 | Invoke/test/chat with an agent | invoke |
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |
+| Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
 | Troubleshoot an agent issue | invoke → troubleshoot |
 | Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 
@@ -65,12 +66,13 @@ Every agent source folder should keep Foundry-specific state under `.foundry/`:
 <agent-root>/
   .foundry/
     agent-metadata.yaml
+    agent-metadata.prod.yaml
     datasets/
     evaluators/
     results/
 ```
 
-- `agent-metadata.yaml` is the required source of truth for environment-specific project settings, agent names, registry details, and evaluation test cases.
+- `agent-metadata.yaml` is the preferred local/dev metadata file. Optional sidecar files such as `agent-metadata.prod.yaml` can hold a single prod or CI-targeted environment without mixing multiple environments in one file.
 - `datasets/` and `evaluators/` are local cache folders. Reuse them when they are current, and ask before refreshing or overwriting them.
 - See [Agent Metadata Contract](references/agent-metadata-contract.md) for the canonical schema and workflow rules.
 
@@ -85,35 +87,48 @@ Agent skills should run this step **only when they need configuration values the
 
 ### Step 1: Discover Agent Roots
 
-Search the workspace for `.foundry/agent-metadata.yaml`.
+Search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
 
 - **One match** → use that agent root.
 - **Multiple matches** → require the user to choose the target agent folder.
 - **No matches** → for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
 
-### Step 2: Resolve Environment
+After selecting an agent root, keep all local `.foundry` cache inspection, source inspection, evaluator suggestions, dataset suggestions, and prompt-optimization context inside that folder only. Do **not** scan sibling agent folders unless the user explicitly switches roots.
 
-Read `.foundry/agent-metadata.yaml` and resolve the environment in this order:
+### Step 2: Select Metadata File and Resolve Environment
+
+Inside the selected agent root, choose the metadata file in this order:
+1. Metadata filename or path explicitly provided by the user or workflow
+2. If an explicit environment is already known and `.foundry/agent-metadata.<env>.yaml` exists, use that file
+3. `.foundry/agent-metadata.yaml`
+4. If multiple metadata files remain and no rule above selects one, prompt the user to choose
+
+Read the selected metadata file and resolve the environment in this order:
 1. Environment explicitly named by the user
-2. Environment already selected earlier in the session
-3. `defaultEnvironment` from metadata
+2. If the selected metadata file defines exactly one environment, use it
+3. Environment already selected earlier in the session
+4. `defaultEnvironment` from metadata
 
-If the metadata contains multiple environments and none of the rules above selects one, prompt the user to choose. Keep the selected agent root and environment visible in every workflow summary.
+If the selected metadata file still contains multiple environments and none of the rules above selects one, prompt the user to choose. Keep the selected agent root, metadata file, and environment visible in every workflow summary.
+
+If the selected environment exposes older `testSuites[]` metadata but not `evaluationSuites[]`, treat `testSuites[]` as the source for this session and normalize each entry in memory to the `evaluationSuites[]` shape before continuing. If the metadata is older still and only exposes legacy `testCases[]`, normalize that list the same way. Preserve dataset and evaluator fields, keep any existing `tags`, and map legacy `priority` to `tags.tier` only when `tags.tier` is missing: `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage`.
 
 ### Step 3: Resolve Common Configuration
 
-Use the selected environment in `agent-metadata.yaml` as the primary source:
+Use the selected environment in the selected metadata file as the primary source:
 
 | Metadata Field | Resolves To | Used By |
 |----------------|-------------|---------|
 | `environments.<env>.projectEndpoint` | Project endpoint | deploy, invoke, observe, trace, troubleshoot |
 | `environments.<env>.agentName` | Agent name | invoke, observe, trace, troubleshoot |
 | `environments.<env>.azureContainerRegistry` | ACR registry name / image URL prefix | deploy |
-| `environments.<env>.testCases[]` | Dataset + evaluator + threshold bundles | observe, eval-datasets |
+| `environments.<env>.evaluationSuites[]` | Dataset + evaluator + tag bundles | observe, eval-datasets |
 
 ### Step 4: Bootstrap Missing Metadata (Create/Deploy Only)
 
-If create/deploy is initializing a new `.foundry` workspace and metadata fields are still missing, check if `azure.yaml` exists in the project root. If found, run `azd env get-values` and use it to seed `agent-metadata.yaml` before continuing.
+If create/deploy is initializing a new `.foundry` workspace and metadata fields are still missing, check if `azure.yaml` exists in the project root. If found, run `azd env get-values` and use it to seed `agent-metadata.yaml` by default, or `agent-metadata.<env>.yaml` when the workflow explicitly targets a separate environment-specific file.
+
+On any metadata write (deploy, auto-setup, dataset refresh, or trace-to-dataset update), persist only `evaluationSuites[]` in the selected metadata file. If the selected file is a preferred single-environment file, rewrite only that one environment block. If the selected file is a legacy multi-environment file, rewrite only the selected environment block. Never copy or merge environments across sibling metadata files automatically. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite it to `evaluationSuites[]` and remove migrated `priority` fields from the rewritten entries.
 
 | azd Variable | Seeds |
 |-------------|-------|
@@ -124,7 +139,8 @@ If create/deploy is initializing a new `.foundry` workspace and metadata fields 
 ### Step 5: Collect Missing Values
 
 Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, metadata, or azd bootstrap. Common values skills may need:
-- **Agent root** — Target folder containing `.foundry/agent-metadata.yaml`
+- **Agent root** — Target folder containing `.foundry/agent-metadata*.yaml`
+- **Metadata file** — `agent-metadata.yaml` for local/dev, or an explicit sidecar such as `agent-metadata.prod.yaml`
 - **Environment** — `dev`, `prod`, or another environment key from metadata
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Name of the target agent

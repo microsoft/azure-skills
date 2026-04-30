@@ -14,8 +14,10 @@ Extract production traces from App Insights using KQL, transform them into evalu
 ## Prerequisites
 
 - App Insights resource resolved (see [trace skill](../../trace/trace.md) Before Starting)
-- Agent root, environment, and project endpoint available in `.foundry/agent-metadata.yaml`
+- Agent root, selected metadata file, environment, and project endpoint available from `.foundry/agent-metadata*.yaml`
 - Time range confirmed with user (default: last 7 days)
+
+When a repo contains multiple agent roots, this workflow updates only the selected agent root's `.foundry/datasets/`, `.foundry/results/`, and metadata files. Do **not** merge sibling agent folders.
 
 > 💡 **Run all KQL queries** using **`monitor_resource_log_query`** (Azure MCP tool) against the App Insights resource. This is preferred over delegating to the `azure-kusto` skill.
 
