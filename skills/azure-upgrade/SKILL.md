@@ -1,6 +1,6 @@
 ---
 name: azure-upgrade
-description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, migrate hosting plan, change hosting plan, function app SKU, migrate App Service to Container Apps, migrate legacy Azure SDKs for Java, upgrade legacy Azure Java SDK, com.microsoft.azure to com.azure."
+description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, migrate hosting plan, change hosting plan, function app SKU, migrate App Service to Container Apps, migrate legacy Azure SDKs for Java, upgrade legacy Azure Java SDK, com.microsoft.azure to com.azure, migrate Azure Cache for Redis to Azure Managed Redis, ACR to AMR, OSS Redis to AMR, Basic/Standard/Premium Redis migration, P1/P2/C3 cache migration, ACRE to AMR, Enterprise Redis to AMR, Enterprise_E10 / EnterpriseFlash migration, AMR SKU recommendation, Redis cache retirement."
 license: MIT
 compatibility: python3.10+
 metadata:
@@ -21,6 +21,8 @@ metadata:
 | Assess upgrade readiness | "Is my function app ready for Flex Consumption?" |
 | Automate plan migration | "Automate the steps to upgrade my Functions plan" |
 | Modernize legacy Azure Java SDK | "Migrate legacy Azure SDKs for Java", "Upgrade legacy Azure Java SDK", "Migrate my Java project from com.microsoft.azure to com.azure" |
+| Migrate Azure Cache for Redis (ACR/OSS) to Azure Managed Redis (AMR) | "Migrate my Redis cache to AMR", "ACR to AMR", "OSS to AMR", "Upgrade my Premium P2 cache to Managed Redis", "Pick an AMR SKU", "Convert my Bicep/ARM/Terraform Redis template to AMR" |
+| Migrate Azure Cache for Redis Enterprise (ACRE) to Azure Managed Redis (AMR) | "Migrate my Enterprise_E10 cache to AMR", "ACRE to AMR", "Update my ACRE ARM/Bicep template for AMR", "Migrate EnterpriseFlash to AMR", "Migrate my geo-replicated Enterprise Redis" |
 
 ## Rules
 
@@ -39,6 +41,8 @@ metadata:
 |--------|--------|-----------|
 | Azure Functions Consumption Plan | Azure Functions Flex Consumption Plan | [consumption-to-flex.md](references/services/functions/consumption-to-flex.md) |
 | Legacy Azure Java SDK (`com.microsoft.azure.*`) | Modern Azure Java SDK (`com.azure.*`) | [languages/java/README.md](references/languages/java/README.md) |
+| Azure Cache for Redis (ACR/OSS) Basic/Standard/Premium | Azure Managed Redis (AMR) | [services/redis/redis-to-amr.md](references/services/redis/redis-to-amr.md) |
+| Azure Cache for Redis Enterprise (ACRE) / Enterprise Flash | Azure Managed Redis (AMR) | [services/redis/redis-to-amr.md](references/services/redis/redis-to-amr.md) |
 
 > SDK upgrade scenarios (e.g. Java legacy → modern) run a **source-code modernization flow** that is distinct from Azure service/plan/SKU upgrades: follow the scenario reference, **not** the Steps below.
 
@@ -73,6 +77,8 @@ Track progress in `upgrade-status.md` inside the workspace root.
   - [Consumption to Flex Consumption](references/services/functions/consumption-to-flex.md)
   - [Assessment](references/services/functions/assessment.md)
   - [Automation Scripts](references/services/functions/automation.md)
+- **Redis**
+  - [Redis (ACR or ACRE) to AMR Migration](references/services/redis/redis-to-amr.md) — routes to dedicated [amr-migration-skill](https://github.com/AzureManagedRedis/amr-migration-skill) (ACR/OSS) or [acre-to-amr-migration-skill](https://github.com/AzureManagedRedis/acre-to-amr-migration-skill) (Enterprise)
 - **Java SDK Migration Templates**
   - [Plan Template](references/languages/java/templates/PLAN_TEMPLATE.md)
   - [Progress Template](references/languages/java/templates/PROGRESS_TEMPLATE.md)
