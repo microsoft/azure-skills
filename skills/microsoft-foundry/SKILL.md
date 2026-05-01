@@ -4,7 +4,7 @@ description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker bui
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.8"
+  version: "1.1.9"
 ---
 
 # Microsoft Foundry Skill
@@ -32,19 +32,31 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
+| **private-network** | Answer questions about Foundry network isolation **and** deploy Foundry with VNet isolation (BYO VNet, Managed VNet, hybrid). Covers architecture concepts, template selection, deployment, and post-deployment validation. | [resource/private-network/private-network.md](resource/private-network/private-network.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` → agent workflows (`deploy` → `invoke`).
+> 💡 **Tip:** For a complete onboarding flow: `project/create` (public) or `private-network` (VNet isolation) → `models/deploy-model` → agent workflows (`create` → `deploy` → `invoke`).
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
 > 💡 **Prompt Optimization:** For requests like "optimize my prompt" or "improve my agent instructions," load [observe](foundry-agent/observe/observe.md) and use the `prompt_optimize` MCP tool through that eval-driven workflow.
 
+## Infrastructure Lifecycle
+
+Match user intent to the correct infrastructure workflow.
+
+| User Intent | Workflow |
+|-------------|---------|
+| "Create Foundry" / "Set up Foundry" (ambiguous) | Use `AskUserQuestion`: (a) just an AI Services resource, (b) a project with public access, or (c) a project with network isolation? Route: (a) → [resource/create](resource/create/create-foundry-resource.md), (b) → [project/create](project/create/create-foundry-project.md), (c) → [private-network](resource/private-network/private-network.md) |
+| Set up Foundry with VNet isolation | [private-network](resource/private-network/private-network.md) |
+| Create a Foundry project (public) | [project/create](project/create/create-foundry-project.md) |
+| Create a bare Foundry resource | [resource/create](resource/create/create-foundry-resource.md) |
+
 ## Agent Development Lifecycle
 
-Match user intent to the correct workflow. Read each sub-skill in order before executing.
+Match user intent to the correct agent workflow. Read each sub-skill in order before executing.
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
@@ -79,7 +91,6 @@ Every agent source folder should keep Foundry-specific state under `.foundry/`:
 ## Agent: Setup References
 
 - [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
-- [Private Network Standard Agent Setup](references/private-network-standard-agent-setup.md) - Standard setup with VNet isolation and private endpoints.
 
 ## Agent: Project Context Resolution
 
