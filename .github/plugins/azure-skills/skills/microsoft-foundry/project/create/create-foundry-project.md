@@ -1,15 +1,15 @@
 ---
 name: foundry-create-project
 description: |
-  Create a new Azure AI Foundry project using Azure Developer CLI (azd) to provision infrastructure for hosting AI agents and models.
+  Create a new Microsoft Foundry project using Azure Developer CLI (azd) to provision infrastructure for hosting AI agents and models.
   USE FOR: create Foundry project, new AI Foundry project, set up Foundry, azd init Foundry, provision Foundry infrastructure, onboard to Foundry, create Azure AI project, set up AI project.
   DO NOT USE FOR: deploying agents to existing projects (use agent/deploy), creating agent code (use agent/create), deploying AI models from catalog (use microsoft-foundry main skill), Azure Functions (use azure-functions).
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
 
-# Create Azure AI Foundry Project
+# Create Microsoft Foundry Project
 
-Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted agents (capability host + Container Registry).
+Create a new Microsoft Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted agents (capability host + Container Registry).
 
 **Table of Contents:** [Prerequisites](#prerequisites) · [Workflow](#workflow) · [Best Practices](#best-practices) · [Troubleshooting](#troubleshooting) · [Related Skills](#related-skills) · [Resources](#resources)
 

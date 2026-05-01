@@ -36,10 +36,10 @@ az account set --subscription <subscription-id>
 if [ -n "$PROJECT_RESOURCE_ID" ]; then
   echo "Using project resource ID from environment: $PROJECT_RESOURCE_ID"
 else
-  echo "PROJECT_RESOURCE_ID not set. Please provide your Azure AI Foundry project resource ID."
+  echo "PROJECT_RESOURCE_ID not set. Please provide your Microsoft Foundry project resource ID."
   echo ""
   echo "You can find this in:"
-  echo "  • Azure AI Foundry portal → Project → Overview → Resource ID"
+  echo "  • Microsoft Foundry portal → Project → Overview → Resource ID"
   echo "  • Format: /subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}"
   echo ""
   echo "Example: /subscriptions/abc123.../resourceGroups/rg-prod/providers/Microsoft.CognitiveServices/accounts/my-account/projects/my-project"
@@ -370,7 +370,7 @@ RESOURCE_GROUP="$NEW_RESOURCE_GROUP"
 
 **Generate unique deployment name:**
 
-The deployment name should match the model name (e.g., "gpt-4o"), but if a deployment with that name already exists, append a numeric suffix (e.g., "gpt-4o-2", "gpt-4o-3"). This follows the same UX pattern as Azure AI Foundry portal.
+The deployment name should match the model name (e.g., "gpt-4o"), but if a deployment with that name already exists, append a numeric suffix (e.g., "gpt-4o-2", "gpt-4o-3"). This follows the same UX pattern as Microsoft Foundry portal.
 
 Use the `generate_deployment_name` script to check existing deployments and generate a unique name:
 
@@ -657,7 +657,7 @@ echo "Capacity: $(format_capacity $DEPLOY_CAPACITY)"
 echo "Endpoint: $ENDPOINT"
 echo ""
 
-# Generate direct link to deployment in Azure AI Foundry portal
+# Generate direct link to deployment in Microsoft Foundry portal
 DEPLOYMENT_URL=$(bash "$(dirname "$0")/scripts/generate_deployment_url.sh" \
   --subscription "$SUBSCRIPTION_ID" \
   --resource-group "$RESOURCE_GROUP" \
@@ -665,7 +665,7 @@ DEPLOYMENT_URL=$(bash "$(dirname "$0")/scripts/generate_deployment_url.sh" \
   --project "$PROJECT_NAME" \
   --deployment "$DEPLOYMENT_NAME")
 
-echo "🔗 View in Azure AI Foundry Portal:"
+echo "🔗 View in Microsoft Foundry Portal:"
 echo ""
 echo "$DEPLOYMENT_URL"
 echo ""
@@ -688,7 +688,7 @@ echo "  --output table"
 echo ""
 
 echo "Next steps:"
-echo "• Click the link above to test in Azure AI Foundry playground"
+echo "• Click the link above to test in Microsoft Foundry playground"
 echo "• Integrate into your application"
 echo "• Set up monitoring and alerts"
 ```

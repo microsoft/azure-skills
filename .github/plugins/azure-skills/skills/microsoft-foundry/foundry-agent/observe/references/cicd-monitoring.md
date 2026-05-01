@@ -47,6 +47,6 @@ The observe loop does not end at deployment. Continuous monitoring closes the lo
 
 ## Reference
 
-- [Azure AI Foundry Cloud Evaluation](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/cloud-evaluation)
+- [Microsoft Foundry Cloud Evaluation](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/cloud-evaluation)
 - [Hosted Agents](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/hosted-agents)
 - [Continuous Evaluation Reference](continuous-eval.md)

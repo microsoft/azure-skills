@@ -1,6 +1,6 @@
 # Invoke Foundry Agent
 
-Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-turn conversations.
+Invoke and test deployed agents in Microsoft Foundry with single-turn and multi-turn conversations.
 
 ## Quick Reference
 

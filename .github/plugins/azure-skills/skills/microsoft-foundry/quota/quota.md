@@ -191,4 +191,4 @@ See [detailed quota request guide](./references/workflows.md#request-quota-incre
 
 **Calculators:**
 - [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) - Official pricing estimator
-- Azure AI Foundry PTU calculator (Microsoft Foundry → Operate → Quota → Provisioned Throughput Unit tab) - PTU capacity sizing
+- Microsoft Foundry PTU calculator (Microsoft Foundry → Operate → Quota → Provisioned Throughput Unit tab) - PTU capacity sizing

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Generate Azure AI Foundry portal URL for a model deployment
-# This script creates a direct clickable link to view a deployment in the Azure AI Foundry portal
+# Generate Microsoft Foundry portal URL for a model deployment
+# This script creates a direct clickable link to view a deployment in the Microsoft Foundry portal
 
 set -e
 
@@ -11,7 +11,7 @@ Usage: $0 --subscription SUBSCRIPTION_ID --resource-group RESOURCE_GROUP \\
           --foundry-resource FOUNDRY_RESOURCE --project PROJECT_NAME \\
           --deployment DEPLOYMENT_NAME
 
-Generate Azure AI Foundry deployment URL
+Generate Microsoft Foundry deployment URL
 
 Required arguments:
   --subscription        Azure subscription ID (GUID)

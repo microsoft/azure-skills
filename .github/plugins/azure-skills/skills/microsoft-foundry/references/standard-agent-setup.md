@@ -4,7 +4,7 @@
 
 ## Overview
 
-Azure AI Foundry supports two agent setup configurations:
+Microsoft Foundry supports two agent setup configurations:
 
 | Setup | Capability Host | Description |
 |-------|----------------|-------------|

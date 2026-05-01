@@ -135,7 +135,7 @@ Before presenting any deployment options (SKU, capacity), always validate both o
 All deployment modes require:
 - Azure CLI installed and authenticated (`az login`)
 - Active Azure subscription with deployment permissions
-- Azure AI Foundry project resource ID (or agent will help discover it via `PROJECT_RESOURCE_ID` env var)
+- Microsoft Foundry project resource ID (or agent will help discover it via `PROJECT_RESOURCE_ID` env var)
 
 ## Sub-Skills
 

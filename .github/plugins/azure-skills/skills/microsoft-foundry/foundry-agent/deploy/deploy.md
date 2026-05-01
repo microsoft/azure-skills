@@ -1,6 +1,6 @@
 # Foundry Agent Deploy
 
-Create and manage agent deployments in Azure AI Foundry. For hosted agents, this includes the full workflow from containerizing the project to verifying the deployed agent.
+Create and manage agent deployments in Microsoft Foundry. For hosted agents, this includes the full workflow from containerizing the project to verifying the deployed agent.
 
 ## Quick Reference
 
@@ -209,7 +209,7 @@ Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment
 ## Display Agent Information
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
-Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
+Below the table you MUST also display a Playground link for direct access to the agent in Microsoft Foundry:
 
 [Open in Playground](https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion})
 
