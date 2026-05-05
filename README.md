@@ -53,6 +53,14 @@ Before you install, make sure you have:
 - **Azure CLI** installed and authenticated with `az login`
 - **Azure Developer CLI** installed and authenticated with `azd auth login` if you plan to use deployment workflows
 
+### APM (one install, multiple harnesses)
+
+The Azure Skills Plugin is multi-harness. If you use [APM](https://github.com/microsoft/apm), one command installs it across GitHub Copilot, Claude Code, Cursor, OpenCode, Codex, and Gemini from a single `apm.yml`:
+
+```bash
+apm install microsoft/azure-skills
+```
+
 ### GitHub Copilot CLI
 
 **Add the marketplace** (first time only):
