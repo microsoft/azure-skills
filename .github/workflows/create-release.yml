@@ -1,0 +1,54 @@
+name: Create Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  create-release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.title, 'Sync plugin files from GitHub-Copilot-for-Azure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read version from plugin.json
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' plugin.json)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes from CHANGELOG.md
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract content between the version header and the next header
+          NOTES=$(awk "/^## ${VERSION}$/{found=1; next} found && /^## /{exit} found{print}" .github/plugins/azure-skills/CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="Sync release ${VERSION}"
+          fi
+          # Write notes to a temp file to avoid issues with special characters
+          echo "$NOTES" > /tmp/release_notes.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          # Check if the release already exists; skip if so
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping release creation."
+            exit 0
+          fi
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file /tmp/release_notes.md \
+            --target "${{ github.event.pull_request.merge_commit_sha }}"
