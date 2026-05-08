@@ -1,10 +1,10 @@
 ---
 name: azure-hosted-copilot-sdk
-description: "Build, deploy, modify GitHub Copilot SDK apps on Azure. MANDATORY when codebase contains @github/copilot-sdk or CopilotClient — use this skill instead of azure-prepare. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, add feature, modify copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry)."
+description: "Build, deploy, and modify GitHub Copilot SDK apps on Azure. MANDATORY when codebase contains @github/copilot-sdk or CopilotClient in package.json. PREFER OVER azure-prepare when copilot-sdk markers detected. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, build copilot app, prepare copilot app, add feature to copilot app, modify copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: deploying already-prepared copilot-sdk apps (use azure-deploy), general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.2"
+  version: "1.1.3"
 ---
 
 # GitHub Copilot SDK on Azure
@@ -13,7 +13,7 @@ metadata:
 
 > ⚠️ **CRITICAL: This check MUST run before ANY other skill (azure-prepare, azure-deploy, etc.) when an existing codebase is present.**
 
-### Detection procedure (run IMMEDIATELY for any deploy/modify/add-feature prompt):
+### Detection procedure (run IMMEDIATELY for any build/modify/add-feature/prepare prompt):
 
 1. Read `package.json` in the workspace root (and any `*/package.json` one level deep)
 2. Check if `@github/copilot-sdk` or `copilot-sdk` appears in `name`, `dependencies`, or `devDependencies`
@@ -31,12 +31,13 @@ metadata:
 
 | Prompt pattern (no "copilot" keyword) | Why this skill |
 |---------------------------------------|---------------|
-| "Deploy this app to Azure" | Codebase contains `@github/copilot-sdk` |
+| "Build this app" / "Prepare this app for Azure" | Codebase contains `@github/copilot-sdk` - needs SDK-aware scaffolding |
 | "Add a new feature to this app" | Requires SDK-aware implementation patterns |
 | "Update this app" / "Modify this app" | Must preserve SDK integration patterns |
-| "Ship this to production" | Needs copilot-specific infrastructure and token management |
 
-> ⚠️ **Warning:** ANY prompt targeting an existing codebase — deploy, modify, add feature, update, enhance — MUST route to this skill when codebase contains `@github/copilot-sdk`, even if the prompt does not mention "copilot". This skill then orchestrates azure-prepare and azure-deploy as sub-skills.
+> ⚠️ **Warning:** ANY build, modify, add-feature, or prepare prompt targeting an existing codebase MUST route to this skill when codebase contains `@github/copilot-sdk`, even if the prompt does not mention "copilot". This skill then orchestrates azure-prepare and azure-deploy as sub-skills.
+
+> ⚠️ **Yield to azure-deploy:** When the codebase already has `.azure/deployment-plan.md` and the user wants to **deploy** (not modify or add features), route to **azure-deploy** instead. This skill handles preparation; azure-deploy handles execution.
 
 ## Step 1: Route
 

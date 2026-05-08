@@ -5,8 +5,8 @@ Use VPA to get data-driven resource recommendations for rightsizing pods. Always
 ## Enable VPA (Recommendation Mode)
 
 ```bash
-# Install VPA (if not present)
-kubectl apply -f https://github.com/kubernetes/autoscaler/releases/latest/download/vertical-pod-autoscaler.yaml
+# Enable VPA addon on AKS cluster (if not already enabled)
+az aks update --enable-vpa --resource-group <RESOURCE_GROUP> --name <CLUSTER_NAME>
 
 # Create a VPA object in recommendation mode for a deployment
 kubectl apply -f - <<EOF

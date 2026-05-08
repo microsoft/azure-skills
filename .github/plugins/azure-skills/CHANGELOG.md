@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.38
+
+- fix: improve azure-hosted-copilot-sdk routing for codebase-detection scenarios ([#1857](https://github.com/microsoft/azure-skills/pull/1857))
+
 ## 1.1.33
 
 - feature: Feature/azure compute/enablemachinemanagement ([#2069](https://github.com/microsoft/azure-skills/pull/2069))
