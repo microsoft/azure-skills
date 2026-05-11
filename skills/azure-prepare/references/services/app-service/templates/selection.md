@@ -44,6 +44,13 @@ Cross-reference with [App Service overview](https://learn.microsoft.com/en-us/az
 7. DEFAULT → Web API base template by runtime (see [web-api.md](web-api.md))
 ```
 
+## Base Templates
+
+| Scenario | Template Reference |
+|----------|-------------------|
+| Full-stack web app with server-side rendering | [web-app.md](web-app.md) |
+| REST API / headless backend (default) | [web-api.md](web-api.md) |
+
 ## Recipe Types
 
 | Type | IaC Delta? | Examples |

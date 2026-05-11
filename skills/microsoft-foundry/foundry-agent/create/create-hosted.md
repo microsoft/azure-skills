@@ -279,6 +279,27 @@ Apply these to both greenfield and brownfield projects:
 
 6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
+7. **Reserved environment variables** — The Foundry platform injects environment variables into every hosted agent container at startup. You MUST NOT generate, suggest, or configure any of these in `.env` files, `agent.yaml` `environment_variables`, or application code:
+
+   **Blocked prefixes** (any variable starting with these is reserved):
+   - `FOUNDRY_*` — platform-injected identity, session, project, and toolset variables
+   - `AGENT_*` — reserved for platform use
+
+   **Exact reserved names** (platform-managed, overwritten at runtime):
+   - `PORT` — HTTP listen port (default `8088`)
+   - `HOME` — session filesystem path (`/home/session`)
+   - `SSE_KEEPALIVE_INTERVAL` — SSE keep-alive config
+   - `APPLICATIONINSIGHTS_CONNECTION_STRING` — observability
+   - `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP collector endpoint
+
+   **Key `FOUNDRY_*` variables available at runtime** (read-only, do not set):
+   - `FOUNDRY_PROJECT_ENDPOINT` — project endpoint URL for calling Azure services
+   - `FOUNDRY_AGENT_NAME` — the deployed agent's name
+   - `FOUNDRY_AGENT_VERSION` — the deployed agent's version
+   - `FOUNDRY_TOOLBOX_ENDPOINT` — MCP-compatible toolbox endpoint (if toolbox is configured)
+
+   If user code needs to read these values at runtime (e.g., `FOUNDRY_PROJECT_ENDPOINT` to call Azure services), read them from the environment — do not set or override them.
+
 ## Coding Tips
 
 Use these when generating or modifying project code:

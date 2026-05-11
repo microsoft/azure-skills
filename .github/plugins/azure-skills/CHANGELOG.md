@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.41
+
+- fix: update foundry-agent invoke skill for invocations protocol ([#2154](https://github.com/microsoft/azure-skills/pull/2154))
+
 ## 1.1.38
 
 - fix: improve azure-hosted-copilot-sdk routing for codebase-detection scenarios ([#1857](https://github.com/microsoft/azure-skills/pull/1857))
