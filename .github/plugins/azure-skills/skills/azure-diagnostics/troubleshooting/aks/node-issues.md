@@ -17,7 +17,7 @@ kubectl describe node <node-name>
 | `Ready`              | `False` | kubelet stopped reporting         | SSH to node; if unrecoverable, consider cordon/drain/delete\* |
 | `MemoryPressure`     | `True`  | Node running out of memory        | Evict pods; scale out pool; reduce pod density                |
 | `DiskPressure`       | `True`  | OS disk or ephemeral storage full | Check logs and images; clean up or increase disk              |
-| `PIDPressure`        | `True`  | Too many processes                | App spawning excessive threads/processes                      |
+| `PIDPressure`        | `True`  | Too many processes                | App spawning excessive threads/processes; use IG `snapshot_process` |
 | `NetworkUnavailable` | `True`  | CNI plugin issue                  | Check CNI pods in kube-system; node network config            |
 
 \*Only after explicit user request for remediation and confirmation of workload impact.
@@ -104,6 +104,10 @@ kubectl debug node/<node> -it --image=mcr.microsoft.com/cbl-mariner/base/core:2.
 ```
 
 Common culprit: high-volume container logs accumulating in `/var/log/containers`.
+
+**Deep diagnostics with Inspektor Gadget** (PID pressure or unknown process load):
+
+Use `snapshot_process` (timeout 5) to list all processes on the node. For node-wide scope, omit pod filters. See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
 ---
 

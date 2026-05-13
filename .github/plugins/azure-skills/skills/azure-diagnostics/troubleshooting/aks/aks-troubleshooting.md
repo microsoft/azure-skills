@@ -20,6 +20,8 @@ Primary AKS troubleshooting guide for incidents routed from [../../SKILL.md](../
 
 When gathering AKS diagnostic evidence, prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool that fits the read, then supporting Azure tools such as `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only when the AKS-MCP surface cannot perform the needed check.
 
+When standard diagnostics do not reveal root cause, use **Inspektor Gadget** for real-time, low-level node and pod observability (DNS traces, TCP traces, process snapshots, file access traces). See [references/inspektor-gadget.md](references/inspektor-gadget.md) for the gadget catalog, command patterns, and symptom-to-gadget mapping.
+
 See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md)
 
 ## Required Inputs
@@ -47,6 +49,7 @@ If cluster identity is missing, stop and ask for it.
 1. Azure-side state first: cluster state, resource health, recent operations, node pool state, detector or monitoring output.
 2. Kubernetes-side state second: cluster reachability, nodes, `kube-system`, events, affected namespace, pod detail, logs.
 3. Use detector, warning-event, or metrics modes when the incoming data already matches them.
+4. Deep diagnostics; when steps 1–3 do not reveal root cause, use [inspektor-gadget.md](references/inspektor-gadget.md) for real-time tracing and snapshots on the affected node.
 
 ## Workflow
 
