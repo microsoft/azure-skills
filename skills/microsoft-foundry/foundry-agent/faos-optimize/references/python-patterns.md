@@ -133,17 +133,45 @@ Use `python-dotenv` when local `.env` support exists. Use `azure-identity` when 
 
 ## Environment Variables
 
-Supported optimization variables:
+The canonical local `agent_optimization` package uses these optimization variables:
 
 | Variable | Purpose |
-|----------|---------|
+| -------- | ------- |
 | `AGENT_OPTIMIZATION_CONFIG` | Inline JSON config from the optimization service |
 | `OPTIMIZATION_CONFIG` | Non-reserved inline JSON fallback |
 | `AGENT_OPTIMIZATION_CANDIDATE_ID` | Candidate identifier to resolve from a service |
 | `AGENT_OPTIMIZATION_RESOLVE_ENDPOINT` | Resolver API base URL |
 | `AGENT_OPTIMIZATION_SKILLS_DIR` | Download location for candidate skill files |
 
-Do not add all of these to `agent.yaml` by default. Add only the variables required for the user's intended optimization path.
+Do not add all of these to `agent.yaml` by default. For hosted agent vNext, do not place `AGENT_*` variables in the user-authored deployment payload because they are platform-reserved there. Use the optimization service/runtime injection path or local development environment for `AGENT_OPTIMIZATION_*`, and use `OPTIMIZATION_CONFIG` only when an inline non-reserved fallback is explicitly needed.
+
+Do not generate `FAOS_OPTIMIZATION_*` aliases in the base package unless the user explicitly requests a compatibility adapter. The reference package and FAOS contract use `AGENT_OPTIMIZATION_*` plus `OPTIMIZATION_CONFIG`.
+
+## Canonical Local Package
+
+When the target repository does not already provide an optimization package, add this split-file package rather than a single-file loader:
+
+```text
+agent_optimization/
+    __init__.py
+    _config.py
+    _resolver.py
+```
+
+`__init__.py` should only re-export the public API:
+
+```python
+"""Agent optimization config loader for hosted agents."""
+
+from agent_optimization._config import OptimizationConfig, Skill, load_config
+
+__all__ = ["OptimizationConfig", "Skill", "load_config"]
+__version__ = "0.1.0"
+```
+
+`_config.py` owns `Skill`, `OptimizationConfig`, `load_config`, default fallback behavior, inline config parsing, and candidate config handoff.
+
+`_resolver.py` owns candidate resolution, using `{endpoint}/candidates/{candidate_id}/config` for resolved config, optional skill-file download from the candidate manifest, and `DefaultAzureCredential` with the `https://ml.azure.com/.default` scope.
 
 ## Verification Checklist
 

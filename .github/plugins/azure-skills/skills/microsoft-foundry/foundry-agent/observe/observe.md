@@ -74,6 +74,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 14. **Use a two-phase evaluator strategy.** Phase 1 is built-in only: `relevance`, `task_adherence`, `intent_resolution`, `indirect_attack`, and `builtin.tool_call_accuracy` when the agent uses tools. Generate seed datasets with `query` and `expected_behavior` so Phase 2 can reuse or create targeted custom evaluators only after the first run exposes gaps.
 15. **Account for LLM judge knowledge cutoff.** When the agent uses real-time data sources (web search, Bing Grounding, live APIs), the LLM judge's training cutoff means it cannot verify current facts. Custom evaluators that score factual accuracy or behavioral adherence will produce systematic false negatives - flagging the agent's real-time data as "fabricated" or "beyond knowledge cutoff." Mitigations: (a) instruct the evaluator prompt to accept sourced claims it cannot verify, (b) use `expected_behavior` rubrics that describe the shape of a good answer rather than specific facts, (c) flag suspected knowledge-cutoff false negatives in the failure analysis rather than treating them as real failures.
 16. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis". This applies to files in `.foundry/datasets/`, `.foundry/results/`.
+17. **Use the custom evaluator output contract.** When creating custom evaluator prompts, treat the MCP/tool-enforced output schema as authoritative: `result` plus `reason`. Do **not** include or preserve conflicting user-provided output instructions such as `score`/`reasoning`, duplicate `OUTPUT FORMAT` blocks, markdown, or alternate JSON schemas in `promptText`. If the user provides a judge prompt that contains its own return schema, keep the rubric and placeholders but rewrite or remove the output-format section so it cannot conflict with the enforced `result`/`reason` contract.
 
 ## Two-Phase Evaluator Strategy
 
@@ -102,6 +103,8 @@ promptText: |
 ```
 
 > 💡 **Tip:** This evaluator scores against the per-query behavioral rubric in `expected_behavior`, not just the agent's global instructions. That usually produces a cleaner signal when broad built-in judges are directionally correct but too coarse for optimization.
+
+> ⚠️ **Output contract:** Do not add `Return JSON: {"score": ...}` or any extra output-format block to custom evaluator `promptText`. The evaluator runtime appends and enforces the final JSON contract (`result` and `reason`). If a user-supplied rubric asks for `score`/`reasoning`, normalize that wording to `result`/`reason` or omit the output schema entirely before calling `evaluator_catalog_create`.
 
 ## Related Skills
 
