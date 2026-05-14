@@ -19,11 +19,11 @@ DO NOT USE FOR: non-Python agents, deploying an agent directly, running batch ev
 ## Quick Reference
 
 | Property | Value |
-|----------|-------|
+| -------- | ----- |
 | Supported language | Python |
 | Required pattern | `from agent_optimization import load_config` |
 | Required knobs | instructions, model |
-| Optional knobs | temperature, skills directory, learned skills, max tokens, tool/retrieval options when safe |
+| Optional knobs | temperature, skills directory, learned skills, tool/retrieval options when safe |
 | Review gate | Mandatory before deploy |
 | Next workflow | [deploy](../deploy/deploy.md) after user approval |
 
@@ -80,7 +80,7 @@ Create an internal inventory with file path, symbol/name, role, current default,
 Classify the architecture before editing:
 
 | Topology | Default FAOS targeting |
-|----------|------------------------|
+| -------- | ---------------------- |
 | Single agent | Wire config directly to the agent's instructions/model/options |
 | Multi-agent with obvious orchestrator/supervisor | Target the orchestrator by default, unless evaluator context points elsewhere |
 | Multi-agent with specialist tool agent | Target the specialist/tool path when evaluators focus on tool or task behavior |
@@ -94,7 +94,7 @@ Do not collapse multiple role-specific prompts into a single global `SYSTEM_PROM
 Use evaluator context to select the smallest meaningful optimization scope.
 
 | Evaluator signal | Prefer these knobs first |
-|------------------|--------------------------|
+| ---------------- | ------------------------ |
 | `relevance` | final response instructions, answer synthesis prompt, model choice |
 | `task_adherence` | primary task instructions, specialist instructions, response constraints |
 | `intent_resolution` | router/orchestrator prompt, classifier prompt, planner prompt, handoff descriptions |
@@ -169,13 +169,41 @@ For multi-agent code, prefer named config variables such as `orchestrator_config
 
 If the agent already has an `agent_optimization` package, reuse it and avoid overwriting user changes.
 
-If missing, add a minimal local package with:
+If missing, add the canonical local package structure:
+
+```text
+agent_optimization/
+    __init__.py
+    _config.py
+    _resolver.py
+```
+
+The package must expose the public API from `__init__.py`:
+
+```python
+"""Agent optimization config loader for hosted agents."""
+
+from agent_optimization._config import OptimizationConfig, Skill, load_config
+
+__all__ = ["OptimizationConfig", "Skill", "load_config"]
+__version__ = "0.1.0"
+```
+
+Implement `_config.py` and `_resolver.py` with the reference contract:
 
 - `load_config(...)`
 - `OptimizationConfig`
 - `Skill`
+- graceful fallback to defaults when no optimization config is present
 - environment-variable fallback support for `AGENT_OPTIMIZATION_CONFIG` and `OPTIMIZATION_CONFIG`
 - optional candidate resolver support for `AGENT_OPTIMIZATION_CANDIDATE_ID` and `AGENT_OPTIMIZATION_RESOLVE_ENDPOINT`
+- candidate config resolution from `{endpoint}/candidates/{candidate_id}/config`
+- optional candidate skill-file download from `{endpoint}/candidates/{candidate_id}` and `{endpoint}/candidates/{candidate_id}/files?path=...`
+- resolver token acquisition with `DefaultAzureCredential().get_token("https://ml.azure.com/.default")`
+
+Do not collapse the package into a single source file when creating new conversions. The split files make the config loader and resolver easier to compare, test, and update.
+
+Do not introduce alternate `FAOS_OPTIMIZATION_*` environment variable names in the generated package unless the user explicitly asks for a compatibility adapter. The base FAOS contract uses `AGENT_OPTIMIZATION_*` and `OPTIMIZATION_CONFIG`.
 
 Do not assume a public PyPI package exists. Keep the local package self-contained unless the repository already uses a shared internal package.
 
@@ -188,7 +216,7 @@ Update Python dependency files only as needed:
 
 Use `load_dotenv(override=False)` so Foundry runtime environment variables win over local `.env` values.
 
-Do not automatically add optimization env vars to `agent.yaml`. If the user wants env var placeholders, add only the required ones for their workflow and keep optional optimization vars documented rather than injected by default.
+Do not automatically add optimization env vars to `agent.yaml`. Hosted agent vNext reserves platform-owned `AGENT_*` variables in deployment payloads, so `AGENT_OPTIMIZATION_*` values should come from the optimization/runtime path or local development environment, not from user-authored `agent.yaml` container variables. If the user wants env var placeholders, add only non-reserved variables required for their workflow and keep optional optimization vars documented rather than injected by default.
 
 ### Step 11: Verify
 

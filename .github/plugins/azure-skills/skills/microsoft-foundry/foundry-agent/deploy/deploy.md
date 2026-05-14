@@ -267,7 +267,7 @@ Start with <=5 built-in evaluators for the initial eval run so the first pass st
 
 After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
 
-If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring.
+If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring. When creating custom evaluator `promptText`, preserve the rubric but remove or rewrite user-provided output-format instructions that conflict with the runtime-enforced `result`/`reason` JSON contract (for example, `score`/`reasoning` schemas or duplicate `OUTPUT FORMAT` blocks).
 
 ### 4. Identify LLM-Judge Deployment
 

@@ -47,6 +47,7 @@ When Phase 2 is needed:
 1. Call **`evaluator_catalog_get`** again and reuse an existing custom evaluator if it already covers the gap.
 2. Only if the catalog still lacks the required signal, use **`evaluator_catalog_create`** with the selected environment's project endpoint.
 3. Prefer evaluators that consume `expected_behavior`, as described in the [Two-Phase Evaluator Strategy](../observe.md), so scoring can follow the per-query rubric instead of only the global agent instructions.
+4. Before passing `promptText` to `evaluator_catalog_create`, remove or rewrite any user-provided output-format instructions that conflict with the custom evaluator contract. The runtime-enforced JSON fields are `result` and `reason`; do not preserve alternate schemas such as `score`/`reasoning` or duplicate mandatory output blocks.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -54,7 +55,7 @@ When Phase 2 is needed:
 | `name` | ✅ | For example, `domain_accuracy`, `citation_quality` |
 | `category` | ✅ | `quality`, `safety`, or `agents` |
 | `scoringType` | ✅ | `ordinal`, `continuous`, or `boolean` |
-| `promptText` | ✅* | Template with `{{query}}`, `{{response}}`, and `{{expected_behavior}}` placeholders when behavior-specific scoring is needed |
+| `promptText` | ✅* | Template with `{{query}}`, `{{response}}`, and `{{expected_behavior}}` placeholders when behavior-specific scoring is needed. Keep rubric instructions, but omit conflicting output JSON schemas; the runtime enforces `result` and `reason`. |
 | `minScore` / `maxScore` | | Default: 1 / 5 |
 | `passThreshold` | | Scores >= this value pass |
 
