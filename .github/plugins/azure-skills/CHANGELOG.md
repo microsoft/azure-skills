@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.47
+
+- feat(azure-diagnostics/inspektor-gadget): Use correct filter for tcpdump gadget ([#2292](https://github.com/microsoft/azure-skills/pull/2292))
+
 ## 1.1.46
 
 - feat(microsoft-foundry): add Tracing Insights API skill for automated anomaly detection ([#2276](https://github.com/microsoft/azure-skills/pull/2276))
