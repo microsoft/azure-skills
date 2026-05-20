@@ -6,24 +6,14 @@ on:
       - main
     paths:
       - ".github/workflows/pages.yml"
-      - "astro.config.mjs"
-      - "package-lock.json"
-      - "package.json"
-      - "postcss.config.mjs"
-      - "public/**"
-      - "src/**"
+      - "landing-page/**"
       - "skills/**"
       - "plugin.json"
       - "gemini-extension.json"
   pull_request:
     paths:
       - ".github/workflows/pages.yml"
-      - "astro.config.mjs"
-      - "package-lock.json"
-      - "package.json"
-      - "postcss.config.mjs"
-      - "public/**"
-      - "src/**"
+      - "landing-page/**"
       - "skills/**"
       - "plugin.json"
       - "gemini-extension.json"
@@ -50,6 +40,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: landing-page/package-lock.json
 
       - name: Setup Pages
         if: github.event_name != 'pull_request'
@@ -58,16 +49,18 @@ jobs:
           enablement: true
 
       - name: Install dependencies
+        working-directory: landing-page
         run: npm ci
 
       - name: Build
+        working-directory: landing-page
         run: npm run build
 
       - name: Upload artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: landing-page/dist
 
   deploy:
     if: github.event_name != 'pull_request'

@@ -3,6 +3,7 @@
 Azure work is not just a code problem. It is a decision problem: which service fits this app, what needs to be validated before deployment, which tools should run, and what guardrails matter. The Azure Skills Plugin packages Azure expertise and MCP-backed execution together so compatible coding agents can do real Azure work instead of giving generic cloud advice.
 
 **[Explore the Azure Skills site](https://microsoft.github.io/azure-skills/)**
+**[Landing page maintenance guide](landing-page/README.md)**
 
 **[Install the plugin](#install-in-60-seconds)**
 
@@ -328,6 +329,7 @@ If you are exploring or customizing the plugin source, the key pieces are:
 
 - `.github/plugins/azure-skills/skills/` - the Azure skill definitions
 - `.github/plugins/azure-skills/.mcp.json` - included MCP configuration for Azure and Foundry
+- `landing-page/` - Astro GitHub Pages site source and maintenance guide
 - `README.md` - high-level overview and install guide for the plugin
 
 ## Troubleshooting

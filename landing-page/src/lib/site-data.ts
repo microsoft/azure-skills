@@ -2,7 +2,8 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 
-const root = process.cwd();
+const runtimeCwd = process.cwd();
+const repositoryRoot = path.basename(runtimeCwd) === "landing-page" ? path.resolve(runtimeCwd, "..") : runtimeCwd;
 const repository = "https://github.com/microsoft/azure-skills";
 
 type SkillFrontmatter = {
@@ -429,7 +430,7 @@ export async function getSiteData() {
 }
 
 async function getSkills(): Promise<SkillCard[]> {
-  const skillsRoot = path.join(root, "skills");
+  const skillsRoot = path.join(repositoryRoot, "skills");
   const entries = await readdir(skillsRoot, { withFileTypes: true });
   const cards = await Promise.all(
     entries
@@ -613,7 +614,7 @@ function getInstallSurfaces(pluginVersion: string, geminiVersion: string): Insta
 }
 
 async function readJson<T>(relativePath: string): Promise<T> {
-  const content = await readFile(path.join(root, relativePath), "utf8");
+  const content = await readFile(path.join(repositoryRoot, relativePath), "utf8");
   return JSON.parse(content) as T;
 }
 
@@ -624,4 +625,3 @@ function toTitleCase(value: string) {
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(" ");
 }
-
