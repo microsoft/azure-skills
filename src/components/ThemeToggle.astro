@@ -1,0 +1,43 @@
+---
+---
+
+<button
+  type="button"
+  class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-950/10 bg-white text-azure-ink transition hover:border-azure-blue/35 hover:bg-azure-tint dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+  data-theme-toggle
+  aria-label="Toggle color theme"
+>
+  <span class="theme-toggle-icon" aria-hidden="true"></span>
+</button>
+
+<script is:inline>
+  (() => {
+    const key = "azure-skills-theme";
+    const button = document.querySelector("[data-theme-toggle]");
+
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const updateLabel = () => {
+      const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      button.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} theme`);
+    };
+
+    button.addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+
+      try {
+        localStorage.setItem(key, next);
+      } catch (error) {
+        console.warn("Unable to save theme preference.", error);
+      }
+
+      updateLabel();
+    });
+
+    updateLabel();
+  })();
+</script>
+

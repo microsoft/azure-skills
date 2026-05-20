@@ -1,0 +1,26 @@
+---
+import { Icon } from "astro-icon/components";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-slate-950/10 bg-slate-50/80 px-5 py-10 text-sm text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 sm:px-8">
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+    <div>
+      <p class="font-semibold text-azure-ink dark:text-white">Azure Skills</p>
+      <p class="mt-1 max-w-2xl">Azure expertise and MCP-backed execution for compatible coding agents.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-4">
+      <a class="inline-flex items-center gap-2 transition hover:text-azure-blue dark:hover:text-azure-cyan" href="https://github.com/microsoft/azure-skills">
+        <Icon name="lucide:github" class="h-4 w-4" />
+        GitHub
+      </a>
+      <a class="inline-flex items-center gap-2 transition hover:text-azure-blue dark:hover:text-azure-cyan" href="https://learn.microsoft.com/azure/">
+        <Icon name="lucide:book-open" class="h-4 w-4" />
+        Azure docs
+      </a>
+      <span>&copy; {year} Microsoft</span>
+    </div>
+  </div>
+</footer>
+

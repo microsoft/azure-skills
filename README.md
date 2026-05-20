@@ -2,13 +2,15 @@
 
 Azure work is not just a code problem. It is a decision problem: which service fits this app, what needs to be validated before deployment, which tools should run, and what guardrails matter. The Azure Skills Plugin packages Azure expertise and MCP-backed execution together so compatible coding agents can do real Azure work instead of giving generic cloud advice.
 
+**[Explore the Azure Skills site](https://microsoft.github.io/azure-skills/)**
+
 **[Install the plugin](#install-in-60-seconds)**
 
 ## One install, three layers of capability
 
 ### Azure skills: the brain
 
-This plugin ships **25 curated Azure skills** that teach an agent how Azure work gets done. They provide workflows, decision trees, and guardrails for scenarios such as:
+This plugin ships **curated Azure skills** that teach an agent how Azure work gets done. They provide workflows, decision trees, and guardrails for scenarios such as:
 
 - **Build, deploy, and evolve** with `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-upgrade`, `azure-enterprise-infra-planner`, `azure-hosted-copilot-sdk`, `azure-kubernetes`, and `airunway-aks-setup`
 - **Troubleshoot, monitor, and govern** with `azure-diagnostics`, `appinsights-instrumentation`, `azure-compliance`, `azure-resource-lookup`, and `azure-quotas`

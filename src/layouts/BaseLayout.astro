@@ -1,0 +1,55 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const assetVersion = "2026-05-20-azure-logo";
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={`${base}favicon.svg?v=${assetVersion}`} type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(`${base}og-image.svg?v=${assetVersion}`, Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title}</title>
+    <script is:inline>
+      (() => {
+        const key = "azure-skills-theme";
+        const root = document.documentElement;
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const requestedTheme = new URL(window.location.href).searchParams.get("theme");
+
+        try {
+          if (requestedTheme === "light" || requestedTheme === "dark") {
+            root.dataset.theme = requestedTheme;
+            return;
+          }
+
+          const stored = localStorage.getItem(key);
+          root.dataset.theme = stored === "light" || stored === "dark" ? stored : prefersDark ? "dark" : "light";
+        } catch (error) {
+          console.warn("Unable to read theme preference.", error);
+          root.dataset.theme = prefersDark ? "dark" : "light";
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

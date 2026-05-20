@@ -1,0 +1,17 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  icon: string;
+  label: string;
+  compact?: boolean;
+}
+
+const { icon, label, compact = false } = Astro.props;
+---
+
+<span class:list={["vendor-badge", compact && "vendor-badge-compact"]} aria-label={label}>
+  <Icon name={icon} class="h-4 w-4" aria-hidden="true" />
+  {!compact && <span>{label}</span>}
+</span>
+

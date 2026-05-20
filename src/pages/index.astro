@@ -1,0 +1,260 @@
+---
+import { Icon } from "astro-icon/components";
+import Footer from "../components/Footer.astro";
+import InstallTabs from "../components/InstallTabs.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getSiteData } from "../lib/site-data";
+
+const { repository, skills, categories, manifests, installSurfaces, capabilities, workflows } = await getSiteData();
+const base = import.meta.env.BASE_URL;
+const assetVersion = "2026-05-20-azure-logo";
+const title = "Azure Skills for AI coding agents";
+const description =
+  "Install Azure Skills for AI coding agents: Azure workflows, MCP-backed tools, Foundry guidance, deployment guardrails, diagnostics, cost, and governance support.";
+
+const heroStats = [
+  { label: "skills", value: skills.length, icon: "lucide:layers" },
+  { label: "plugin", value: manifests.plugin.version, icon: "lucide:plug" },
+  { label: "hosts", value: installSurfaces.length, icon: "lucide:monitor-cog" }
+] as const;
+
+const navLinks = [
+  { label: "Install", href: "#install" },
+  { label: "Capabilities", href: "#capabilities" },
+  { label: "Skills", href: "#skills" },
+  { label: "Workflows", href: "#workflows" }
+] as const;
+
+const skillColorClasses = [
+  "text-azure-blue bg-azure-tint border-azure-blue/15 dark:bg-azure-blue/20 dark:text-azure-cyan dark:border-azure-cyan/20",
+  "text-azure-navy bg-blue-50 border-blue-200 dark:bg-blue-500/20 dark:text-blue-100 dark:border-blue-200/20",
+  "text-azure-teal bg-cyan-50 border-cyan-200 dark:bg-azure-cyan/15 dark:text-cyan-100 dark:border-cyan-200/20",
+  "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-400/15 dark:text-emerald-100 dark:border-emerald-200/20",
+  "text-violet-700 bg-violet-50 border-violet-200 dark:bg-violet-400/15 dark:text-violet-100 dark:border-violet-200/20"
+] as const;
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="relative isolate overflow-hidden bg-white text-azure-ink dark:bg-azure-dark dark:text-white">
+    <header class="sticky top-0 z-40 border-b border-slate-950/10 bg-white/85 backdrop-blur dark:border-white/10 dark:bg-azure-dark/85">
+      <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
+        <a class="flex items-center gap-3 rounded-xl text-azure-ink transition hover:text-azure-blue dark:text-white dark:hover:text-azure-cyan" href="#top" aria-label="Azure Skills home">
+          <img class="h-10 w-10 object-contain" src={`${base}brand/azure-skills-mark.svg?v=${assetVersion}`} alt="" width="40" height="40" />
+          <span class="hidden text-sm font-semibold tracking-[-0.01em] sm:inline">Azure Skills</span>
+        </a>
+        <nav class="hidden items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300 md:flex" aria-label="Primary navigation">
+          {navLinks.map((link) => (
+            <a class="rounded-lg transition hover:text-azure-ink dark:hover:text-white" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <div class="flex items-center gap-2">
+          <ThemeToggle />
+          <a class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-950/10 bg-white text-azure-ink transition hover:border-azure-blue/35 hover:bg-azure-tint dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]" href={repository} aria-label="Open microsoft/azure-skills on GitHub">
+            <Icon name="lucide:github" class="h-5 w-5" />
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <section id="top" class="mx-auto grid w-full max-w-7xl gap-8 px-5 pb-10 pt-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:pb-14 lg:pt-20">
+      <div>
+        <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-azure-blue/20 bg-azure-tint px-3 py-1.5 text-sm font-semibold text-azure-blue dark:border-azure-cyan/25 dark:bg-azure-blue/15 dark:text-azure-cyan">
+          <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+          Azure expertise for AI coding agents
+        </p>
+        <h1 class="text-balance max-w-4xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-azure-ink dark:text-white sm:text-5xl sm:leading-[1.06] lg:text-[4.25rem] lg:leading-[1.05]">
+          Install once. Give agents an <span class="text-azure-blue dark:text-azure-cyan">Azure-native</span> path from idea to cloud.
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+          Azure Skills packages Azure workflows, MCP-backed execution, and Foundry guidance so compatible agents can plan, validate, deploy, diagnose, and optimize with cloud-specific guardrails.
+        </p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-azure-blue px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-azure-navy dark:bg-azure-cyan dark:text-azure-ink dark:hover:bg-white" href="#install">
+            <Icon name="lucide:download" class="h-4 w-4" />
+            Start with installation
+          </a>
+          <a class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-950/10 bg-white px-5 py-3 text-sm font-semibold text-azure-ink transition hover:-translate-y-0.5 hover:border-azure-blue/30 hover:bg-azure-tint dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]" href="#skills">
+            <Icon name="lucide:map" class="h-4 w-4" />
+            Explore skills
+          </a>
+        </div>
+      </div>
+
+      <aside class="surface-card relative isolate overflow-hidden p-5 sm:p-6" aria-label="Azure Skills summary">
+        <div class="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-azure-cyan/30 blur-3xl dark:bg-azure-blue/35"></div>
+        <div class="relative">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="eyebrow">Capability layer</p>
+              <h2 class="mt-2 text-xl font-semibold tracking-[-0.02em] text-azure-ink dark:text-white">Skills plus live Azure tools</h2>
+            </div>
+            <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-azure-blue/15 bg-azure-tint text-azure-blue dark:border-azure-cyan/20 dark:bg-azure-blue/20 dark:text-azure-cyan">
+              <Icon name="lucide:cloud-cog" class="h-5 w-5" />
+            </span>
+          </div>
+
+          <div class="mt-6 grid gap-2">
+            {capabilities.map((capability) => (
+              <div class="flex items-center gap-3 rounded-xl border border-slate-950/10 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-azure-blue/15 bg-azure-tint text-azure-blue dark:border-azure-cyan/20 dark:bg-azure-blue/15 dark:text-azure-cyan">
+                  <Icon name={capability.icon} class="h-4.5 w-4.5" />
+                </span>
+                <div>
+                  <p class="text-sm font-semibold text-azure-ink dark:text-white">{capability.title}</p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">{capability.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div class="mt-4 grid grid-cols-3 gap-2">
+            {heroStats.map((stat) => (
+              <div class="rounded-2xl border border-slate-950/10 bg-slate-950/[0.025] p-3 dark:border-white/10 dark:bg-white/[0.035]">
+                <span class="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-azure-blue/15 bg-azure-tint text-azure-blue dark:border-azure-cyan/20 dark:bg-azure-blue/20 dark:text-azure-cyan">
+                  <Icon name={stat.icon} class="h-4 w-4" />
+                </span>
+                <p class="text-2xl font-semibold leading-none tracking-[-0.04em] text-azure-ink dark:text-white">{stat.value}</p>
+                <p class="mt-1 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="mx-auto w-full max-w-7xl px-5 pb-14 sm:px-8 lg:pb-16">
+      <InstallTabs surfaces={installSurfaces} />
+    </div>
+
+    <section id="capabilities" class="section-rule mx-auto w-full max-w-7xl px-5 py-14 sm:px-8">
+      <div class="mb-8 max-w-3xl">
+        <p class="eyebrow inline-flex items-center gap-2">
+          <Icon name="lucide:blocks" class="h-4 w-4" />
+          What gets installed
+        </p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-azure-ink dark:text-white sm:text-5xl">One package, three layers of Azure capability.</h2>
+        <p class="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
+          The plugin combines skill guidance, MCP execution, and Foundry-specific workflows so agents can answer with Azure context and act through supported tools.
+        </p>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3">
+        {capabilities.map((capability) => (
+          <article class="surface-card p-5">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-azure-blue/15 bg-azure-tint text-azure-blue dark:border-azure-cyan/20 dark:bg-azure-blue/20 dark:text-azure-cyan">
+              <Icon name={capability.icon} class="h-5 w-5" />
+            </span>
+            <p class="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{capability.label}</p>
+            <h3 class="mt-2 text-xl font-semibold tracking-[-0.02em] text-azure-ink dark:text-white">{capability.title}</h3>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{capability.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="skills" class="section-rule mx-auto w-full max-w-7xl px-5 py-14 sm:px-8">
+      <div class="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div class="max-w-3xl">
+          <p class="eyebrow inline-flex items-center gap-2">
+            <Icon name="lucide:layout-grid" class="h-4 w-4" />
+            Skill catalog
+          </p>
+          <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-azure-ink dark:text-white sm:text-5xl">Azure workflows for the moments agents usually guess.</h2>
+        </div>
+        <a class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 underline decoration-slate-300 underline-offset-4 transition hover:text-azure-blue dark:text-slate-300 dark:decoration-white/25 dark:hover:text-azure-cyan" href={`${repository}/tree/main/skills`}>
+          Browse skill source
+          <Icon name="lucide:arrow-up-right" class="h-4 w-4" />
+        </a>
+      </div>
+
+      <div class="mb-6 flex flex-wrap gap-2">
+        {categories.map((category) => (
+          <span class="inline-flex items-center gap-2 rounded-full border border-slate-950/10 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+            {category.label}
+            <span class="rounded-full bg-white px-1.5 py-0.5 text-[0.65rem] text-azure-blue dark:bg-white/10 dark:text-azure-cyan">{category.count}</span>
+          </span>
+        ))}
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {skills.map((skill, index) => (
+          <article class="group surface-card flex flex-col p-4 transition hover:-translate-y-0.5 hover:border-azure-blue/25 hover:shadow-sm dark:hover:border-azure-cyan/25">
+            <div class="flex items-start gap-3">
+              <span class:list={["inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition group-hover:scale-[1.03]", skillColorClasses[index % skillColorClasses.length]]}>
+                <Icon name={skill.icon} class="h-5 w-5" />
+              </span>
+              <div class="min-w-0">
+                <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{skill.scenario}</p>
+                <h3 class="mt-1 text-lg font-semibold tracking-[-0.02em]">
+                  <a class="text-azure-ink transition hover:text-azure-blue dark:text-white dark:hover:text-azure-cyan" href={skill.href}>
+                    {skill.role}
+                  </a>
+                </h3>
+              </div>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{skill.summary}</p>
+            <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">{skill.description}</p>
+            <div class="mt-4 flex flex-wrap gap-1.5">
+              {skill.highlights.map((highlight) => (
+                <span class="rounded-full border border-slate-950/10 px-2 py-1 text-[0.68rem] font-medium text-slate-500 dark:border-white/10 dark:text-slate-400">{highlight}</span>
+              ))}
+            </div>
+            <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-950/10 pt-3 dark:border-white/10">
+              <code class="inline-code px-2.5 py-1 text-[0.72rem]">{skill.prompt}</code>
+              <span class="shrink-0 text-[0.68rem] font-semibold text-slate-400 dark:text-slate-500">v{skill.version}</span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="workflows" class="section-rule mx-auto w-full max-w-7xl px-5 py-14 sm:px-8">
+      <div class="mb-8 max-w-3xl">
+        <p class="eyebrow inline-flex items-center gap-2">
+          <Icon name="lucide:workflow" class="h-4 w-4" />
+          Prompts to try
+        </p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-azure-ink dark:text-white sm:text-5xl">Ask for outcomes, not generic cloud advice.</h2>
+        <p class="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
+          These prompts activate guided Azure workflows and, when configured, MCP tools that can inspect real resources.
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {workflows.map((workflow) => (
+          <article class="surface-card p-5">
+            <div class="flex items-start gap-3">
+              <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-azure-blue/15 bg-azure-tint text-azure-blue dark:border-azure-cyan/20 dark:bg-azure-blue/20 dark:text-azure-cyan">
+                <Icon name={workflow.icon} class="h-5 w-5" />
+              </span>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{workflow.label}</p>
+                <code class="mt-2 inline-flex rounded-lg bg-slate-950/[0.04] px-2.5 py-1.5 text-xs font-semibold text-azure-ink dark:bg-white/[0.06] dark:text-white">{workflow.prompt}</code>
+              </div>
+            </div>
+            <p class="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">{workflow.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="px-5 py-16 sm:px-8">
+      <div class="mx-auto max-w-7xl overflow-hidden rounded-3xl bg-azure-blue p-8 text-white shadow-sm dark:bg-azure-navy sm:p-10">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-azure-cyan">Ready for Azure-aware agents?</p>
+            <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">Install the plugin, authenticate Azure, and try a real resource-backed prompt.</h2>
+          </div>
+          <a class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-azure-ink transition hover:-translate-y-0.5 hover:bg-azure-tint" href="#install">
+            <Icon name="lucide:download" class="h-4 w-4" />
+            Choose install path
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <Footer />
+  </main>
+</BaseLayout>

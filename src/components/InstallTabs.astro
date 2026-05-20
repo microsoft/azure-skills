@@ -1,0 +1,172 @@
+---
+import { Code } from "astro-expressive-code/components";
+import { Icon } from "astro-icon/components";
+import VendorBadge from "./VendorBadge.astro";
+import type { InstallSurface } from "../lib/site-data";
+
+interface Props {
+  surfaces: InstallSurface[];
+}
+
+const { surfaces } = Astro.props;
+---
+
+<section id="install" class="surface-card p-4 sm:p-5" aria-labelledby="install-heading">
+  <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="eyebrow inline-flex items-center gap-2">
+        <Icon name="lucide:download" class="h-4 w-4" />
+        Start here
+      </p>
+      <h2 id="install-heading" class="mt-2 text-2xl font-semibold tracking-[-0.02em] text-azure-ink dark:text-white">
+        Install Azure guidance where your agent runs
+      </h2>
+    </div>
+    <p class="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+      Each host gets the same Azure skill layer plus MCP-backed tools for live Azure and Foundry workflows.
+    </p>
+  </div>
+
+  <div class="mb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="tablist" aria-label="Azure Skills install options">
+    {surfaces.map((surface, index) => (
+      <button
+        type="button"
+        role="tab"
+        class="install-tab inline-flex min-w-0 items-center justify-start gap-2 rounded-xl border border-slate-950/10 bg-white px-2.5 py-2 text-[0.8rem] font-medium text-slate-700 transition hover:border-azure-blue/30 hover:bg-azure-tint hover:text-azure-ink dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-azure-cyan/30 dark:hover:bg-azure-blue/15 dark:hover:text-white sm:w-auto sm:px-3 sm:text-sm"
+        id={`install-tab-${surface.id}`}
+        data-install-tab={surface.id}
+        data-active={index === 0 ? "true" : "false"}
+        aria-selected={index === 0 ? "true" : "false"}
+        aria-controls={`install-panel-${surface.id}`}
+      >
+        <VendorBadge icon={surface.icon} label={surface.name} compact />
+        <span class="min-w-0 truncate">{surface.shortName}</span>
+      </button>
+    ))}
+  </div>
+
+  <div>
+    {surfaces.map((surface, index) => (
+      <div
+        id={`install-panel-${surface.id}`}
+        role="tabpanel"
+        data-install-panel={surface.id}
+        aria-labelledby={`install-tab-${surface.id}`}
+        hidden={index !== 0}
+      >
+        <div class="mb-4 rounded-xl border border-azure-blue/15 bg-azure-tint p-4 dark:border-azure-cyan/15 dark:bg-azure-blue/10">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 class="text-xl font-semibold tracking-[-0.015em] text-azure-ink dark:text-white">{surface.name}</h3>
+              <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{surface.detail}</p>
+            </div>
+            <span class="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-azure-blue/15 bg-white px-3 py-1 text-xs font-medium text-azure-blue dark:border-azure-cyan/20 dark:bg-white/[0.06] dark:text-azure-cyan">
+              <Icon name="lucide:plug" class="h-3.5 w-3.5" />
+              {surface.status}
+            </span>
+          </div>
+        </div>
+
+        <div class="install-terminal">
+          <Code code={surface.command} lang={surface.language} title={surface.title} />
+        </div>
+
+        <ul class="mt-4 grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          {surface.notes.map((note) => (
+            <li class="flex gap-2">
+              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 shrink-0 text-azure-blue dark:text-azure-cyan" />
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script is:inline>
+  (() => {
+    const tabs = Array.from(document.querySelectorAll("[data-install-tab]"));
+    const panels = Array.from(document.querySelectorAll("[data-install-panel]"));
+    const installParam = "install";
+    const storageKey = "azure-skills-install-tab";
+    const tabIds = tabs.map((tab) => tab.getAttribute("data-install-tab")).filter(Boolean);
+
+    if (tabs.length === 0) {
+      return;
+    }
+
+    const normalizeId = (id) => id?.trim().toLowerCase();
+    const isKnownTab = (id) => Boolean(id && tabIds.includes(id));
+
+    const getQuerySelection = () => {
+      const value = normalizeId(new URL(window.location.href).searchParams.get(installParam));
+      return isKnownTab(value) ? value : undefined;
+    };
+
+    const getStoredSelection = () => {
+      try {
+        const value = normalizeId(localStorage.getItem(storageKey));
+        return isKnownTab(value) ? value : undefined;
+      } catch (error) {
+        console.warn("Unable to read install tab preference.", error);
+        return undefined;
+      }
+    };
+
+    const persistSelection = (id) => {
+      try {
+        localStorage.setItem(storageKey, id);
+      } catch (error) {
+        console.warn("Unable to save install tab preference.", error);
+      }
+    };
+
+    const updateUrlSelection = (id) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set(installParam, id);
+      window.history.replaceState({}, "", url);
+    };
+
+    const activate = (id, options = {}) => {
+      const { focusActiveTab = false, persist = false, updateUrl = false } = options;
+
+      for (const tab of tabs) {
+        const isActive = tab.getAttribute("data-install-tab") === id;
+        tab.setAttribute("data-active", isActive ? "true" : "false");
+        tab.setAttribute("aria-selected", isActive ? "true" : "false");
+
+        if (focusActiveTab && isActive && tab instanceof HTMLElement) {
+          tab.focus();
+        }
+      }
+
+      for (const panel of panels) {
+        panel.toggleAttribute("hidden", panel.getAttribute("data-install-panel") !== id);
+      }
+
+      if (persist) {
+        persistSelection(id);
+      }
+
+      if (updateUrl) {
+        updateUrlSelection(id);
+      }
+    };
+
+    for (const tab of tabs) {
+      tab.addEventListener("click", () => {
+        const id = tab.getAttribute("data-install-tab");
+        if (isKnownTab(id)) {
+          activate(id, { persist: true, updateUrl: true });
+        }
+      });
+    }
+
+    const initial = getQuerySelection() ?? getStoredSelection() ?? tabIds[0];
+    if (isKnownTab(initial)) {
+      activate(initial);
+    }
+  })();
+</script>
+

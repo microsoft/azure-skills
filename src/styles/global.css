@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-azure-blue: #0078d4;
+  --color-azure-navy: #005a9e;
+  --color-azure-cyan: #50e6ff;
+  --color-azure-teal: #008575;
+  --color-azure-tint: #eff6ff;
+  --color-azure-ink: #172033;
+  --color-azure-dark: #061322;
+  --font-sans: "Segoe UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  --surface-bg: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-elevated: #ffffff;
+  --hairline: rgb(15 23 42 / 0.08);
+  --hairline-strong: rgb(15 23 42 / 0.14);
+  --text-muted: rgb(15 23 42 / 0.62);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-bg: #061322;
+  --surface-muted: #0b1d33;
+  --surface-elevated: rgb(255 255 255 / 0.04);
+  --hairline: rgb(255 255 255 / 0.09);
+  --hairline-strong: rgb(255 255 255 / 0.16);
+  --text-muted: rgb(255 255 255 / 0.64);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  background: var(--surface-bg);
+  color: #172033;
+  font-family: "Segoe UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-theme="dark"] body {
+  color: #ffffff;
+}
+
+::selection {
+  background: #50e6ff;
+  color: #061322;
+}
+
+:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+:root[data-theme="dark"] :focus-visible {
+  outline-color: #50e6ff;
+}
+
+:where(a, button, summary, [role="button"], [role="tab"], label[for], select, input[type="button"], input[type="reset"], input[type="submit"]) {
+  cursor: pointer;
+}
+
+:where(button:disabled, [aria-disabled="true"], input:disabled, select:disabled) {
+  cursor: not-allowed;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.surface-card {
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: var(--surface-elevated);
+}
+
+.section-rule {
+  border-top: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.vendor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: currentColor;
+}
+
+.vendor-badge-compact {
+  justify-content: center;
+}
+
+.install-tab[data-active="true"] {
+  border-color: #0078d4;
+  background: #0078d4;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .install-tab[data-active="true"] {
+  border-color: #50e6ff;
+  background: #50e6ff;
+  color: #061322;
+}
+
+.install-terminal .expressive-code {
+  margin: 0;
+}
+
+.install-terminal .expressive-code figure.frame {
+  border: 1px solid var(--hairline) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.install-terminal .expressive-code figure.frame figcaption.header {
+  border-bottom: 1px solid var(--hairline) !important;
+}
+
+.inline-code {
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: rgb(15 23 42 / 0.04);
+  color: #172033;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+:root[data-theme="dark"] .inline-code {
+  background: rgb(255 255 255 / 0.06);
+  color: #ffffff;
+}
+
+.theme-toggle-icon {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0.28rem color-mix(in srgb, currentColor 18%, transparent);
+}
+
+:root[data-theme="dark"] .theme-toggle-icon {
+  background: transparent;
+  box-shadow: inset -0.32rem -0.24rem 0 currentColor;
+}
+
+.heading-anchor-icon {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.heading-anchor:hover .heading-anchor-icon,
+.heading-anchor:focus-visible .heading-anchor-icon {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
