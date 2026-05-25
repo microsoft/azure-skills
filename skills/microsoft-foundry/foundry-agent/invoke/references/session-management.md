@@ -2,6 +2,8 @@
 
 Manage hosted agent sessions — isolated compute environments that provide persistent state across invocations.
 
+> ℹ️ This document covers HTTP-protocol sessions (`responses`, `invocations`) created and tracked via the MCP `session_*` tools. For `invocations_ws` agents — where the session id is **client-supplied** on the WebSocket upgrade URL and `session_create` does not apply — see [`invocations-ws/references/session-management.md`](../../invocations-ws/references/session-management.md).
+
 ## Overview
 
 Sessions bind a hosted agent to a dedicated compute instance. Files written to `$HOME` during a session persist across requests for the lifetime of that session. When a session is deleted, its compute resources and stored files are released.

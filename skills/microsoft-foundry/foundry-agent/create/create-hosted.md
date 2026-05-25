@@ -43,6 +43,7 @@ If the user hasn't already specified, use `ask_user` to collect in this order:
 |----------|----------|
 | `responses` (default) | Conversational agents using the OpenAI-compatible `/responses` contract |
 | `invocations` | Arbitrary payloads, custom SSE behavior, protocol bridges, webhook-style callers, or client-managed sessions |
+| `invocations_ws` | Real-time duplex workloads — voice agents, live streams, signaling for out-of-band media transports. **Bring-Your-Own only** (no Microsoft Agent Framework adapter); samples live under `bring-your-own/invocations_ws/`. The verify and adapter sections below assume HTTP — for WS specifics (URL with `agent_session_id`, 5-min idle / 30-min connection limits, browser-proxy requirement), follow the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md). |
 
 **Framework:**
 
@@ -74,6 +75,7 @@ List available samples using the GitHub API. First resolve the `sample_browse_pa
 | Python + Microsoft Agent Framework + `invocations` | `samples/python/hosted-agents/agent-framework/invocations/` |
 | Python + LangGraph | `samples/python/hosted-agents/bring-your-own/{protocol}/langgraph-chat/` |
 | Python + Custom | `samples/python/hosted-agents/bring-your-own/{protocol}/` |
+| Python + Custom + `invocations_ws` | `samples/python/hosted-agents/bring-your-own/invocations_ws/` (BYO only — no Agent Framework / LangGraph lanes for `invocations_ws`) |
 | C# + Microsoft Agent Framework + `responses` | `samples/csharp/hosted-agents/agent-framework/` |
 | C# + Microsoft Agent Framework + `invocations` | `samples/csharp/hosted-agents/agent-framework/invocations-echo-agent/` |
 | C# + Custom | `samples/csharp/hosted-agents/bring-your-own/{protocol}/` |
@@ -137,6 +139,7 @@ For nested directories, recursively fetch the GitHub contents API for entries wh
 5. Send a protocol-appropriate test request to the correct endpoint:
    - `responses` → `POST http://localhost:8088/responses`
    - `invocations` → `POST http://localhost:8088/invocations`
+   - `invocations_ws` → open a WebSocket to `ws://localhost:8088/invocations_ws` (not HTTP POST). The wire format is developer-defined per the sample; see the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the framing model and discovery guidance.
 6. Fix any errors from the test request and retry until it succeeds
 7. Once startup and test request succeed, stop the server to prevent resource usage
 
@@ -163,7 +166,7 @@ Scan the project to determine:
 | Imports from `langgraph`, `langchain` | LangGraph |
 | No recognized framework imports, or other frameworks (e.g., Semantic Kernel, AutoGen, custom code) | Custom |
 
-3. **Target protocol** — If the user has not specified one, infer whether the project should target `responses` or `invocations` based on the existing caller contract
+3. **Target protocol** — If the user has not specified one, infer whether the project should target `responses`, `invocations`, or `invocations_ws` based on the existing caller contract (HTTP request/response → `responses` or `invocations`; long-lived duplex stream / real-time media → `invocations_ws`)
 4. **Entry point** — Identify the main script/entrypoint that creates and runs the agent
 5. **Agent object** — Identify the agent instance that needs to be wrapped (e.g., a `BaseAgent` subclass, a compiled `StateGraph`, or an existing server/app)
 
@@ -177,7 +180,7 @@ Add the correct adapter package based on framework, language, and protocol. Get 
 |-----------|------------|
 | Microsoft Agent Framework | `responses`: `agent-framework-foundry-hosting`; `invocations`: `agent-framework-foundry-hosting` |
 | LangGraph | `responses`: `azure-ai-agentserver-responses` + `azure-ai-agentserver-core`; `invocations`: `azure-ai-agentserver-invocations` + `azure-ai-agentserver-core` |
-| Custom | `responses`: `azure-ai-agentserver-responses`; `invocations`: `azure-ai-agentserver-invocations` |
+| Custom | `responses`: `azure-ai-agentserver-responses`; `invocations`: `azure-ai-agentserver-invocations`; `invocations_ws`: no adapter package — implement the WebSocket handler directly (FastAPI/Starlette `@app.websocket("/invocations_ws")` or equivalent) |
 
 **.NET adapter packages:**
 
@@ -216,6 +219,11 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 **Custom:**
 - Follow the corresponding `bring-your-own/{protocol}` sample for the selected language
 - Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
+
+**`invocations_ws` (BYO only, Python or C#):**
+- No hosting adapter — author a WebSocket handler directly at path `/invocations_ws`
+- Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract, `agent_session_id` semantics, and the 5-min idle / 30-min connection limits
+- Reference samples live under `samples/python/hosted-agents/bring-your-own/invocations_ws/`
 
 > ⚠️ **Warning:** The adapter MUST be the default entrypoint (no flags required to start). This is required for both local debugging and containerized deployment.
 
@@ -256,7 +264,10 @@ Refer to the chosen sample's `Dockerfile` in the [foundry-samples repo](https://
 
 1. Install dependencies (use virtual environment for Python)
 2. Run the main entrypoint — the adapter should start an HTTP server on `localhost:8088`
-3. Send a protocol-appropriate test request to either `/responses` or `/invocations`
+3. Send a protocol-appropriate test request:
+   - `responses` → `POST /responses`
+   - `invocations` → `POST /invocations`
+   - `invocations_ws` → open a WebSocket to `ws://localhost:8088/invocations_ws` (see the [invocations-ws skill](../invocations-ws/invocations-ws.md) for framing)
 4. Verify the response follows the expected protocol shape for the selected lane
 5. Fix any errors and retry until the test request succeeds
 6. Stop the server

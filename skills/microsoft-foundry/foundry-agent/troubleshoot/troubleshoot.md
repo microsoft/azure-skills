@@ -46,6 +46,8 @@ Use `agent_get` with `projectEndpoint` and `agentName` to retrieve the agent def
 
 Hosted-agent logs are scoped to individual **sessions** (sandbox instances).
 
+> ℹ️ **`invocations_ws` agents:** the `sessionId` used by these REST endpoints is the **client-supplied `agent_session_id`** that the WebSocket client put on the upgrade URL — not a value issued by `session_create`. If the user has the WS client logs, pull the `agent_session_id` from there and pass it as `sessionId` below. See the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the WS URL contract.
+
 1. **Check agent version status** — Use `agent_get` to verify the agent version status is `active`. If it is not active, the agent may still be provisioning or may have failed to become active.
 
 2. **List sessions** — Hosted-agent logs require a `sessionId`. If the user does not have one, list available sessions:
