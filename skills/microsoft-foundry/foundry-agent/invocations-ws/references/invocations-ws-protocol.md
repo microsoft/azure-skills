@@ -19,24 +19,25 @@ The `invocations_ws` protocol is a **duplex WebSocket pass-through**. After the 
 ```
 wss://{account}.services.ai.azure.com
    /api/projects/agents/endpoint/protocols/invocations_ws
-   ?project-name={project}
-   &agent-name={agentName}
-   &api-version=v1
+   ?project_name={project}
+   &agent_name={agentName}
    &agent_session_id={sessionId}
+   &foundry_features=HostedAgents=V1Preview
 ```
 
 | Query parameter | Required | Notes |
 |-----------------|----------|-------|
-| `project-name` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint) |
-| `agent-name` | ✅ | Hosted agent name as declared in `agent.yaml` |
-| `api-version` | ❌ | Defaults to `v1` |
-| `agent_session_id` | ✅ | Per-connection identifier — see [Session Management](../../invoke/references/session-management.md) |
+| `project_name` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint) |
+| `agent_name` | ✅ | Hosted agent name as declared in `agent.yaml` |
+| `agent_session_id` | ❌ | Per-connection identifier — see [Session Management](../../invoke/references/session-management.md). If omitted, the platform (or the container) generates a random id |
+| `foundry_features` | ✅ (preview) | Must be `HostedAgents=V1Preview` while the protocol is in preview. May alternatively be sent as the `Foundry-Features` request header. |
 
 | Header | Required | Notes |
 |--------|----------|-------|
-| `Authorization: Bearer <token>` | ✅ | Entra token for audience `https://ai.azure.com` — `az account get-access-token --resource https://ai.azure.com` |
+| `Authorization: Bearer <token>` | ✅ | Entra token for audience `https://ai.azure.com` (scope `https://ai.azure.com/.default`) — `az account get-access-token --resource https://ai.azure.com`. Validated by APIM and the Agents service; the container does **not** see this header. |
+| `Foundry-Features: HostedAgents=V1Preview` | ✅ (preview) | Required unless the equivalent `foundry_features` query parameter is set. |
 
-The container receives the upgrade on path `/invocations_ws`. The `agent_session_id` query string is preserved and visible to the container so it can route, log, and persist state per connection.
+The container receives the upgrade on path `/invocations_ws`. Inside the container, read the session id from the `FOUNDRY_AGENT_SESSION_ID` environment variable (set by `azure-ai-agentserver-invocations`), or fall back to the `agent_session_id` query string.
 
 > ⚠️ **Browsers cannot set the `Authorization` header on a `WebSocket`.** Browser clients must connect through a thin server-side proxy that adds the header before forwarding. This is a browser API limitation, not a Foundry requirement.
 
@@ -92,8 +93,9 @@ import os, uuid, websockets
 token = os.popen("az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv").read().strip()
 url = (
     "wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws"
-    "?project-name={project}&agent-name={name}&api-version=v1"
+    "?project_name={project}&agent_name={name}"
     f"&agent_session_id={uuid.uuid4().hex}"
+    "&foundry_features=HostedAgents=V1Preview"
 )
 
 async with websockets.connect(url, additional_headers={"Authorization": f"Bearer {token}"}) as ws:
@@ -109,7 +111,7 @@ async with websockets.connect(url, additional_headers={"Authorization": f"Bearer
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | 401 / 403 on upgrade | Missing or expired Entra token | Re-mint with `az account get-access-token --resource https://ai.azure.com` |
-| 404 on upgrade | Wrong `project-name`, `agent-name`, or `api-version` | Verify with `agent_get`; check that the deployed version uses `protocol: invocations_ws` |
+| 404 on upgrade | Wrong `project_name` or `agent_name`, or missing preview flag | Verify with `agent_get`; ensure `foundry_features=HostedAgents=V1Preview` is set; confirm the deployed version uses `protocol: invocations_ws` and the region is **North Central US** |
 | WS closes after accept | Container raised in the handler | Tail logs with `azd ai agent monitor --session-id <agent_session_id> --follow` |
 | Frames silently dropped | Wire-format mismatch (binary vs text, wrong schema) | Confirm both ends agree on framing — the platform performs no transcoding |
 | State lost on reconnect | Different `agent_session_id` used | Reuse the same `agent_session_id` to land on the same logical state inside the container |

@@ -13,7 +13,7 @@ Sessions bind a hosted agent to a dedicated compute instance. Files written to `
 | Protocol | How a session is created | Session id |
 |----------|--------------------------|------------|
 | `responses`, `invocations` (HTTP) | Call the `session_create` MCP tool before invoking the agent | **Server-issued** `sessionId` (or a client-supplied one passed to `session_create`) |
-| `invocations_ws` (WebSocket) | Implicitly, when the client opens the WebSocket upgrade | **Client-supplied** `agent_session_id` query parameter on the upgrade URL — no separate "create" call |
+| `invocations_ws` (WebSocket) | Implicitly, on the first WebSocket upgrade (no `session_create` call) | **Client-supplied** `agent_session_id` query parameter on the upgrade URL — **optional**; if omitted, the platform (or the container) generates a random id |
 
 Both ids follow the same format rule: `^[A-Za-z0-9_-]{8,128}$`.
 
@@ -30,14 +30,20 @@ session_create → Running → (invoke, file ops) → session_delete
 **WebSocket (`invocations_ws`):**
 
 ```text
-client picks agent_session_id
-  └─► WebSocket upgrade (with Authorization + ?agent_session_id=...)
-        └─► container accepts → handler bound to this agent_session_id
-              └─► frames flow in both directions
-                    └─► either side closes → connection ends
+client opens WS upgrade (optionally with ?agent_session_id=<id>)
+  └─► first upgrade for that id ──► sandbox created, handler bound
+        └─► frames flow ──► either side closes ──► WS connection ends
+              └─► sandbox + $HOME persist ──► next WS upgrade with same id re-hydrates
+                    └─► after the idle timeout, compute is deprovisioned; state is persisted
 ```
 
-There is no `session_create` / `session_delete` for `invocations_ws`. Reusing the same `agent_session_id` on a new WebSocket is the supported way to resume per-session state — the container is responsible for persisting and re-hydrating that state (typically via external storage, since the next connection can land on a different replica).
+Key points for `invocations_ws`:
+
+- There is **no `session_create` / `session_delete`** call. The first upgrade creates the session; the session outlives any individual WebSocket connection.
+- The `agent_session_id` query parameter is **optional**. If you omit it, the platform (or the container) generates a random id; supply it explicitly only when you need a specific id to resume an existing session.
+- The `agent_session_id` is the **affinity key** — the platform routes upgrades with the same id back to the same sandbox.
+- Closing the WebSocket does **not** delete the session. To resume, open a new upgrade with the same `agent_session_id` and the container sees its previous `$HOME` state.
+- After the idle timeout, the platform deprovisions compute but persists session state, so the next reconnect re-hydrates the sandbox.
 
 ## Session ID Format
 
