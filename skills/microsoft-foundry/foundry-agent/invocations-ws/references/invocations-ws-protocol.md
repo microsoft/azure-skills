@@ -40,22 +40,6 @@ The container receives the upgrade on path `/invocations_ws`. The `agent_session
 
 > ⚠️ **Browsers cannot set the `Authorization` header on a `WebSocket`.** Browser clients must connect through a thin server-side proxy that adds the header before forwarding. This is a browser API limitation, not a Foundry requirement.
 
-## Connection Limits
-
-The service enforces two hard limits on every `invocations_ws` connection:
-
-| Limit | Value | Behaviour |
-|-------|-------|-----------|
-| **Idle timeout** | **5 minutes** | If no frame is sent **or** received in either direction for 5 minutes, the service closes the WebSocket. |
-| **Max connection duration** | **30 minutes** | Every WebSocket is forcibly closed 30 minutes after the upgrade completes, regardless of how active it has been. |
-
-Both limits apply to the WebSocket itself; the container and the client cannot extend them by configuration. To stay connected longer:
-
-- **Defeat the idle timeout** with application-level keep-alives (any frame counts — a no-op JSON ping, an empty binary frame, a heartbeat event). Send them more often than the 5-minute window; 60–120 seconds is a safe interval.
-- **Handle the 30-minute cap** by reconnecting. Reuse the same `agent_session_id` so the container can resume per-session state on the new connection (see [Session Management](session-management.md)). For voice or other media workloads, drain in-flight audio and open the new WebSocket before the old one is closed to avoid a perceptible gap.
-
-Standard WebSocket protocol-level pings (RFC 6455 control frames) do not necessarily reset the idle timer — emit an application-layer frame to be safe.
-
 ## Pass-Through Semantics
 
 The platform is a transparent relay:
@@ -129,6 +113,4 @@ async with websockets.connect(url, additional_headers={"Authorization": f"Bearer
 | WS closes after accept | Container raised in the handler | Tail logs with `azd ai agent monitor --session-id <agent_session_id> --follow` |
 | Frames silently dropped | Wire-format mismatch (binary vs text, wrong schema) | Confirm both ends agree on framing — the platform performs no transcoding |
 | State lost on reconnect | Different `agent_session_id` used | Reuse the same `agent_session_id` to land on the same logical state inside the container |
-| Connection closed after ~5 min of silence | **5-minute idle timeout** — no frames in either direction | Emit application-level keep-alive frames more often than every 5 minutes |
-| Connection closed at ~30 min mark | **30-minute max connection duration** (hard cap) | Reconnect with the same `agent_session_id`; drain in-flight work before the cap |
 | Browser fails with `1006 abnormal closure` | Browser tried to connect directly with no `Authorization` | Route through a server-side proxy that adds the header |

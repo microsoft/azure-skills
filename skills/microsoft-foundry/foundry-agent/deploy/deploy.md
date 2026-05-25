@@ -350,7 +350,7 @@ Each evaluation suite should bundle one dataset with the evaluator list, thresho
 | `a2a` | Agent-to-Agent protocol |
 | `responses` | OpenAI Responses API |
 | `invocations` | Invocation payload protocol for arbitrary request bodies and custom SSE behavior |
-| `invocations_ws` | Duplex WebSocket protocol for real-time / voice / signaling workloads (`WS /invocations_ws` on port 8088). Connect through `wss://...endpoint/protocols/invocations_ws?...&agent_session_id=...`; the MCP `agent_invoke` tool does **not** speak WebSocket. Service enforces a **5-minute idle timeout** and a **30-minute max connection duration** — clients must send application-level keep-alives and reconnect with the same `agent_session_id`. See the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md) for the full client/server contract. |
+| `invocations_ws` | Duplex WebSocket protocol for real-time / voice / signaling workloads (`WS /invocations_ws` on port 8088). Connect through `wss://...endpoint/protocols/invocations_ws?...&agent_session_id=...`. See the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md) for the full client/server contract. |
 | `mcp` | Model Context Protocol |
 
 ## Agent Management Operations

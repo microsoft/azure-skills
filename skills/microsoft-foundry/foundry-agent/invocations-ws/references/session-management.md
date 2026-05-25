@@ -26,21 +26,6 @@ client picks agent_session_id
                           └─► container decides whether to persist state for next connect
 ```
 
-## Service-Enforced Connection Limits
-
-Every `invocations_ws` WebSocket is subject to two hard limits enforced by the service. They cap the **connection**, not the logical session — reconnecting with the same `agent_session_id` is the supported way to continue beyond them.
-
-| Limit | Value | Trigger |
-|-------|-------|---------|
-| **Idle timeout** | **5 minutes** | No frames sent or received in either direction for 5 minutes |
-| **Max connection duration** | **30 minutes** | 30 minutes after the upgrade, regardless of traffic |
-
-Implications:
-
-- **Always run an application-level keep-alive** on long-lived connections — any frame (no-op JSON heartbeat, empty binary frame, audio silence) more often than every 5 minutes. Do not rely on RFC 6455 WebSocket ping frames to keep the idle timer alive.
-- **Plan for reconnect every ~30 minutes.** Before the cap, open a new WebSocket with the same `agent_session_id`, switch traffic to it, then close the old one. The container sees a fresh `accept()` and must re-hydrate per-connection state from your store.
-- **Persist anything you want to survive the cap.** In-memory state in the connection handler is lost at the 30-minute mark; only state written to external storage (keyed by `agent_session_id`) carries over.
-
 ## `agent_session_id` Format
 
 Treat `agent_session_id` as a URL-safe identifier you generate per logical session:
@@ -106,8 +91,6 @@ The MCP `session_logstream` tool accepts the same `agent_session_id` for `invoca
 1. **Generate `agent_session_id` once per logical session** — e.g. on first connect for a given user/tab; reuse it on reconnects so the container can resume state.
 2. **Keep ids opaque and unguessable** — they appear in logs and may be visible to operators; do not encode PII into them.
 3. **Externalise durable state** — assume the next connection can land on a different replica.
-4. **Send application-level keep-alives** — emit a heartbeat frame more often than the **5-minute idle timeout** in both directions (60–120 s is safe). RFC 6455 ping frames are not guaranteed to reset the timer.
-5. **Plan reconnects around the 30-minute cap** — every WebSocket is closed at the 30-minute mark. Open a fresh connection with the same `agent_session_id` before the deadline and drain in-flight work to the new socket so users see no gap.
-6. **Persist what must survive a reconnect** — in-memory handler state is lost when the WebSocket closes (idle timeout, max-duration cap, network blip, or replica restart). Write durable state to external storage keyed by `agent_session_id`.
-7. **Clean up on disconnect** — release per-session resources (audio pipelines, model contexts, file handles) when the WebSocket closes; otherwise replicas leak memory under churn.
-8. **Use `azd ai agent monitor --session-id`** to scope logs when debugging a specific user report.
+4. **Persist what must survive a reconnect** — in-memory handler state is lost when the WebSocket closes (network blip, replica restart, or intentional client reconnect). Write durable state to external storage keyed by `agent_session_id`.
+5. **Clean up on disconnect** — release per-session resources (audio pipelines, model contexts, file handles) when the WebSocket closes; otherwise replicas leak memory under churn.
+6. **Use `azd ai agent monitor --session-id`** to scope logs when debugging a specific user report.

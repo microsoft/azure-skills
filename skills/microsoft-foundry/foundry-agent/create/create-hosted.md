@@ -43,7 +43,7 @@ If the user hasn't already specified, use `ask_user` to collect in this order:
 |----------|----------|
 | `responses` (default) | Conversational agents using the OpenAI-compatible `/responses` contract |
 | `invocations` | Arbitrary payloads, custom SSE behavior, protocol bridges, webhook-style callers, or client-managed sessions |
-| `invocations_ws` | Real-time duplex workloads — voice agents, live streams, signaling for out-of-band media transports. **Bring-Your-Own only** (no Microsoft Agent Framework adapter); samples live under `bring-your-own/invocations_ws/`. The verify and adapter sections below assume HTTP — for WS specifics (URL with `agent_session_id`, 5-min idle / 30-min connection limits, browser-proxy requirement), follow the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md). |
+| `invocations_ws` | Real-time duplex workloads — voice agents, live streams, signaling for out-of-band media transports. The verify and adapter sections below assume HTTP — for WS specifics (URL with `agent_session_id`, browser-proxy requirement, framing), follow the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md). |
 
 **Framework:**
 
@@ -75,7 +75,7 @@ List available samples using the GitHub API. First resolve the `sample_browse_pa
 | Python + Microsoft Agent Framework + `invocations` | `samples/python/hosted-agents/agent-framework/invocations/` |
 | Python + LangGraph | `samples/python/hosted-agents/bring-your-own/{protocol}/langgraph-chat/` |
 | Python + Custom | `samples/python/hosted-agents/bring-your-own/{protocol}/` |
-| Python + Custom + `invocations_ws` | `samples/python/hosted-agents/bring-your-own/invocations_ws/` (BYO only — no Agent Framework / LangGraph lanes for `invocations_ws`) |
+| Python + Custom + `invocations_ws` | `samples/python/hosted-agents/bring-your-own/invocations_ws/` |
 | C# + Microsoft Agent Framework + `responses` | `samples/csharp/hosted-agents/agent-framework/` |
 | C# + Microsoft Agent Framework + `invocations` | `samples/csharp/hosted-agents/agent-framework/invocations-echo-agent/` |
 | C# + Custom | `samples/csharp/hosted-agents/bring-your-own/{protocol}/` |
@@ -180,7 +180,7 @@ Add the correct adapter package based on framework, language, and protocol. Get 
 |-----------|------------|
 | Microsoft Agent Framework | `responses`: `agent-framework-foundry-hosting`; `invocations`: `agent-framework-foundry-hosting` |
 | LangGraph | `responses`: `azure-ai-agentserver-responses` + `azure-ai-agentserver-core`; `invocations`: `azure-ai-agentserver-invocations` + `azure-ai-agentserver-core` |
-| Custom | `responses`: `azure-ai-agentserver-responses`; `invocations`: `azure-ai-agentserver-invocations`; `invocations_ws`: no adapter package — implement the WebSocket handler directly (FastAPI/Starlette `@app.websocket("/invocations_ws")` or equivalent) |
+| Custom | `responses`: `azure-ai-agentserver-responses`; `invocations`: `azure-ai-agentserver-invocations` |
 
 **.NET adapter packages:**
 
@@ -220,9 +220,9 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 - Follow the corresponding `bring-your-own/{protocol}` sample for the selected language
 - Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
 
-**`invocations_ws` (BYO only, Python or C#):**
-- No hosting adapter — author a WebSocket handler directly at path `/invocations_ws`
-- Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract, `agent_session_id` semantics, and the 5-min idle / 30-min connection limits
+**`invocations_ws`:**
+- Expose a WebSocket handler at path `/invocations_ws` (e.g. FastAPI/Starlette `@app.websocket("/invocations_ws")` or the equivalent in your framework)
+- Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract and `agent_session_id` semantics
 - Reference samples live under `samples/python/hosted-agents/bring-your-own/invocations_ws/`
 
 > ⚠️ **Warning:** The adapter MUST be the default entrypoint (no flags required to start). This is required for both local debugging and containerized deployment.

@@ -14,10 +14,7 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 | Auth | `Authorization: Bearer <Entra token>` for scope `https://ai.azure.com` |
 | Wire format | Developer-defined (binary frames, JSON text frames, protobuf, raw PCM — anything) |
 | Session affinity | Per-connection, keyed by the `agent_session_id` query parameter |
-| Idle timeout | **5 minutes** — the service closes the WebSocket if no frame is sent or received in either direction for 5 minutes |
-| Max connection duration | **30 minutes** — the service closes the WebSocket 30 minutes after the upgrade, regardless of activity. Reconnect with the same `agent_session_id` to continue. |
 | Multi-turn / state | Agent-managed inside the container; platform does **not** store history |
-| MCP support | The `agent_invoke` MCP tool **does not** speak WebSocket. Connect directly. |
 
 ## When to Use This Skill
 
@@ -37,7 +34,6 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 | Wire format | OpenAI-compatible JSON | Raw bytes (developer-defined) | Frames, developer-defined |
 | History | Platform via `conversationId` | Agent-managed | Agent-managed via `agent_session_id` |
 | Streaming | `stream: true` (SSE) | Agent-controlled | Native duplex |
-| MCP `agent_invoke` | ✅ | ✅ | ❌ (connect WS directly) |
 | Best for | Chat | Webhooks / classifiers / protocol bridges | Voice, signaling, real-time |
 
 ## Workflow
@@ -95,7 +91,7 @@ Once `Running`, the Foundry endpoint is reachable at the URL pattern in the Quic
 
 ### Step 4: Connect a Client
 
-The `agent_invoke` MCP tool does **not** speak WebSocket. Connect directly:
+Connect to the Foundry-side WebSocket directly:
 
 1. **Mint an Entra token** for the audience `https://ai.azure.com`:
 
@@ -131,7 +127,7 @@ azd ai agent monitor my-ws-agent --follow
 azd ai agent monitor my-ws-agent --session-id <agent_session_id> --follow
 ```
 
-The `session_logstream` MCP tool also works for `invocations_ws` agents. See the [`troubleshoot`](../troubleshoot/troubleshoot.md) skill for deeper diagnostics.
+The same `agent_session_id` can be used to stream container logs (see the [`troubleshoot`](../troubleshoot/troubleshoot.md) skill for deeper diagnostics).
 
 ## Error Handling
 
@@ -143,8 +139,6 @@ The `session_logstream` MCP tool also works for `invocations_ws` agents. See the
 | Browser cannot connect directly | Browser `WebSocket` cannot set `Authorization` | Run a thin server-side proxy that injects the token before forwarding |
 | Frames received but no response | Wire-format mismatch | Confirm both ends use the same framing (binary vs text, codec, sample rate, schema). The platform does **not** validate or transcode frames |
 | Cold-start delay on first connect | Container initialising (VAD, model load, etc.) | Expected; subsequent connections to the same container are fast |
-| WS closed after ~5 min of silence | Service-enforced **5-minute idle timeout** with no frames in either direction | Send application-level keep-alive frames more often than every 5 minutes (e.g. every 60–120 s); reconnect with the same `agent_session_id` to resume |
-| WS closed at ~30 min mark | Service-enforced **30-minute max connection duration** (hard cap, regardless of activity) | Plan for graceful reconnect; before the cap, drain in-flight work and open a fresh WebSocket with the same `agent_session_id` |
 | State lost across reconnect | Different `agent_session_id` used | Reuse the same `agent_session_id` query parameter to preserve agent-managed state |
 
 ## Reference Samples
