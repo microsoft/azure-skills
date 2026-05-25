@@ -30,7 +30,7 @@ wss://{account}.services.ai.azure.com
 | `project-name` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint) |
 | `agent-name` | ✅ | Hosted agent name as declared in `agent.yaml` |
 | `api-version` | ❌ | Defaults to `v1` |
-| `agent_session_id` | ✅ | Per-connection identifier — see [Session Management](session-management.md) |
+| `agent_session_id` | ✅ | Per-connection identifier — see [Session Management](../../invoke/references/session-management.md) |
 
 | Header | Required | Notes |
 |--------|----------|-------|

@@ -99,7 +99,7 @@ Connect to the Foundry-side WebSocket directly:
    az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv
    ```
 
-2. **Build the upstream URL** with a per-connection `agent_session_id` (any URL-safe identifier you generate; see [Session Management](references/session-management.md) for ID requirements):
+2. **Build the upstream URL** with a per-connection `agent_session_id` (any URL-safe identifier you generate; see [Session Management](../invoke/references/session-management.md) for ID requirements):
 
    ```
    wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws
@@ -115,7 +115,7 @@ Connect to the Foundry-side WebSocket directly:
 
 ### Step 5: Multi-turn / Session State
 
-There is no platform-managed history. To correlate frames across reconnects or keep per-user state, reuse the same `agent_session_id` and key your state off it inside the container. See [Session Management](references/session-management.md).
+There is no platform-managed history. To correlate frames across reconnects or keep per-user state, reuse the same `agent_session_id` and key your state off it inside the container. See [Session Management](../invoke/references/session-management.md).
 
 ### Step 6: Observe and Troubleshoot
 
@@ -154,7 +154,7 @@ Each sub-folder shows a different media-path strategy (audio entirely over the W
 ## Additional Resources
 
 - [Invocations WebSocket Protocol Guide](references/invocations-ws-protocol.md)
-- [Session Management](references/session-management.md)
+- [Session Management](../invoke/references/session-management.md)
 - [Foundry Hosted Agents](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [`invoke` skill](../invoke/invoke.md) — HTTP-based `responses` and `invocations` protocols
 - [`deploy` skill](../deploy/deploy.md) — package and deploy hosted-agent containers

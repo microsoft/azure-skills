@@ -2,19 +2,42 @@
 
 Manage hosted agent sessions — isolated compute environments that provide persistent state across invocations.
 
-> ℹ️ This document covers HTTP-protocol sessions (`responses`, `invocations`) created and tracked via the MCP `session_*` tools. For `invocations_ws` agents — where the session id is **client-supplied** on the WebSocket upgrade URL and `session_create` does not apply — see [`invocations-ws/references/session-management.md`](../../invocations-ws/references/session-management.md).
+This document covers session creation and lifecycle for both HTTP-protocol agents (`responses`, `invocations`) and WebSocket agents (`invocations_ws`).
 
 ## Overview
 
 Sessions bind a hosted agent to a dedicated compute instance. Files written to `$HOME` during a session persist across requests for the lifetime of that session. When a session is deleted, its compute resources and stored files are released.
 
+## Session Creation
+
+| Protocol | How a session is created | Session id |
+|----------|--------------------------|------------|
+| `responses`, `invocations` (HTTP) | Call the `session_create` MCP tool before invoking the agent | **Server-issued** `sessionId` (or a client-supplied one passed to `session_create`) |
+| `invocations_ws` (WebSocket) | Implicitly, when the client opens the WebSocket upgrade | **Client-supplied** `agent_session_id` query parameter on the upgrade URL — no separate "create" call |
+
+Both ids follow the same format rule: `^[A-Za-z0-9_-]{8,128}$`.
+
 ## Session Lifecycle
+
+**HTTP (`responses`, `invocations`):**
 
 ```text
 session_create → Running → (invoke, file ops) → session_delete
                     ↓
                Expired (platform auto-cleanup)
 ```
+
+**WebSocket (`invocations_ws`):**
+
+```text
+client picks agent_session_id
+  └─► WebSocket upgrade (with Authorization + ?agent_session_id=...)
+        └─► container accepts → handler bound to this agent_session_id
+              └─► frames flow in both directions
+                    └─► either side closes → connection ends
+```
+
+There is no `session_create` / `session_delete` for `invocations_ws`. Reusing the same `agent_session_id` on a new WebSocket is the supported way to resume per-session state — the container is responsible for persisting and re-hydrating that state (typically via external storage, since the next connection can land on a different replica).
 
 ## Session ID Format
 
