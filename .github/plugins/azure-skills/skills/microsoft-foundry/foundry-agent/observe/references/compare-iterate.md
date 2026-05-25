@@ -2,9 +2,9 @@
 
 ## Step 8 — Re-Evaluate
 
-Use **`evaluation_agent_batch_eval_create`** with the **same `evaluationId`** as the baseline run. This places both runs in the same eval group for comparison. Use the same local test dataset (from the selected agent root's `.foundry/datasets/`) and evaluator bundle from the selected environment/evaluation suite. Update `agentVersion` to the new version.
+Use **`evaluation_agent_batch_eval_create`** for re-evaluation, even when the selected evaluation suite has `suiteName`. The generated suite preserves the reviewed dataset/evaluator bundle for selection and lineage, but the run should target the agent directly. Reuse the **same `evaluationId`** as the baseline run when the evaluator set and thresholds are unchanged. Use the same local or registered test dataset (from the selected agent root's `.foundry/datasets/` and suite metadata) and evaluator bundle from the selected environment/evaluation suite. Update `agentVersion` to the new version.
 
-> ⚠️ **Parameter switch reminder:** Re-evaluation creation uses `evaluationId`, but follow-up calls to `evaluation_get` and `evaluation_comparison_create` must use `evalId`.
+> ⚠️ **Parameter switch reminder:** Agent-target batch re-evaluation creation uses `evaluationId`, but follow-up calls to `evaluation_get` and `evaluation_comparison_create` must use `evalId`. Do not call `evaluation_suite_run` for batch eval.
 
 > ⚠️ **Eval-group immutability:** Reuse the same `evaluationId` only when `evaluatorNames` and thresholds are unchanged. If you add/remove evaluators or change thresholds, create a new evaluation group first, then compare runs within that new group.
 

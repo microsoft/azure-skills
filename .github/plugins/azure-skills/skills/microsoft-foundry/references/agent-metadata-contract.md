@@ -9,6 +9,7 @@ Use this contract for every agent source folder that participates in Microsoft F
   .foundry/
     agent-metadata.yaml
     agent-metadata.prod.yaml
+    suites/
     datasets/
     evaluators/
     results/
@@ -16,7 +17,7 @@ Use this contract for every agent source folder that participates in Microsoft F
 
 - `agent-metadata.yaml` is the preferred local/dev metadata file.
 - Optional sidecar files such as `agent-metadata.prod.yaml` can hold a single prod or CI-targeted environment without mixing multiple environments in one file.
-- `datasets/` and `evaluators/` are local cache folders. Reuse existing files when they are current, and ask before refreshing or overwriting them.
+- `suites/`, `datasets/`, and `evaluators/` are local cache folders. Reuse existing files when they are current, and ask before refreshing or overwriting user-edited files. Deterministic re-fetch of the same immutable remote `<name>-v<version>` may replace the generated cache artifact for that exact version.
 - `results/` stores local evaluation outputs and comparison artifacts by environment.
 
 ## Metadata File Model
@@ -38,7 +39,7 @@ New setups should prefer **one environment per metadata file** while keeping the
 | `environments.<name>.azureContainerRegistry` | ✅ for hosted agents | ACR used for deployment and image refresh |
 | `environments.<name>.observability.applicationInsightsResourceId` | Recommended | App Insights resource for trace workflows |
 | `environments.<name>.observability.applicationInsightsConnectionString` | Optional | Connection string when needed for tooling |
-| `environments.<name>.evaluationSuites[]` | ✅ | Dataset + local/remote references + evaluator + tag bundles for evaluation workflows |
+| `environments.<name>.evaluationSuites[]` | ✅ | Foundry suite + dataset + local/remote references + evaluator + tag bundles for evaluation workflows |
 
 ## Example `.foundry/agent-metadata.yaml` (local/dev)
 
@@ -53,13 +54,19 @@ environments:
       applicationInsightsResourceId: /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Insights/components/support-dev-ai
     evaluationSuites:
       - id: smoke-core
+        suiteName: support-agent-dev-smoke
+        suiteVersion: "1"
+        generationJobId: <suite-generation-job-id>
+        generationSource: synthetic
         tags:
           tier: smoke
           purpose: baseline
           stage: seed
         dataset: support-agent-dev-eval-seed
         datasetVersion: v1
-        datasetFile: .foundry/datasets/support-agent-dev-eval-seed-v1.jsonl
+        suiteFile: .foundry/suites/support-agent-dev-smoke-v1.json
+        datasetFile: .foundry/datasets/support-agent-dev-eval-seed-v1.ref.json
+        datasetContentPath: .foundry/datasets/support-agent-dev-eval-seed-v1/
         datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: intent_resolution
@@ -67,16 +74,22 @@ environments:
           - name: task_adherence
             threshold: 4
           - name: citation_quality
+            version: "1"
             threshold: 0.9
-            definitionFile: .foundry/evaluators/citation-quality.yaml
+            definitionFile: .foundry/evaluators/citation-quality-v1.json
       - id: trace-regression-suite
+        suiteName: support-agent-dev-traces
+        suiteVersion: "3"
+        generationSource: traces
         tags:
           tier: regression
           purpose: regression
           stage: traces
         dataset: support-agent-dev-traces
         datasetVersion: v3
-        datasetFile: .foundry/datasets/support-agent-dev-traces-v3.jsonl
+        suiteFile: .foundry/suites/support-agent-dev-traces-v3.json
+        datasetFile: .foundry/datasets/support-agent-dev-traces-v3.ref.json
+        datasetContentPath: .foundry/datasets/support-agent-dev-traces-v3/
         datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: coherence
@@ -96,13 +109,18 @@ environments:
     azureContainerRegistry: contosoregistry.azurecr.io
     evaluationSuites:
       - id: production-guardrails
+        suiteName: support-agent-prod-guardrails
+        suiteVersion: "2"
+        generationSource: manual-fallback
         tags:
           tier: smoke
           purpose: safety
           stage: prod
         dataset: support-agent-prod-curated
         datasetVersion: v2
-        datasetFile: .foundry/datasets/support-agent-prod-curated-v2.jsonl
+        suiteFile: .foundry/suites/support-agent-prod-guardrails-v2.json
+        datasetFile: .foundry/datasets/support-agent-prod-curated-v2.ref.json
+        datasetContentPath: .foundry/datasets/support-agent-prod-curated-v2/
         datasetUri: <foundry-dataset-uri>
         evaluators:
           - name: violence
@@ -130,7 +148,7 @@ Use `evaluationSuites[]` as the canonical schema. If the selected environment st
 | Legacy field | Migration behavior |
 |--------------|--------------------|
 | `id` | Keep as-is |
-| `dataset`, `datasetVersion`, `datasetFile`, `datasetUri`, `evaluators` | Keep as-is |
+| `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `dataset`, `datasetVersion`, `datasetFile`, `datasetUri`, `evaluators` | Keep as-is |
 | `tags` | Preserve if already present |
 | `priority` | If `tags.tier` is missing, map `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage` |
 
@@ -146,10 +164,38 @@ Use `tags` as a freeform key/value map on each evaluation suite. Suggested keys:
 | `purpose` | `baseline`, `safety`, `tools`, `quality`, `regression` | Why the suite exists |
 | `stage` | `seed`, `traces`, `curated`, `prod` | Dataset lifecycle alignment |
 
-Each evaluation suite should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every evaluation suite can resolve both the cache artifact and the Foundry-registered dataset. Add a `tags` map to each suite (for example, `tier: smoke`, `purpose: baseline`) so workflows can group or filter suites without a fixed priority enum. Local dataset filenames should start with the selected environment's Foundry `agentName` from the selected metadata file, followed by stage and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Keep `datasets/`, `evaluators/`, and `results/` shared at the `.foundry/` root even when multiple metadata files exist. Use evaluation-suite IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+Each evaluation suite should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep local cache filenames versioned (for example, `...-v3.ref.json`). Persist the local `suiteFile`, `datasetFile`, `datasetContentPath`, and remote `datasetUri` together so every evaluation suite can resolve both local cache artifacts and the Foundry-registered dataset. Add a `tags` map to each suite (for example, `tier: smoke`, `purpose: baseline`) so workflows can group or filter suites without a fixed priority enum. Local dataset filenames should start with the selected environment's Foundry `agentName` from the selected metadata file, followed by dataset and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Keep `suites/`, `datasets/`, `evaluators/`, and `results/` shared at the `.foundry/` root even when multiple metadata files exist. Use evaluation-suite IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+
+For generated Foundry suites, also persist `suiteName`, `suiteVersion`, `generationJobId`, and `generationSource`. Valid `generationSource` values are `synthetic`, `traces`, `dataset`, `file`, `prompt`, and `manual-fallback`. A suite with `suiteName` should still run batch eval through `evaluation_agent_batch_eval_create`; use `evaluation_suite_get` only to resolve the reviewed dataset/evaluator metadata. Evaluator entries may include `version` and `definitionFile`; `definitionFile` points to the full cached evaluator JSON returned by `evaluator_catalog_get`. If the user creates a separate reviewed rubric file, store it in a distinct field such as `reviewedDefinitionFile`.
+
+Example generated suite entry:
+
+```yaml
+evaluationSuites:
+  - id: smoke-core
+    suiteName: support-agent-dev-smoke
+    suiteVersion: "1"
+    generationJobId: <suite-generation-job-id>
+    generationSource: synthetic
+    tags:
+      tier: smoke
+      purpose: baseline
+      stage: generated
+    dataset: support-agent-dev-smoke-data
+    datasetVersion: "1"
+    suiteFile: .foundry/suites/support-agent-dev-smoke-v1.json
+    datasetFile: .foundry/datasets/support-agent-dev-smoke-data-v1.ref.json
+    datasetContentPath: .foundry/datasets/support-agent-dev-smoke-data-v1/
+    datasetUri: <foundry-dataset-uri>
+    evaluators:
+      - name: support-agent-dev-adaptive
+        version: "1"
+        threshold: 4
+        definitionFile: .foundry/evaluators/support-agent-dev-adaptive-v1.json
+```
 
 ## Sync Guidance
 
 - Pull/refresh when the user asks, when the workflow detects missing local cache, or when remote versions clearly differ from local metadata.
-- Push/register updates after the user confirms local changes that should be shared in Foundry.
+- Push/register updates after the user confirms local changes that should be shared in Foundry. Use `data_generation_job_create` for dataset regeneration, `evaluation_dataset_create` for approved dataset versions, `evaluator_generation_job_create` or `evaluator_catalog_update(createNewVersion: true)` for adaptive evaluator updates, and `evaluation_suite_create` for reviewed suite versions.
 - Record remote dataset names, versions, dataset URIs, and last sync timestamps in `.foundry/datasets/manifest.json` or the relevant metadata section.

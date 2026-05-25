@@ -48,7 +48,7 @@ all_items = [item.model_dump() for item in output_items]
 
 Query/response data lives in `datasource_item.query` and `datasource_item['sample.output_text']`, **not** in `sample.input`/`sample.output` (which are empty arrays). Parse `datasource_item` fields when extracting queries and responses for analysis.
 
-> ⚠️ **LLM judge knowledge cutoff:** When evaluating agents that use real-time data sources (web search, Bing Grounding, live APIs), the LLM judge may flag factually correct but temporally recent responses as "fabricated" or "unverifiable" because the judge's training data predates the agent's live results. Check failure reasons for phrases like "cannot verify," "beyond knowledge cutoff," or "no evidence" before treating them as real failures. See Behavioral Rule 13 in `observe.md` for mitigations.
+> ⚠️ **LLM judge knowledge cutoff:** When evaluating agents that use real-time data sources (web search, Bing Grounding, live APIs), the LLM judge may flag factually correct but temporally recent responses as "fabricated" or "unverifiable" because the judge's training data predates the agent's live results. Check failure reasons for phrases like "cannot verify," "beyond knowledge cutoff," or "no evidence" before treating them as real failures. See Behavioral Rule 18 in `observe.md` for mitigations.
 
 ### Custom Evaluator Dual-Entry Parsing
 

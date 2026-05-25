@@ -80,6 +80,27 @@ client = FoundryChatClient(
 
 If the model client is shared by multiple agents, flag this as a global side effect in the review summary.
 
+If the runtime should advertise local file-based skills, load `config.skills_dir` before composing instructions:
+
+```python
+from pathlib import Path
+
+from agent_optimization._config import _load_skills_from_dir
+
+if not config.skills and config.skills_dir:
+    config.skills.extend(_load_skills_from_dir(Path(config.skills_dir)))
+instructions = config.compose_instructions()
+```
+
+Patch optimized tool descriptions only on safe metadata surfaces:
+
+```python
+for tool_fn in existing_tools:
+    overrides = config.tool_definitions.get(getattr(tool_fn, "__name__", ""))
+    if overrides and "description" in overrides:
+        tool_fn.__doc__ = overrides["description"]
+```
+
 ## FastAPI or Custom Responses Runtime
 
 Keep the existing HTTP contract. Use config values where the model call is created.
@@ -110,7 +131,7 @@ router_config = load_config(
 
 ## Optional Skill Support
 
-`default_skills_dir="skills"` records the default skill location. It does not automatically make the runtime load files or expose skill tools.
+`default_skills_dir="skills"` records the default skill location. It does not automatically make the runtime load files or expose skill tools unless the app explicitly loads `config.skills_dir` as shown above.
 
 Add file-based skill support only when the target framework has a safe tool-calling or plugin mechanism. If adding it, use progressive disclosure:
 
@@ -133,19 +154,36 @@ Use `python-dotenv` when local `.env` support exists. Use `azure-identity` when 
 
 ## Environment Variables
 
-The canonical local `agent_optimization` package uses these optimization variables:
+The canonical local `agent_optimization` package uses hosted-agent-safe `OPTIMIZATION_*` variables first:
 
 | Variable | Purpose |
 | -------- | ------- |
-| `AGENT_OPTIMIZATION_CONFIG` | Inline JSON config from the optimization service |
-| `OPTIMIZATION_CONFIG` | Non-reserved inline JSON fallback |
-| `AGENT_OPTIMIZATION_CANDIDATE_ID` | Candidate identifier to resolve from a service |
-| `AGENT_OPTIMIZATION_RESOLVE_ENDPOINT` | Resolver API base URL |
-| `AGENT_OPTIMIZATION_SKILLS_DIR` | Download location for candidate skill files |
+| `OPTIMIZATION_CONFIG` | Inline JSON config |
+| `OPTIMIZATION_CANDIDATE_ID` | Candidate identifier |
+| `OPTIMIZATION_RESOLVE_ENDPOINT` | Resolver API base URL |
+| `OPTIMIZATION_LOCAL_DIR` | Local candidate directory |
+| `AGENT_OPTIMIZATION_CONFIG` | Backward-compatible inline JSON |
 
-Do not add all of these to `agent.yaml` by default. For hosted agent vNext, do not place `AGENT_*` variables in the user-authored deployment payload because they are platform-reserved there. Use the optimization service/runtime injection path or local development environment for `AGENT_OPTIMIZATION_*`, and use `OPTIMIZATION_CONFIG` only when an inline non-reserved fallback is explicitly needed.
+Do not add all of these to `agent.yaml` by default. Hosted agent vNext reserves `AGENT_*` variables in user-authored deployment payloads. Add only non-reserved variables needed by the workflow, usually `OPTIMIZATION_LOCAL_DIR` or `OPTIMIZATION_CONFIG`.
 
-Do not generate `FAOS_OPTIMIZATION_*` aliases in the base package unless the user explicitly requests a compatibility adapter. The reference package and FAOS contract use `AGENT_OPTIMIZATION_*` plus `OPTIMIZATION_CONFIG`.
+## Local Candidate Directory
+
+Use `OPTIMIZATION_LOCAL_DIR=.agent_optimization` for local or demo workflows without a resolver service. The local fallback expects this metadata layout. Resolver flows may persist `config.json`, but do not rely on it unless the package explicitly loads it.
+
+```text
+.agent_optimization/
+  baseline/
+    metadata.yaml
+    instructions.md
+    tools.json
+  <candidate-id>/
+    metadata.yaml
+    instructions.md
+    tools.json
+    skills/<skill-name>/SKILL.md
+```
+
+Keep loader priority explicit: inline `OPTIMIZATION_CONFIG`, resolver candidate, local directory, then defaults.
 
 ## Canonical Local Package
 
@@ -169,9 +207,9 @@ __all__ = ["OptimizationConfig", "Skill", "load_config"]
 __version__ = "0.1.0"
 ```
 
-`_config.py` owns `Skill`, `OptimizationConfig`, `load_config`, default fallback behavior, inline config parsing, and candidate config handoff.
+`_config.py` owns `Skill`, `OptimizationConfig`, `load_config`, default fallback behavior, inline config parsing, local directory loading, and candidate config handoff.
 
-`_resolver.py` owns candidate resolution, using `{endpoint}/candidates/{candidate_id}/config` for resolved config, optional skill-file download from the candidate manifest, and `DefaultAzureCredential` with the `https://ml.azure.com/.default` scope.
+`_resolver.py` owns candidate resolution, using `OPTIMIZATION_RESOLVE_ENDPOINT`, `{endpoint}/candidates/{candidate_id}/config` for resolved config, optional skill-file download from the candidate manifest, and `DefaultAzureCredential` with the `https://ml.azure.com/.default` scope.
 
 ## Verification Checklist
 
