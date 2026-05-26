@@ -107,7 +107,7 @@ async with websockets.connect(url, additional_headers={"Authorization": f"Bearer
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | 401 / 403 on upgrade | Missing or expired Entra token | Re-mint with `az account get-access-token --resource https://ai.azure.com` |
-| 404 on upgrade | Wrong `project_name` or `agent_name`, or missing preview flag | Verify with `agent_get`; ensure `foundry_features=HostedAgents=V1Preview` is set; confirm the deployed version uses `protocol: invocations_ws` and the region is **North Central US** |
+| 404 on upgrade | Wrong `project_name` or `agent_name`, missing preview flag, or unsupported region | Verify with `agent_get`; ensure `foundry_features=HostedAgents=V1Preview` is set; confirm the deployed version uses `protocol: invocations_ws` and that the region is supported per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
 | WS closes after accept | Container raised in the handler | Tail logs with `azd ai agent monitor --session-id <agent_session_id> --follow` |
 | Frames silently dropped | Wire-format mismatch (binary vs text, wrong schema) | Confirm both ends agree on framing — the platform performs no transcoding |
 | State lost on reconnect | Different `agent_session_id` used | Reuse the same `agent_session_id` to land on the same logical state inside the container |
