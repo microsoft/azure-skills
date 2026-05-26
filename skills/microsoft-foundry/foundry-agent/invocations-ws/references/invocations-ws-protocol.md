@@ -68,7 +68,7 @@ These are protocols developers build **on top of** the raw WebSocket. The platfo
 
 ### 1. Inspect the WebSocket Handler
 
-Look at the function decorated with `@app.ws_handler` (the `azure-ai-agentserver-invocations` host) — or, in older containers, `@app.websocket("/invocations_ws")` (raw FastAPI/ASGI). The handler determines:
+Look at the function decorated with `@app.ws_handler` on an `InvocationsAgentServerHost` (the `azure-ai-agentserver-invocations` SDK). The handler determines:
 
 - Whether frames are binary, text, or mixed
 - The expected first frame (handshake, capabilities, auth challenge)
