@@ -119,7 +119,7 @@ Use `session_list` to enumerate sessions:
 
 ## Best Practices
 
-1. **Create sessions explicitly** — Always use `session_create` before invoking a hosted agent. Do not rely on implicit session creation.
+1. **Create sessions explicitly** — Always use `session_create` before invoking a hosted agent with `responses` or `invocations` protocol. Do not rely on implicit session creation.
 2. **Reuse sessions** — Keep the same session for related multi-turn interactions to preserve agent state.
 3. **Clean up when done** — Delete sessions after use to release compute resources and avoid quota consumption.
 4. **Handle expiry** — Sessions expire based on platform policies. If `session_get` returns a non-running state, create a new session.

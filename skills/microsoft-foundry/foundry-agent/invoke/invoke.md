@@ -49,7 +49,7 @@ Key difference: `responses` takes a natural language `inputText` message with pl
 
 > ⚠️ **Critical for invocations:** `inputText` is forwarded as the raw HTTP request body. The agent developer defines what the container accepts. **Do not guess** — fetch the agent's OpenAPI spec or inspect its source code first.
 
-> 💡 **Tip:** The `agent_invoke` MCP tool supports both protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
+> 💡 **Tip:** The `agent_invoke` MCP tool supports both `responses` and `invocations` protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
 
 ## Workflow
 

@@ -45,7 +45,7 @@ If the user hasn't already specified, use `ask_user` to collect in this order:
 | `invocations` | Arbitrary payloads, custom SSE behavior, protocol bridges, webhook-style callers, or client-managed sessions |
 | `invocations_ws` | Real-time duplex workloads — voice agents, live streams, signaling for out-of-band media transports. The verify and adapter sections below assume HTTP — for WS specifics (URL with `agent_session_id`, browser-proxy requirement, framing), follow the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md). |
 
-> 💡 **Tip:** A single hosted agent can expose **multiple protocols simultaneously**. Declare each in `agent.yaml` under `protocols:` and register the matching handlers on the same `InvocationsAgentServerHost` (e.g., `invocations` + `invocations_ws` to pair a control/batch HTTP path with a WebSocket path).
+> 💡 **Tip:** A single hosted agent can expose **multiple protocols simultaneously**. Declare each in `agent.yaml` under `protocols:` and register the matching handlers on the same `InvocationAgentServerHost` (e.g., `invocations` + `invocations_ws` to pair a control/batch HTTP path with a WebSocket path).
 
 **Framework:**
 
@@ -223,7 +223,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 - Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
 
 **`invocations_ws`:**
-- Use the `azure-ai-agentserver-invocations` SDK and register a WebSocket handler with `@app.ws_handler` on the same `InvocationsAgentServerHost` 
+- Use the `azure-ai-agentserver-invocations` SDK and register a WebSocket handler with `@app.ws_handler` on the same `InvocationAgentServerHost` 
 - Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract and `agent_session_id` semantics
 - Reference samples live under `samples/python/hosted-agents/bring-your-own/invocations_ws/`
 

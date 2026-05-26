@@ -45,10 +45,10 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 Use the `azure-ai-agentserver-invocations` host — the same package that serves HTTP `/invocations` — and register a WebSocket handler with `@app.ws_handler`. The host runs the server, binds the port, exposes `/readiness`, handles `await websocket.accept()`, runs Ping/Pong keep-alive (default 30s), maps uncaught handler exceptions to close code `1011`, and emits the structured close event used by `azd ai agent monitor`. You can register `@app.invocation_handler` (HTTP `POST /invocations`) and `@app.ws_handler` (WebSocket `GET /invocations_ws`) on the same `app`.
 
 ```python
-from azure.ai.agentserver.invocations import InvocationsAgentServerHost
+from azure.ai.agentserver.invocations import InvocationAgentServerHost
 from starlette.websockets import WebSocket
 
-app = InvocationsAgentServerHost()
+app = InvocationAgentServerHost()
 
 @app.ws_handler                    # GET /invocations_ws (WebSocket upgrade)
 async def ws(websocket: WebSocket) -> None:
