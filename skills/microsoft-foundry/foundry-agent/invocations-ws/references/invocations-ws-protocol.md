@@ -68,20 +68,16 @@ These are protocols developers build **on top of** the raw WebSocket. The platfo
 
 ### 1. Inspect the WebSocket Handler
 
-Look at the function decorated with `@app.websocket("/invocations_ws")` (FastAPI) or the equivalent ASGI / framework hook. The handler determines:
+Look at the function decorated with `@app.ws_handler` (the `azure-ai-agentserver-invocations` host) — or, in older containers, `@app.websocket("/invocations_ws")` (raw FastAPI/ASGI). The handler determines:
 
 - Whether frames are binary, text, or mixed
 - The expected first frame (handshake, capabilities, auth challenge)
 - The control vocabulary (start, stop, mute, hangup, etc.)
 - The response cadence (turn-based vs free-running)
 
-### 2. Inspect the Sample Client
+### 2. Ask the User or Author
 
-Hosted-agent samples ship with a client portal (often under `chat_client/`) that connects to the same WebSocket. The client is the executable specification of the protocol — read its serializer/deserializer.
-
-### 3. Ask the User or Author
-
-If neither the handler nor a sample client is available, ask the agent author for the framing spec before connecting.
+If the handler isn't available, ask the agent author for the framing spec before connecting.
 
 ## Examples
 
