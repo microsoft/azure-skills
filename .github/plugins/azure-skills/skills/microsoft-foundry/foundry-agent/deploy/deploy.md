@@ -10,14 +10,14 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | MCP server | `azure` |
 | Key Foundry MCP tools | `agent_definition_schema_get`, `agent_update`, `agent_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
-| Container protocols | `a2a`, `responses`, `invocations`, `mcp` |
+| Container protocols | `a2a`, `responses`, `invocations`, `invocations_ws`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
 
 ## When to Use This Skill
 
-USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, direct code deployment, upload code deployment, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
 
-> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, or `agent_update` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, RBAC setup, invocation verification).
+> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, `agent_update`, or direct-code REST upload commands **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → deployment method selection → Dockerfile/image build or direct-code metadata upload → agent creation/version update → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema or REST metadata validation, RBAC setup, invocation verification).
 
 ## MCP Tools
 
@@ -28,12 +28,53 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 | `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
 | `agent_delete` | Delete an agent and clean up hosted-agent runtime resources | `projectEndpoint`, `agentName` (required) |
 
+## Deployment Method Selection
+
+Direct code deployment is opt-in only.
+
+- Prompt agents use [Workflow: Prompt Agent Deployment](#workflow-prompt-agent-deployment).
+- Hosted agents use [Workflow: Hosted Agent Deployment](#workflow-hosted-agent-deployment); select the hosted deployment method in Step 3.
+- Do not infer direct code deployment just because Docker is unavailable or a Dockerfile is missing. Ask or use the default Docker/ACR workflow guidance.
+
+If the user explicitly says `using direct code deployment`, `direct-code deployment`, `upload code deployment`, or otherwise clearly asks to deploy by uploading source code, Step 3 reads [Direct Code Deployment Reference](references/direct-code-deployment.md), deploys the agent directly, then proceeds directly to [Step 7: Test the Agent](#step-7-test-the-agent).
+
 ## Workflow: Hosted Agent Deployment
 
+> ⚠️ **Warning: hosted agent deployment has 8 steps, not 7.**
+>
+> The single most common failure of this skill is stopping after Step 7 (invocation smoke test) and emitting a "deployment complete" summary. **Step 8 (auto-generate evaluation suite) is mandatory and runs automatically after every deploy — including redeploys, version bumps, and `azd deploy` re-runs.**
+>
+> Before you write any final summary, Playground link, version table, or deployment success message, you MUST self-verify:
+>
+> 1. Did Step 8 run to completion (suite generated **or** documented fallback persisted)?
+> 2. Is deployment context resolvable from azd or metadata, and was `.foundry` updated only with non-derivable overlay/cache state?
+> 3. Did you prompt the user to run an evaluation?
+>
+> If the answer to any of these is **no**, do not summarize — go run Step 8 now.
+
+> ⚠️ **`azd deploy` ≠ deployment complete.** `azd deploy` (or any `azd up`/`az acr build`/`agent_update` shortcut) only covers Steps 1–6. You **MUST** still execute Step 7 (invocation test) and Step 8 (auto-generate evaluation suite) before reporting success to the user. A successful `azd deploy` exit code is **not** a stopping condition. A successful invocation in Step 7 is **not** a stopping condition either.
+
+### Definition of Done — Hosted Agent Deployment
+
+A hosted-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done. If you skip any item, your response is incomplete.
+
+For direct-code deployments, Step 3 runs the direct-code reference and deploys the agent directly, then proceeds directly to Step 7.
+
+- [ ] Step 1 — Project scanned, type detected
+- [ ] Step 2 — Environment variables confirmed with user
+- [ ] Step 3 — Deployment method selected and prepared
+- [ ] Step 4 — Agent configuration collected
+- [ ] Step 5 — Agent definition schema retrieved
+- [ ] Step 6 — `agent_update` called successfully
+- [ ] Step 7 — RBAC checked **and** invocation smoke test passed (via the invoke skill)
+- [ ] Step 8 — Auto-generated evaluation suite job reached `succeeded` (or documented fallback)
+- [ ] Step 8 — Cache files written: `.foundry/suites/<suite>-v<ver>.json`, `.foundry/evaluators/<eval>-v<ver>.json` (FULL definition, not stub), `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json`, AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual dataset rows via SAS-url download)
+- [ ] Deployment context is resolvable from azd or metadata; `.foundry/agent-metadata*.yaml` contains only non-derivable overlay/cache state for the selected environment
+- [ ] User prompted to run an evaluation
 
 ### Step 1: Detect and Scan Project
 
-Get the project path from the selected agent root in the project context (see Common: Project Context Resolution). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
+Get the project path from the selected agent root in the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
 
 | Project Type | Detection Files |
 |--------------|-----------------|
@@ -67,7 +108,13 @@ Loop until the user confirms or cancels:
 - `VAR_NAME=new_value` → Update the value, show updated table, ask again
 - `cancel` → Abort deployment
 
-### Step 3: Generate Dockerfile and Build Image
+### Step 3: Select Deployment Method and Prepare
+
+If the user explicitly requested direct code deployment or upload code deployment, do not generate a Dockerfile or build an image. Read and follow [Direct Code Deployment Reference](references/direct-code-deployment.md), deploy the agent directly, then proceed directly to [Step 7: Test the Agent](#step-7-test-the-agent).
+
+For all other hosted-agent deployments, continue with the Docker/ACR preparation below.
+
+#### Image built and pushed to ACR
 
 Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Use official base image for the detected language and runtime version
@@ -162,17 +209,53 @@ After this RBAC check is complete, read and follow the [invoke skill](../invoke/
 
 If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+> ⚠️ **Not done yet: invocation success is the midpoint, not the finish line.** The next action after a passing smoke test is **Step 8**, not a deployment summary. Do not write a summary, version table, or Playground link yet.
 
-### Step 8: Auto-Create Evaluators & Dataset
+### Step 8: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below in 8a.
+
+This step is mandatory — not optional — for every hosted-agent deployment, including redeploys, version bumps, and `azd deploy` re-runs against an already-existing agent. In azd projects, resolve deployment context from `azd env get-values` and treat `.foundry/agent-metadata*.yaml` as an overlay/cache instead of copying azd-owned values into it.
+
+**8a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask the user to pick a setup source. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend traces when the agent has recent traces, or current agent code/definition:
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use?*
+> *(a) **Current agent code/definition** — synthetic Q&A from `agent.yaml` / instructions. Best when there's little or no trace history.*
+> *(b) **Historical traces** — last 3 days, ~50 traces. Best if the agent has recent invocations.*
+> *(c) **Existing eval.yaml** — local dataset/evaluator intent from the selected agent folder. Best when azd eval config already exists."*
+
+**8b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below for the generation, polling, persistence, and metadata-update steps. Required parameters and poll-to-terminal rules are non-negotiable.
+
+**8c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally):
+
+- `evaluation_suite_get` → `.foundry/suites/<suite>-v<ver>.json` (full object)
+- `evaluator_catalog_get` → `.foundry/evaluators/<eval>-v<ver>.json` (full definition, NOT a stub)
+- `evaluation_dataset_get` + `evaluation_dataset_sas_url_get` → `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json` (metadata stub) AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual JSONL rows). The SAS-url tool returns a container-scope SAS — list the container then `curl.exe` each blob. See the reference for the exact list+download steps. Set `contentDownloaded: true` in the stub once files are on disk.
+
+Do not write the deployment summary until all cache files exist.
+
+**8d. Skip-only-on-explicit-request.** If — and only if — the user explicitly says "skip eval suite generation," record that decision in your summary and still ensure deployment context remains resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip; this step is opt-out, not opt-in.
 
 ## Workflow: Prompt Agent Deployment
 
+### Definition of Done — Prompt Agent Deployment
+
+A prompt-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done.
+
+- [ ] Step 1 — Agent configuration collected
+- [ ] Step 2 — Agent definition schema retrieved
+- [ ] Step 3 — `agent_update` called successfully
+- [ ] Step 4 — Invocation smoke test passed (via the invoke skill)
+- [ ] Step 5 — Auto-generated evaluation suite job reached `succeeded` (or documented fallback)
+- [ ] Step 5 — Cache files written: `.foundry/suites/<suite>-v<ver>.json`, `.foundry/evaluators/<eval>-v<ver>.json` (FULL definition, not stub), `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json`, AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual dataset rows via SAS-url download)
+- [ ] Deployment context is resolvable from azd or metadata; `.foundry/agent-metadata*.yaml` contains only non-derivable overlay/cache state for the selected environment
+- [ ] User prompted to run an evaluation
+
 ### Step 1: Collect Agent Configuration
 
-Use the project endpoint from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
+Use the project endpoint from the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Ask the user only for values not already resolved:
 - **Agent name** — Unique name for the agent
 - **Model deployment** — Model deployment name (e.g., `gpt-4o`)
 - **Instructions** — System prompt (optional)
@@ -200,13 +283,28 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+> ⚠️ **Not done yet: invocation success is the midpoint, not the finish line.** The next action is **Step 5**, not a deployment summary. Do not write a summary or Playground link yet.
 
-### Step 5: Auto-Create Evaluators & Dataset
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below.
+
+**5a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask which setup source to use. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend recent traces when present, or current agent code/definition:
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent code/definition (synthetic Q&A), (b) Historical traces (last 3 days, ~50 traces), or (c) Existing eval.yaml from the selected agent folder?"*
+
+**5b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
+
+**5c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally): suite JSON, evaluator full definition, dataset `.ref.json` PLUS the actual dataset blobs downloaded via `evaluation_dataset_sas_url_get` (container SAS → list → curl each blob). Do not write the deployment summary until those files exist.
+
+**5d. Skip-only-on-explicit-request.** Skip only if the user explicitly says "skip eval suite generation." Keep deployment context resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip.
 
 ## Display Agent Information
+
+> ⚠️ **Gate:** Do not render the table or Playground link until the Definition of Done checklist for the selected workflow (Hosted or Prompt) is fully satisfied, including the invocation smoke test, the auto-generated evaluation suite (or documented skip), and resolvable deployment context plus `.foundry` overlay/cache updates. The Playground link is the final artifact, not a mid-workflow checkpoint.
+
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
 Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
@@ -221,95 +319,86 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 
 ## Document Deployment Context
 
-After a successful deployment, persist the deployment context to the selected metadata file under `<agent-root>/.foundry/` so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. Local/dev flows should default to `agent-metadata.yaml`; prod or CI-targeted flows can point at `agent-metadata.prod.yaml` or another explicit sidecar file. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
+After a successful deployment, make the deployment context reusable without duplicating azd-owned values. If `azure.yaml` and `azd env get-values` provide the project endpoint, agent name/version, ACR, App Insights, subscription, resource group, and project identifiers, treat azd as the source of truth. Persist only non-derivable overlay/cache state to the selected metadata file under `<agent-root>/.foundry/`.
 
-| Metadata Field | Purpose | Example |
-|----------------|---------|---------|
-| `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
-| `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
-| `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
-| `environments.<env>.evaluationSuites[]` | Evaluation bundles for datasets, evaluators, tags, and thresholds | `smoke-core`, `trace-regression-suite` |
-| `environments.<env>.evaluationSuites[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
+| State | Preferred Source | Metadata Behavior |
+|-------|------------------|-------------------|
+| Project endpoint, agent name/version, ACR, observability | azd env values | Do not copy when azd provides them |
+| azd binding | selected azd env/service | Store `azd.environmentName` and `azd.service` when useful |
+| Evaluation suites | Foundry lookup/generation or verified `eval.yaml` sync | Persist in `evaluationSuites[]` |
+| Local cache paths and results | `.foundry/` cache/results | Persist suite, dataset, evaluator, and result refs |
 
-If the selected metadata file is a preferred single-environment file, update only that one environment block and leave sibling metadata files untouched. If the selected metadata file is a legacy multi-environment file, merge the selected environment instead of overwriting other environments or cached evaluation suites without confirmation. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` when you persist deployment metadata.
+If metadata and azd disagree for the same deployment value, stop and ask which source is authoritative. If the selected metadata file is a preferred single-environment file, update only that one environment block and leave sibling metadata files untouched. If the selected metadata file is a legacy multi-environment file, merge the selected environment instead of overwriting other environments or cached evaluation suites without confirmation. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` when you persist synced suite metadata.
 
-## After Deployment — Auto-Create Evaluators & Dataset
+## After Deployment — Auto-Generate Evaluation Suite
 
 > ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
 
-### 1. Read Agent Instructions
+### 1. Resolve Effective Context
+
+Use the [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution) flow. In azd projects, resolve project endpoint, agent name/version, ACR, and observability from `azd env get-values`; use `.foundry/agent-metadata*.yaml` only for overlays and synced suite/cache refs. If `eval.yaml` exists in the selected agent root, parse it as local evaluation intent before generating anything new.
+
+### 2. Read Agent Instructions
 
 Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
 
-### 2. Reuse or Refresh Local Cache
+### 3. Reuse or Refresh Suite Cache
 
 Inspect the selected agent root before generating anything new:
 
-- Reuse `.foundry/evaluators/` and `.foundry/datasets/` when they already contain the right assets for the selected environment.
-- Ask before refreshing cached files or replacing thresholds.
-- If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
+- Reuse a selected environment `evaluationSuites[]` entry when it has `suiteName`, `suiteVersion`, matching `.foundry/datasets/`, and matching `.foundry/evaluators/` cache files.
+- When `eval.yaml` exists and matches the selected agent, prefer verifying/registering its dataset and evaluator references before creating a brand-new generated suite.
+- Call `evaluation_suite_get` to confirm the remote suite still exists before reusing it.
+- Ask before refreshing cached files, replacing thresholds, or writing a new suite version.
+- If cache or the remote suite is missing/stale, generate a new suite and update metadata for the active environment only.
 
-### 2.5 Discover Existing Evaluators
-
-Use **`evaluator_catalog_get`** with the selected environment's project endpoint to list all evaluators already registered in the project. Display them to the user grouped by type (`custom` vs `built-in`) with name, category, and version. During Phase 1, catalog any promising custom evaluators for later reuse, but keep the first run on the built-in baseline. Only propose creating a new evaluator in Phase 2 when no existing evaluator covers the required dimension.
-
-### 3. Select Default Evaluators
-
-Follow the [observe skill's Two-Phase Evaluator Strategy](../observe/observe.md). Phase 1 is built-in only, so do not create a new custom evaluator during the initial setup pass.
-
-Start with <=5 built-in evaluators for the initial eval run so the first pass stays fast:
-
-| Category | Evaluators |
-|----------|-----------|
-| **Quality (built-in)** | relevance, task_adherence, intent_resolution |
-| **Safety (built-in)** | indirect_attack |
-| **Tool use (built-in, conditional)** | tool_call_accuracy (use when the agent calls tools; some catalogs label it as `builtin.tool_call_accuracy`) |
-
-After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
-
-If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring. When creating custom evaluator `promptText`, preserve the rubric but remove or rewrite user-provided output-format instructions that conflict with the runtime-enforced `result`/`reason` JSON contract (for example, `score`/`reasoning` schemas or duplicate `OUTPUT FORMAT` blocks).
-
-### 4. Identify LLM-Judge Deployment
+### 4. Identify Generation Deployment
 
 Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
 
-### 5. Generate Seed Dataset
+### 5. Generate Evaluation Suite
 
-> ⚠️ **MANDATORY: Read the full generation workflow before proceeding.**
+Read and follow [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md) for source selection, required parameters, polling, and cache writes. In the deploy flow, keep these guardrails:
 
-Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
-- The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
-- Coverage distribution targets and generation rules
-- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
-- Foundry registration steps (blob upload + `evaluation_dataset_create`)
-- Metadata updates for the selected metadata file and `manifest.json`
+- Ask the user which setup source to use before calling `evaluation_suite_generation_job_create`; recommend matching `eval.yaml` when present, then recent traces when available, otherwise the current agent code/definition.
+- Use the chat-capable generation deployment selected above and honor the reference's service constraints, especially `maxSamples` (15-1000) and `agentSourceNames: [<agentName>]` for agent-sourced suites.
+- Do not report deployment complete while the generation job is `in_progress`; poll with `evaluation_suite_generation_job_get` until `succeeded`, `failed`, or `canceled`, then inspect the suite with `evaluation_suite_get` and cache artifacts as described in the reference.
 
-Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
+### 6. Fallback to Manual Suggestions
 
-The local filename must start with the selected environment's Foundry agent name (`agentName` in the selected metadata file) before adding stage, environment, or version suffixes.
+If `evaluation_suite_generation_job_create`, `evaluation_suite_generation_job_get`, or `evaluation_suite_get` fails, is unavailable, or returns incomplete artifacts, fall back to the previous manual flow:
 
-Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
+1. Call `evaluator_catalog_get` and suggest relevant built-in/custom evaluators.
+2. Read [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md), generate valid local JSONL with `query` and `expected_behavior`, and register it with `evaluation_dataset_create`.
+3. Persist the suite with `generationSource: manual-fallback` and include the fallback reason in the workflow summary.
 
-### 6. Persist Artifacts and Evaluation Suites
+Do **not** silently ignore generation failures; the user should know whether setup used the generated-suite path or the fallback path.
 
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
+The local filename must start with the effective selected Foundry agent name before adding stage, environment, or version suffixes.
+
+### 7. Persist Artifacts and Evaluation Suites
+
+Save generated or fallback evaluator definitions, local datasets, and evaluation outputs under `.foundry/` using the cache paths defined in [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md), then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
   agent-metadata.yaml
   agent-metadata.prod.yaml
+  suites/
+    <suite-name>-v<version>.json
   evaluators/
-    <name>.yaml
+    <evaluator-name>-v<version>.json
   datasets/
-    <agent-name>-eval-seed-v1.jsonl
+    <agent-name>-<dataset-name>-v<version>.ref.json
+    <dataset-name>-v<version>/<blob>
   results/
 ```
 
-Each evaluation suite should bundle one dataset with the evaluator list, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: seed`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one smoke suite after deployment. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
+Each evaluation suite should bundle the remote suite reference, local cache paths, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: generated`). Persist `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `datasetFile`, and `datasetUri` together. Do not persist azd-owned deployment fields when azd resolves them. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
-### 7. Prompt User
+### 8. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains generated evaluation-suite metadata, local dataset/evaluator references, and remote Foundry suite references. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.
@@ -350,6 +439,7 @@ Each evaluation suite should bundle one dataset with the evaluator list, thresho
 | `a2a` | Agent-to-Agent protocol |
 | `responses` | OpenAI Responses API |
 | `invocations` | Invocation payload protocol for arbitrary request bodies and custom SSE behavior |
+| `invocations_ws` | Duplex WebSocket protocol for real-time / voice / signaling workloads (`WS /invocations_ws` on port 8088). Connect through `wss://...endpoint/protocols/invocations_ws?...&agent_session_id=...`. See the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md) for the full client/server contract. |
 | `mcp` | Model Context Protocol |
 
 ## Agent Management Operations
@@ -387,10 +477,11 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode), the skill skips user confirmation prompts and uses sensible defaults:
 
 - **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
-- **Agent name** — Must be provided in the initial user message or derived sensibly from the project context; if missing, the skill fails with an error instead of prompting
-- **Hosted agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
+- **Agent name** — Must be provided in the initial user message or derived sensibly from the project context (`agent.yaml`, `agent.manifest.yaml`, folder name); if missing, the skill fails with an error instead of prompting
+- **Docker/ACR hosted-agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
+- **Direct code deployment** — If explicitly requested, Step 3 reads the direct-code reference, deploys the agent directly, then proceeds directly to Step 7
 
-> ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, ACR image) are provided upfront in the user message or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
+> ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, model deployment name, and ACR image for Docker/ACR deployments) are provided upfront in the user message, local `.env`, manifests, or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
 
 ## Additional Resources
 
