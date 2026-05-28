@@ -1,76 +1,46 @@
-# Workflow — Azure Enterprise Infra Planner
+# Workflow
 
-## Rules
+## Mandatory Rules
 
-1. Research before planning — call `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_wellarchitectedframework` MCP tools before reading local resource files or generating a plan. See [research.md](research.md) Step 2.
-2. Plan before IaC — generate `<project-root>/.azure/infrastructure-plan.json` before any IaC so we can map the plan to generated code and ensure alignment.
-3. Get approval — plan status must be `approved` before deployment.
-4. User chooses IaC format — Bicep or Terraform; ask if not specified.
-5. Destructive actions require explicit confirmation.
+- You must execute the seven phases in sequential order. Follow the instructions precisely as defined. Do not continue to the next phase until the current phase is complete.
+- You must stop on all "gate" conditions and only continue when the conditions have been met.
+- Destructive actions require explicit user confirmation.
+- You must read each phase's reference file in full before executing it.
+- Never assume knowledge and cut corners or skip research steps.
 
-> Complete each phase fully before starting the next. Phases are sequential, not parallel.
+## Overview
 
-## Phase 1: Research — WAF Tools
-Call MCP tools to gather best practices and WAF guidance. See [research.md](research.md) Steps 1-2.
-- Call `get_azure_bestpractices` once (direct call — small response)
-- Call `wellarchitectedframework_serviceguide_get` for each core service (direct parallel calls — small responses, returns URLs only)
-- Use sub-agents to fetch and summarize each WAF guide URL (large responses — 20-60KB each)
+Starting from Phase 1, execute all phases in sequential order. Do not advance to the next phase until the current phase is complete and all of its gate conditions have been met.
 
-Gate: All WAF tool calls complete and summarized before proceeding.
+| Phase | Action | Reference | Key Gate |
+|-------|--------|-----------|----------|
+| 1 | Extract insights | [1-extract-insights.md](phases/1-extract-insights.md) | Insights written to `<project-root>/.azure/insights.json` |
+| 2 | Research best practices | [2-research-best-practices.md](phases/2-research-best-practices.md) | All MCP tool calls complete and WAF guides summarized |
+| 3 | Research resources | [3-research-resources.md](phases/3-research-resources.md) | All resources have ARM type, naming rules, and pairing constraints; user approves resource list |
+| 4 | Generate plan | [4-generate-plan.md](phases/4-generate-plan.md) | Plan JSON written to disk |
+| 5 | Verify plan | [5-verify.md](phases/5-verify.md) | All checks pass, user approves |
+| 6 | Generate IaC | [6-generate-iac.md](phases/6-generate-iac.md) | All IaC files generated and saved to disk |
+| 7 | Deploy to Azure | [7-deploy.md](phases/7-deploy.md) | User confirms destructive actions |
 
-## Phase 2: Research — Refine & Lookup
-
-Look up resources before generating the plan. The [resources/](resources/README.md) directory contains ARM types, API versions, CAF prefixes, naming rule URLs, and region categories that MCP tools do not provide.
-
-Apply WAF findings, then look up every resource in local reference files. See [research.md](research.md) Steps 3-4.
-- Walk through [waf-checklist.md](waf-checklist.md) — add missing resources, document omissions
-- Read [resources/README.md](resources/README.md) to identify which category files to load, then read only the relevant category files (e.g., `resources/compute-infra.md` for AKS, `resources/security.md` for Key Vault)
-- For each resource: use sub-agents to fetch naming rules via `microsoft_docs_fetch` using URLs from the resource category files
-- For each resource: read pairing constraints from the matching [constraints/](constraints/README.md) category file (e.g., `constraints/networking-core.md` for VNet)
-
-Gate: Every resource has an ARM type, naming rules, and pairing constraints checked. Present the preliminary resource list to the user with brief justifications and wait for approval before proceeding.
-
-## Phase 3: Plan Generation
-Build `<project-root>/.azure/infrastructure-plan.json` using the schema in [plan-schema.md](plan-schema.md). Set `meta.status` to `draft`.
-
-Gate: Plan JSON written to disk before proceeding.
-
-## Phase 4: Verification
-Run a full verification pass on the generated plan. See [verification.md](verification.md) and [pairing-checks.md](pairing-checks.md).
-- Check goal coverage — does every user requirement map to a resource?
-- Check dependency completeness — every `dependencies[]` entry resolves
-- Check pairing constraints — SKU compatibility, subnet conflicts, storage pairing
-- Fix issues in-place in the plan JSON
-
-Gate: All verification checks pass. Present plan to user and wait for approval before proceeding.
-
-## Phase 5: IaC Generation
-Generate Bicep or Terraform from the approved plan. Refer to [bicep-generation.md](bicep-generation.md) for Bicep or [terraform-generation.md](terraform-generation.md) for Terraform.
-
-Gate: `meta.status` must be `approved` before generating any IaC files.
-
-## Phase 6: Deployment
-Execute deployment commands. See [deployment.md](deployment.md).
-- Confirm subscription and resource group with user
-- Select the correct deployment scope based on `targetScope` in `main.bicep` (resource group, subscription, management group, or tenant)
-- Run `az bicep build` to validate, then execute the matching scope command (`az deployment group create`, `az deployment sub create`, etc.) or `terraform apply`
-
-Gate: `meta.status` must be `approved`. Destructive actions require explicit user confirmation.
-
-## Status Lifecycle
+## Plan Status Lifecycle
 
 `draft` → `approved` → `deployed`
+
+- `draft` — set by Phase 4 when the plan is written.
+- `approved` — set by Phase 5 only after the user explicitly approves. Required before Phase 6 and Phase 7.
+- `deployed` — set by Phase 7 after a successful `az deployment ... create` or `terraform apply`.
 
 ## Outputs
 
 | Artifact | Location |
 |----------|----------|
+| Insights | `<project-root>/.azure/insights.json` |
 | Infrastructure Plan | `<project-root>/.azure/infrastructure-plan.json` |
 | Bicep files | `<project-root>/infra/main.bicep`, `<project-root>/infra/modules/*.bicep` |
 | Terraform files | `<project-root>/infra/main.tf`, `<project-root>/infra/modules/**/*.tf` |
 
-Before writing any `.bicep` or `.tf` files:
-1. Create the `infra/` directory at `<project-root>/infra/`
-2. Create `infra/modules/` for child modules
-3. Write `main.bicep` (or `main.tf`) inside `infra/`, not in the project root or `.azure/`
+Before writing any `.bicep` or `.tf` files in Phase 6:
 
+1. Create the `infra/` directory at `<project-root>/infra/`.
+2. Create `infra/modules/` for child modules.
+3. Write `main.bicep` (or `main.tf`) inside `infra/`, not in the project root or `.azure/`.

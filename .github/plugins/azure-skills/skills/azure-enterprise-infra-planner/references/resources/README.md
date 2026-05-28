@@ -1,7 +1,5 @@
 # Resource Reference Index
 
-Load only the files matching resources identified in Phase 1.
-
 ## Region Categories
 
 Resources fall into region-scoped or global categories. Check individual files for details.

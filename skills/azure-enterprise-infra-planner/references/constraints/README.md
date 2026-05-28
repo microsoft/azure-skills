@@ -1,7 +1,5 @@
 # Pairing Constraints Index
 
-Load only the files matching resources identified in Phase 1.
-
 | Sub-Category | File | Resources |
 |-------------|------|-----------|
 | AI & ML | [ai-ml.md](ai-ml.md) | AI Search, Cognitive Services, ML Workspace |

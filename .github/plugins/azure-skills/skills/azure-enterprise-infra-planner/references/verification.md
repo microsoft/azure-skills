@@ -24,4 +24,14 @@ Run these checks immediately after writing each resource to `plan.resources[]`. 
 
 ## 3. Property & Pairing Checks
 
-Cross-check against every already-written connected resource. Consult the resource file's Pairing Constraints section and [pairing-checks.md](pairing-checks.md) for full rules covering: SKU compatibility, subnet/network conflicts, storage pairing, Cosmos DB, Key Vault/CMK, SQL Database, and AKS networking.
+Read [pairing-checks.md](pairing-checks.md) in full. It covers SKU compatibility, subnet/network conflicts, storage pairing, Cosmos DB, Key Vault/CMK, SQL Database, and AKS networking. For every connected pair of resources in the plan, walk through each applicable rule, confirm compliance, and fix any violation in-place before moving on to the next pair.
+
+## 4. Insights Checks
+
+Skip this section when `insights.json` does not exist or contains no insights.
+
+| # | Check | Fix |
+|---|-------|-----|
+| 1 | Every insight in `insights.json` is either justified in `inputs.insightsApplied` or has a documented reason for non-application in `plan.overallReasoning.tradeoffs`. An insight must not appear in both. | Add the insight to `insightsApplied` or document why it was not followed. |
+| 2 | Every entry in `inputs.insightsApplied` cites the insight ID correctly, and its description of how and why it was applied references the insight's pattern and planning implication. | Correct the entry or remove it if it was applied incorrectly. |
+| 3 | No insight should result in a weaker security posture than available alternatives, unless it is explicitly requested in the user prompt or stated in the sub-goals. | Revert to the stronger alternative and move the insight to `plan.overallReasoning.tradeoffs` with an explanation. |
