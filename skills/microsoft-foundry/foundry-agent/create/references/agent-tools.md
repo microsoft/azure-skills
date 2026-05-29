@@ -1,45 +1,52 @@
-# Agent Tools — Simple Tools
+# Agent Tools
 
-Add tools to agents to extend capabilities. This file covers tools that work without external connections. For tools requiring connections/RBAC setup, see:
-- [Web Search tool](tool-web-search.md) — real-time public web search with citations (default for web search)
-- [Bing Grounding tool](tool-bing-grounding.md) — web search via dedicated Bing resource (only when explicitly requested)
-- [Azure AI Search tool](tool-azure-ai-search.md) — private data grounding with vector search
-- [MCP tool](tool-mcp.md) — remote Model Context Protocol servers
+This file is the **index** for every tool an agent can use. For each tool, it points to a dedicated reference file, and — where the tool is also available through a [toolbox](use-toolbox-in-hosted-agent.md) — lists the toolbox `type` value.
 
-## Code Interpreter
+Two delivery paths exist:
 
-Enables agents to write and run Python in a sandboxed environment. Supports data analysis, chart generation, and file processing. Has [additional charges](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/) beyond token-based fees.
+- **Prompt agent** — the agent definition declares tool classes directly (`CodeInterpreterTool`, `MCPTool`, …). Use the SDK class column and the per-tool reference.
+- **Hosted agent via toolbox** — the agent connects to a single MCP endpoint that exposes all tools declared in a toolbox version. Use the `type` column and see [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md). For wiring the underlying project connection (catalog tile or generic remote MCP), see [foundry-tool-catalog.md](foundry-tool-catalog.md).
 
-> Sessions: 1-hour active / 30-min idle timeout. Each conversation = separate billable session.
-
-For code samples, see: [Code Interpreter tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/code-interpreter?view=foundry)
-
-## Function Calling
-
-Define custom functions the agent can invoke. Your app executes the function and returns results. Runs expire 10 minutes after creation — return tool outputs promptly.
-
-> **Security:** Treat tool arguments as untrusted input. Don't pass secrets in tool output. Use `strict=True` for schema validation.
-
-For code samples, see: [Function Calling tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/function-calling?view=foundry)
+> 💡 **Authoritative tool shapes:** the source-of-truth for every tool's wire shape is the **Foundry Agents typespec** on the `main` branch of [`Azure/azure-rest-api-specs`](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/cognitiveservices). When in doubt about a field name, default, or new tool type that isn't yet documented here, load the typespec directly — it's updated as tools are added/changed.
 
 ## Tool Summary
 
-| Tool | Connection? | Reference |
-|------|-------------|-----------|
-| `CodeInterpreterTool` | No | This file |
-| `FileSearchTool` | No (vector store required) | [tool-file-search.md](tool-file-search.md) |
-| `FunctionTool` | No | This file |
-| `WebSearchPreviewTool` | No | [tool-web-search.md](tool-web-search.md) |
-| `BingGroundingAgentTool` | Yes (Bing) | [tool-bing-grounding.md](tool-bing-grounding.md) |
-| `AzureAISearchAgentTool` | Yes (Search) | [tool-azure-ai-search.md](tool-azure-ai-search.md) |
-| `MCPTool` | Optional | [tool-mcp.md](tool-mcp.md) |
+| Tool | Prompt-agent SDK class | Toolbox `type` | Connection? | Reference |
+|------|------------------------|----------------|-------------|-----------|
+| Code Interpreter | `CodeInterpreterTool` | `code_interpreter` | No | [tool-code-interpreter.md](tool-code-interpreter.md) |
+| Function calling (client-side) | `FunctionTool` | — (client-side only) | No | [tool-function-calling.md](tool-function-calling.md) |
+| File Search | `FileSearchTool` | `file_search` | No (vector store required) | [tool-file-search.md](tool-file-search.md) |
+| Web Search (preview) | `WebSearchPreviewTool` | `web_search` (with optional `web_search.custom_search_configuration` for Bing Custom Search) | No (basic Bing); **Yes** for Grounding with Bing Custom Search — the connection scopes grounding to specific domains | [tool-web-search.md](tool-web-search.md) |
+| Bing Grounding | `BingGroundingAgentTool` | — (N/A in toolbox; the toolbox path uses `web_search` with `web_search.custom_search_configuration`) | Yes (Bing) — prompt-agent path only | [tool-bing-grounding.md](tool-bing-grounding.md) |
+| Azure AI Search | `AzureAISearchAgentTool` | `azure_ai_search` | Yes (Search) | [tool-azure-ai-search.md](tool-azure-ai-search.md) |
+| MCP server (remote) | `MCPTool` | `mcp` | Optional (none / static key / project MI / OAuth) | [tool-mcp.md](tool-mcp.md); toolbox attach via [foundry-tool-catalog.md](foundry-tool-catalog.md) |
+| OpenAPI tool | (n/a as a single class) | `openapi` | Conditional — `connection` auth requires `project_connection_id`; **`managed_identity` auth does NOT** (the project MI is used directly with an `audience`) | [tool-openapi.md](tool-openapi.md) |
+| Agent-to-Agent (A2A) | (n/a as a single class) | `a2a_preview` | Optional | [tool-a2a.md](tool-a2a.md) |
+| Agent Memory | `MemorySearchTool` | — (separate memory store) | Yes (project MI + embedding model) | [tool-memory.md](tool-memory.md) |
+| **Work IQ (preview)** | (n/a — server-side only) | `work_iq_preview` | Yes (Work IQ BYO-Entra-app OAuth connection) | [tool-work-iq.md](tool-work-iq.md) |
+| **Fabric IQ (preview)** | (n/a — server-side only) | `fabric_iq_preview` | Yes (Fabric IQ Entra-app OAuth or managed-OAuth connection) | [tool-fabric-iq.md](tool-fabric-iq.md) |
+| **Tool Search (preview)** | (n/a — toolbox-side configuration directive) | `toolbox_search_preview` | No | [tool-tool-search.md](tool-tool-search.md) |
 
-> ⚠️ **Default for web search:** Use `WebSearchPreviewTool` unless the user explicitly requests Bing Grounding or Bing Custom Search.
+> ⚠️ **Default for web search:** Use `WebSearchPreviewTool` (`type: web_search`) unless the user explicitly requests Bing Grounding or Bing Custom Search.
 
-> Combine multiple tools on one agent. The model decides which to invoke.
+> Combine multiple tools on one agent or one toolbox version. The model decides which to invoke. For multi-tool toolbox limits (at most one unnamed tool per type, unique `server_label` per MCP tool) see [toolbox-reference.md](toolbox-reference.md#multi-tool-toolbox-constraint).
+
+## How to use this index
+
+When you need details for a specific tool, **load that tool's reference file directly** — each one is self-contained (shape, requirements, references). Don't try to keep all tools in context at once.
+
+For the toolbox runtime contract (endpoint, auth, MCP protocol, citation patterns, troubleshooting) see [toolbox-reference.md](toolbox-reference.md). For wiring a toolbox into a hosted agent (env vars, samples, tracing) see [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md).
+
+## Adjacent (not a `type` in a toolbox version)
+
+- **Agent Memory** — use the `MemorySearchTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox). See [tool-memory.md](tool-memory.md).
+- **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. Event-based routines are powered by the same **Connector Namespace** that backs catalog-MCP / managed-MCP connectors. See the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 
 ## References
 
-- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
-- [Code Interpreter](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/code-interpreter?view=foundry)
-- [Function Calling](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/function-calling?view=foundry)
+- **[Foundry Agents typespec (`main`)](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/cognitiveservices)** — authoritative tool shapes
+- [Tool Catalog](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog)
+- [Toolbox (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
+- [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md) — wiring a toolbox into a hosted agent
+- [toolbox-reference.md](toolbox-reference.md) — toolbox runtime contract
+- [foundry-tool-catalog.md](foundry-tool-catalog.md) — project connections for remote tools
