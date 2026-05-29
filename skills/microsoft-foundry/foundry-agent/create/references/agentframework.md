@@ -72,13 +72,13 @@ For workflow samples and advanced patterns, search the [Agent Framework GitHub r
 
 ## Debugging
 
-Use [AI Toolkit for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging:
+Use [Foundry Toolkit for VS Code (Formerly AI Toolkit)](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging:
 
 1. Install `debugpy` for VS Code Python Debugger support
 2. Install `agent-dev-cli` (pre-release) for the `agentdev` command
 3. Key debug tasks: `agentdev run <entrypoint>.py --port 8087` starts the agent HTTP server, `debugpy --listen 127.0.0.1:5679` attaches the debugger, and the `ai-mlstudio.openTestTool` VS Code command opens the Agent Inspector UI
 
-For VS Code `launch.json` and `tasks.json` configuration templates, see [AI Toolkit Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
+For VS Code `launch.json` and `tasks.json` configuration templates, see [Foundry Toolkit Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
 
 ## Common Errors
 
