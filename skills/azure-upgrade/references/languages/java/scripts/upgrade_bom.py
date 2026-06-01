@@ -15,12 +15,12 @@ Step 2 – Remove redundant explicit versions:
 - Gradle: org.openrewrite.gradle.RemoveRedundantDependencyVersions
 
 Usage:
-    python3 upgrade_bom.py <project_dir> <bom_version> [options]
+    python3 upgrade_bom.py <project_dir> [latest] [options]
     python3 upgrade_bom.py --get-latest-version
 
 Arguments:
     project_dir   Path to the project root (must contain pom.xml or build.gradle).
-    bom_version   Target azure-sdk-bom version to apply. Resolve the latest stable version first.
+    latest        Optional compatibility token. Explicit version pins are rejected.
 
 Options:
     --mvn <cmd>     Maven command override.
@@ -44,6 +44,10 @@ GROUP_ID = "com.azure"
 ARTIFACT_ID = "azure-sdk-bom"
 BOM_POM_URL = "https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml"
 POM_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
+MIN_BOM_VERSION = "1.3.0"
+LATEST_VERSION_SENTINEL = "latest"
+HTTP_TIMEOUT_SECONDS = 30
+STABLE_SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 # Maven constants
 MVN_REWRITE_PLUGIN = "org.openrewrite.maven:rewrite-maven-plugin"
@@ -75,7 +79,7 @@ def _detect_build_system(project_dir: str) -> str:
 
 def _get_latest_bom_version() -> str:
     try:
-        with urllib.request.urlopen(BOM_POM_URL) as response:
+        with urllib.request.urlopen(BOM_POM_URL, timeout=HTTP_TIMEOUT_SECONDS) as response:
             pom_xml = response.read()
     except urllib.error.URLError as exc:
         raise SystemExit(f"Failed to download {BOM_POM_URL}: {exc}") from exc
@@ -90,6 +94,39 @@ def _get_latest_bom_version() -> str:
         raise SystemExit("Failed to find the azure-sdk-bom <version> in pom.xml")
 
     return version.strip()
+
+
+def _parse_stable_semver(version: str) -> tuple[int, int, int]:
+    match = STABLE_SEMVER_RE.fullmatch(version.strip())
+    if not match:
+        raise ValueError(
+            f"Invalid azure-sdk-bom version '{version}'. Expected stable MAJOR.MINOR.PATCH."
+        )
+    return tuple(int(part) for part in match.groups())
+
+
+def _validate_minimum_bom_version(version: str) -> None:
+    parsed = _parse_stable_semver(version)
+    minimum = _parse_stable_semver(MIN_BOM_VERSION)
+    if parsed < minimum:
+        raise ValueError(
+            f"azure-sdk-bom {version} is below the minimum supported version "
+            f"{MIN_BOM_VERSION}; resolve the latest stable version from {BOM_POM_URL}."
+        )
+
+
+def _resolve_latest_bom_version(requested_version: str | None) -> str:
+    if requested_version and requested_version.strip().lower() != LATEST_VERSION_SENTINEL:
+        raise ValueError(
+            "Explicit azure-sdk-bom version pins are not allowed in this migration flow. "
+            f"Use no version argument, or use '{LATEST_VERSION_SENTINEL}' for compatibility."
+        )
+
+    latest = _get_latest_bom_version()
+    _validate_minimum_bom_version(latest)
+    print(f"[upgrade_bom] Resolved latest azure-sdk-bom version: {latest}")
+    print(f"[upgrade_bom] Source: {BOM_POM_URL}")
+    return latest
 
 
 # ---------------------------------------------------------------------------
@@ -444,7 +481,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "bom_version",
         nargs="?",
-        help="Target azure-sdk-bom version to apply. Resolve the latest stable version first.",
+        help="Optional compatibility token. Only 'latest' is accepted; explicit versions are rejected.",
     )
     parser.add_argument("--mvn", default=None, help="Maven command override.")
     parser.add_argument("--gradle", default=None, help="Gradle command override.")
@@ -461,18 +498,23 @@ def main(argv: list[str] | None = None) -> int:
         print(_get_latest_bom_version())
         return 0
 
-    if not args.project_dir or not args.bom_version:
-        parser.error("project_dir and bom_version are required unless --get-latest-version is used.")
+    if not args.project_dir:
+        parser.error("project_dir is required unless --get-latest-version is used.")
+
+    try:
+        bom_version = _resolve_latest_bom_version(args.bom_version)
+    except ValueError as exc:
+        raise SystemExit(f"[upgrade_bom] ERROR: {exc}") from exc
 
     project_dir = os.path.abspath(args.project_dir)
     build_system = _detect_build_system(project_dir)
 
     if build_system == "maven":
         print("[upgrade_bom] Detected Maven project.")
-        return _handle_maven(project_dir, args.bom_version, args.mvn)
+        return _handle_maven(project_dir, bom_version, args.mvn)
     elif build_system == "gradle":
         print("[upgrade_bom] Detected Gradle project.")
-        return _handle_gradle(project_dir, args.bom_version, args.gradle)
+        return _handle_gradle(project_dir, bom_version, args.gradle)
     else:
         print(
             f"[upgrade_bom] ERROR: No pom.xml or build.gradle found in {project_dir}",

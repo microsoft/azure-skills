@@ -16,7 +16,7 @@ Full procedure: per-phase files under `./workflow/` (load each one when entering
 
 1. **Precheck** ([workflow/phase-1-precheck.md](./workflow/phase-1-precheck.md)) — Verify Maven/Gradle project, detect JDK/build tools. If git available, create branch `java-upgrade/{RUN_ID}`. → load `./templates/PLAN_TEMPLATE.md` to create `plan.md`.
    - Step-wise rules: [rules/execution-guidelines.md](./rules/execution-guidelines.md) (Output directory, Git, Wrapper preference).
-2. **Plan** ([workflow/phase-2-plan.md](./workflow/phase-2-plan.md)) — Inventory deps and populate `plan.md`. → load `./INSTRUCTION.md` for package mappings.
+2. **Plan** ([workflow/phase-2-plan.md](./workflow/phase-2-plan.md)) — Inventory deps and populate `plan.md`. → load `./INSTRUCTION.md` for migration guide.
    - Step-wise rules: [rules/upgrade-strategy.md](./rules/upgrade-strategy.md) (Incremental, Risk-first, Successor preference, Necessary/Meaningful steps).
 3. **Execute** ([workflow/phase-3-execute.md](./workflow/phase-3-execute.md)) — Migrate build config then source, build/test/fix, commit per step. → load `./templates/PROGRESS_TEMPLATE.md` to create `progress.md`; load `./rules/` before running builds/tests.
    - Step-wise rules: [rules/review-code-changes.md](./rules/review-code-changes.md), [rules/upgrade-strategy.md](./rules/upgrade-strategy.md) (Automation tools, Temporary errors OK), [rules/execution-guidelines.md](./rules/execution-guidelines.md) (Template compliance, Git).

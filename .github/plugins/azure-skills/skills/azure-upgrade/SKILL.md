@@ -5,7 +5,7 @@ license: MIT
 compatibility: python3.10+
 metadata:
   author: Microsoft
-  version: "1.1.3"
+  version: "1.1.4"
 ---
 
 # Azure Upgrade

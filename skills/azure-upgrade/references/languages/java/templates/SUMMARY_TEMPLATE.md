@@ -74,7 +74,7 @@
   | com.azure.resourcemanager:azure-resourcemanager  | N/A     | (managed by azure-sdk-bom)                       | Modern replacement                  |
   | com.microsoft.azure:azure-client-authentication  | 1.7.14  | Removed                                          | Replaced by azure-identity          |
   | com.azure:azure-identity                         | N/A     | (managed by azure-sdk-bom)                       | Modern auth library                 |
-  | com.azure:azure-sdk-bom                          | N/A     | 1.3.3                                            | Centralized version management      |
+  | com.azure:azure-sdk-bom                          | N/A     | <TARGET_AZURE_SDK_BOM_VERSION>                   | Centralized version management      |
 -->
 
 | Dependency | Before | After | Reason |

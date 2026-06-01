@@ -1,4 +1,4 @@
-# com.microsoft.azure.management.**
+# com.microsoft.azure.management.\*\*
 
 ## Code Checklist
 
@@ -17,6 +17,8 @@ File-based authentication (e.g., `Azure.configure().authenticate(credentialFile)
 #### Detect: legacy file-based authentication patterns
 
 Treat **any** of the following shapes in the legacy code as file-based authentication that must be replaced (not migrated). Triggers include `AZURE_AUTH_LOCATION`, `.authenticate(File)`, `ApplicationTokenCredentials.fromFile`, or any code path that reads `clientId` / `clientSecret` / `tenant` from disk and feeds them into a credential builder.
+
+> **Important:** Reading `clientId`, `clientSecret`, or `tenantId` from **environment variables** (e.g., `System.getenv("AZURE_CLIENT_ID")`) does **not** constitute file-based authentication and should **not** be flagged by this rule. Only flag patterns that source credentials from files on disk.
 
 ```java
 // Shape A: direct File overload
@@ -53,6 +55,10 @@ AzureResourceManager azure = AzureResourceManager.configure()
 ```
 
 Keep the `TODO` comment in the migrated source so reviewers and downstream maintainers are aware that the authentication mechanism changed and that the new code path has not been exercised by the original tests.
+
+#### Rewrite obsolete authentication diagnostics
+
+If legacy code mentions `AZURE_AUTH_LOCATION` only in a validation guard or exception message, do not carry that option into migrated runtime-visible text. Keep the guard, but rewrite the message around the credentials the migrated code actually supports, e.g. `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_SUBSCRIPTION_ID`. Do not scrub intentional `AZURE_AUTH_LOCATION` mentions from this guide's examples or TODO comments that explain why file-based auth was replaced.
 
 ### OKHttp Interceptors
 

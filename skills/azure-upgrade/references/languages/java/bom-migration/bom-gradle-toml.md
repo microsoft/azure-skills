@@ -4,6 +4,8 @@ OpenRewrite does not yet support TOML version catalogs ([openrewrite/rewrite#440
 
 Check for `gradle/libs.versions.toml`. If it exists and contains Azure entries, apply these steps. Always update `build.gradle` / `build.gradle.kts` references in tandem.
 
+Use `TARGET_AZURE_SDK_BOM_VERSION` resolved in the workflow. Do not keep an existing TOML BOM version unless it exactly matches that value.
+
 > 💡 **Tip:** TOML alias `azure-sdk-bom` becomes accessor `libs.azure.sdk.bom` (hyphens→dots). CamelCase `azureSdkBom` becomes `libs.azureSdkBom`. Match the project's existing convention.
 
 ## Step 1 — Add or upgrade the BOM

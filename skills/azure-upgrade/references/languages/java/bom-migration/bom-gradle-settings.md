@@ -2,6 +2,8 @@
 
 Some projects define version catalogs programmatically in `settings.gradle` / `settings.gradle.kts` instead of using a TOML file. OpenRewrite does not support this either ([openrewrite/rewrite#4852](https://github.com/openrewrite/rewrite/issues/4852)). Handle manually.
 
+Use `TARGET_AZURE_SDK_BOM_VERSION` resolved in the workflow. Do not keep an existing programmatic catalog BOM version unless it exactly matches that value.
+
 ## Step 0 — Detect programmatic catalog usage
 
 Look for a `dependencyResolutionManagement` block in `settings.gradle` or `settings.gradle.kts`:
@@ -209,4 +211,3 @@ dependencyResolutionManagement {
     }
 }
 ```
-

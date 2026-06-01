@@ -5,7 +5,9 @@ After BOM migration, verify:
 - [ ] Project compiles successfully.
 - [ ] No legacy `com.microsoft.azure.*` dependencies remain anywhere (pom.xml, build.gradle, TOML, settings.gradle).
 - [ ] BOM-managed Azure libraries have **no** explicit version (no `<version>` tag, no version string, no `version.ref`, no `.versionRef()`).
-- [ ] The BOM version is correct — check against https://repo1.maven.org/maven2/com/azure/azure-sdk-bom/
+- [ ] Re-resolve the latest stable `azure-sdk-bom` from the Azure SDK for Java source of truth and confirm the plan guideline `TARGET_AZURE_SDK_BOM_VERSION` matches it exactly.
+- [ ] Every BOM version in the migrated project equals `TARGET_AZURE_SDK_BOM_VERSION`; no BOM version was copied from the original project, examples, prior plans, or model memory.
+- [ ] No stale `azure-sdk-bom` version remains.
 
 ## Additional checks for TOML version catalog projects
 

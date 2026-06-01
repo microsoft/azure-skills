@@ -64,6 +64,10 @@
 
 - feat: generate CHANGELOG.md at build time from git history ([#2068](https://github.com/microsoft/azure-skills/pull/2068))
 
+## 1.1.13
+
+- chore: update post-deployment rbac assignment logic ([#2057](https://github.com/microsoft/azure-skills/pull/2057))
+
 ## 1.1.12
 
 - fix: Add Foundry Toolbox integration to hosted agent create skill ([#2035](https://github.com/microsoft/azure-skills/pull/2035))
@@ -79,6 +83,10 @@
 ## 1.1.7
 
 - fix(azure-prepare): fix Aspire AddParameter+WithBuildArg guidance for all azd versions ([#1939](https://github.com/microsoft/azure-skills/pull/1939))
+
+## 1.1.5
+
+- chore: support hosted agent v2 in code gen and deploy skill ([#2000](https://github.com/microsoft/azure-skills/pull/2000))
 
 ## 1.1.3
 

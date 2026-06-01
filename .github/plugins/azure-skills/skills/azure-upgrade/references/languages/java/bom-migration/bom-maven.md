@@ -1,10 +1,10 @@
 # BOM Migration — Maven Projects
 
-> **Python availability**: The script below requires Python 3.8+. If `python3 --version` (or `python --version`) fails, skip the script section and follow [Manual Fallback (no Python)](#manual-fallback-no-python) instead.
+> **Python/script availability**: The script below requires Python 3.10+. If `python3 --version` (or `python --version`) fails, or if `upgrade_bom.py` exits unsuccessfully, skip the script path and follow [Manual Fallback](#manual-fallback-no-python-or-script-failure) instead.
 
 ## Automated (Python available)
 
-Run the `upgrade_bom.py` script located at `references/languages/java/scripts/upgrade_bom.py` (relative to this skill). It auto-detects Maven and performs two steps:
+Run the `upgrade_bom.py` script located at `references/languages/java/scripts/upgrade_bom.py` (relative to this skill). It resolves the latest stable BOM version, auto-detects Maven, and performs two steps:
 
 1. **Set/upgrade the BOM** — adds `azure-sdk-bom` if missing, or upgrades the version if already present.
 2. **Remove redundant explicit versions** — strips explicit `<version>` tags from individual Azure dependencies that are now managed by the BOM.
@@ -13,11 +13,13 @@ The following invocation works identically in **bash** and **PowerShell**:
 
 ```bash
 # Path is relative to the skill directory (plugin/skills/azure-upgrade/)
-python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir> <bom_version>
+python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir>
 ```
 
 Options:
 - `--mvn <cmd>` — override the Maven command (default: auto-detects `mvnw` or `mvn`).
+
+If the script fails after starting, treat that as an automation failure only: keep the resolved `TARGET_AZURE_SDK_BOM_VERSION`, manually apply the fallback steps below, and continue validation.
 
 Under the hood (OpenRewrite recipes):
 - **Add BOM**: `AddManagedDependency` ([docs](https://docs.openrewrite.org/recipes/maven/addmanageddependency))
@@ -51,9 +53,9 @@ Under the hood (OpenRewrite recipes):
 </dependencies>
 ```
 
-## Manual Fallback (no Python)
+## Manual Fallback (no Python or script failure)
 
-When Python is unavailable, edit `pom.xml` directly. Apply the same two steps as the script:
+When Python is unavailable or `upgrade_bom.py` fails, edit `pom.xml` directly. Apply the same two steps as the script:
 
 ### Step 1 — Add or upgrade `azure-sdk-bom`
 
@@ -107,7 +109,7 @@ Do **not** strip versions from artifacts not managed by the BOM (verify each one
 ### Step 3 — Verify
 
 Run `mvn -q -DskipTests dependency:tree` (the same command works in both **bash** and **PowerShell**) and confirm:
-- `com.azure:azure-sdk-bom:pom:{bom_version}:import` appears in the managed dependencies.
+- `com.azure:azure-sdk-bom:pom:{bom_version}:import` appears in the managed dependencies and `{bom_version}` equals `TARGET_AZURE_SDK_BOM_VERSION`.
 - All BOM-managed Azure artifacts resolve to versions from `{bom_version}`.
 
 Then continue with the validation checklist in [bom-validation.md](./bom-validation.md).

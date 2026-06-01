@@ -6,7 +6,7 @@ The application is identified using legacy Azure SDKs for Java (`com.microsoft.a
 
 Follow these steps:
 
-* **Inventory legacy dependencies**: Use tools such as `mvn dependency:tree` or `gradlew dependencies` to find every `com.microsoft.azure.*` SDK and map each one to its modern counterpart under `com.azure.*`. Do **not** rely solely on the root reactor — also grep the entire repository for legacy coordinates so you catch build files that aren't reachable from the root project. Run from the repo root:
+- **Inventory legacy dependencies**: Use tools such as `mvn dependency:tree` or `gradlew dependencies` to find every `com.microsoft.azure.*` SDK and map each one to its modern counterpart under `com.azure.*`. Do **not** rely solely on the root reactor — also grep the entire repository for legacy coordinates so you catch build files that aren't reachable from the root project. Run from the repo root:
 
   ```bash
   # Find every file referencing legacy groupIds/artifacts, including CI, samples, parent poms, buildSrc, version catalogs, Dockerfiles, and docs.
@@ -24,11 +24,11 @@ Follow these steps:
 
   Commonly overlooked locations:`.ci/**/pom.xml`, `ci/**`, parent/BOM poms, `buildSrc/`, `gradle/libs.versions.toml`, `settings.gradle(.kts)`, `archetype-resources/`, sample sub-modules, Dockerfiles, shell/PowerShell scripts, and README snippets. Every hit must end up on the migration file list.
 
-* **Adopt supported SDKs**: Replace the legacy dependencies with their modern equivalents in your `pom.xml` or `build.gradle`, following the migration guide to align feature parity and new SDK names.
+- **Adopt supported SDKs**: Replace the legacy dependencies with their modern equivalents in your `pom.xml` or `build.gradle`, following the migration guide to align feature parity and new SDK names.
 
-* **Update application code**: Refactor your code to the builder-based APIs, updated authentication flows (Azure Identity), and modern async or reactive patterns required by the latest SDKs. Add concise comments explaining non-obvious changes.
+- **Update application code**: Refactor your code to the builder-based APIs, updated authentication flows (Azure Identity), and modern async or reactive patterns required by the latest SDKs. Add concise comments explaining non-obvious changes.
 
-* **Test thoroughly**: Run unit, integration, and end-to-end tests to validate that the modern SDKs behave as expected, focusing on authentication, retry, and serialization differences.
+- **Test thoroughly**: Run unit, integration, and end-to-end tests to validate that the modern SDKs behave as expected, focusing on authentication, retry, and serialization differences.
 
 ## Migration Guide
 
@@ -37,11 +37,11 @@ Follow these steps:
 - Project is Maven or Gradle.
 - Java code is on JDK 8 or above.
 
-### Migrate dependencies
+### Migrate dependencies (Add them to plan guidelines when generating plan)
 
-Use the latest stable `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing any build file. Versions below `1.3.0` are invalid for this migration flow and must not be used.
+Immediately load and read [BOM Migration Guide](./bom-migration/bom-migration.md) before choosing `TARGET_AZURE_SDK_BOM_VERSION`; do not rely on this summary alone. The guide covers how to determine the latest BOM version, plus Maven, plain Gradle, TOML version catalogs (`libs.versions.toml`), and programmatic version catalogs (`settings.gradle`).
 
-Follow the detailed steps in [BOM Migration Guide](./bom-migration/bom-migration.md) — it covers how to determine the latest BOM version, plus Maven, plain Gradle, TOML version catalogs (`libs.versions.toml`), and programmatic version catalogs (`settings.gradle`).
+When writing the plan's `Guidelines` section, use only the latest stable `azure-sdk-bom` resolved by the BOM guide; do **not** infer it from the project, reuse an existing BOM version, copy a value from examples, or trust model memory. Record it as `TARGET_AZURE_SDK_BOM_VERSION = <resolved-version>` and use that exact value throughout the migration.
 
 ### Migrate Java Code
 
@@ -55,7 +55,7 @@ Follow the detailed steps in [BOM Migration Guide](./bom-migration/bom-migration
 
 Use these package-specific references:
 
-- [com.microsoft.azure.management.**](./package-specific/com.microsoft.azure.management.md)
+- [com.microsoft.azure.management.\*\*](./package-specific/com.microsoft.azure.management.md)
 - [com.microsoft.azure.eventprocessorhost](./package-specific/com.microsoft.azure.eventprocessorhost.md)
 
 ## Validation
@@ -63,6 +63,7 @@ Use these package-specific references:
 **Make sure**
 - Migrated project pass compilation.
 - All tests pass. Don't silently skip tests.
+- The plan's `Guidelines` section records the freshly resolved latest stable BOM target exactly as `TARGET_AZURE_SDK_BOM_VERSION = <resolved-version>`; this value must not remain a placeholder, must not be copied from the original project, and must match the current Azure SDK for Java BOM source of truth at validation time.
 - No legacy SDK dependencies/references exist. This is a **hard gate**, not a self-assessment — you must prove it by running the commands below from the repo root and showing they return zero hits. Do not declare migration complete until all three return empty:
 
   ```bash
@@ -98,11 +99,10 @@ Use these package-specific references:
   ```
 
   Pay special attention to files outside the root Maven/Gradle reactor— e.g. `.ci/**/pom.xml`, `ci/**`, `buildSrc/`, sample sub-modules, archetype resources — these are frequently missed because `mvn dependency:tree` on the root project never visits them.
-- If azure-sdk-bom is used, ensure **NO** explicit version dependencies for Azure libraries that are in azure-sdk-bom.
+- If azure-sdk-bom is used, ensure the BOM version exactly matches the resolved latest stable version recorded in the plan's `Guidelines` section as `TARGET_AZURE_SDK_BOM_VERSION` and there are **NO** explicit version dependencies for Azure libraries that are in azure-sdk-bom.
   E.g. Instead of `implementation 'com.azure.resourcemanager:azure-resourcemanager:2.60.0'`, we should use `implementation 'com.azure.resourcemanager:azure-resourcemanager'`.
   For Azure libraries in azure-sdk-bom, check https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml.
-  The BOM version used during migration must be the latest stable version available at migration time and must not be below `1.3.0`.
-  If the BOM version is below `1.3.0` or missing, or individual Azure packages still have explicit versions that should be managed by the BOM, follow the appropriate section in [BOM Migration Guide](./bom-migration/bom-migration.md) to fix it.
+  If the BOM version is missing, or differs from the resolved latest stable version, or individual Azure packages still have explicit versions that should be managed by the BOM, follow the appropriate section in [BOM Migration Guide](./bom-migration/bom-migration.md) to fix it.
 - **Version catalog projects**: Follow the [BOM Validation Checklist](./bom-migration/bom-validation.md) — it covers TOML, programmatic `settings.gradle` catalogs, and plain Gradle.
 - For each migration guide you recorded during migration:
   1. Fetch and read the full content of the guide URL.
