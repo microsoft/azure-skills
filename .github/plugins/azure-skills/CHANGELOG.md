@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.64
+
+- Fix: hard gate deployment phase for infra-planner skill ([#2427](https://github.com/microsoft/azure-skills/pull/2427))
+
 ## 1.1.59
 
 - feat(azure-kubernetes): Update constraint spec references to match what Deployment Safeguards enforces ([#1976](https://github.com/microsoft/azure-skills/pull/1976))
