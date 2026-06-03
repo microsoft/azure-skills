@@ -45,7 +45,7 @@ Before the run, if the selected suite has `suiteName`, call `evaluation_suite_ge
 Use generated suite datasets for user review and lineage. For the agent-target batch eval tool:
 
 - Pass test rows inline via the **`inputData`** parameter (array of `{query: "...", expected_behavior?: "..."}` objects). The service does not accept `datasetName`/`datasetVersion` references for agent-target runs — a generated suite dataset must be materialized into `inputData` rows by the caller.
-- Reviewed local rows should include `expected_behavior` so adaptive evaluators and failure analysis can preserve the user's rubric.
+- Reviewed local rows should include `expected_behavior` so rubric-based evaluators and failure analysis can preserve the user's rubric.
 - Alternatively, set `generateSyntheticData=true` with `generationModelDeploymentName`, `samplesCount` (15–1000), and optional `outputDatasetName` when the user wants the agent-target run to generate a fresh test set instead of supplying `inputData`.
 - Do not call `evaluation_suite_run` for batch eval.
 

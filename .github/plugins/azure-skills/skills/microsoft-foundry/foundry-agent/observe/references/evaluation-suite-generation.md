@@ -1,6 +1,6 @@
 # Evaluation Suite Generation
 
-Use generated suites as the preferred setup path for deployed agents. The suite generation job can create synthetic or trace-derived data plus an adaptive evaluator from agent, dataset, file, prompt, or trace context.
+Use generated suites as the preferred setup path for deployed agents. The suite generation job can create synthetic or trace-derived data plus a rubric-based evaluator from agent, dataset, file, prompt, or trace context.
 
 ## Step 1: Ask the User Which Source to Use (MANDATORY)
 
@@ -18,6 +18,8 @@ If the user picks (c), do not assume a Foundry suite exists. Verify or register 
 ## Step 2: Create and Poll
 
 Call `evaluation_suite_generation_job_create` with the selected `projectEndpoint`, `suiteName`, and `generationModelDeploymentName`. Provide the best available source context:
+
+`suiteName` must start with a letter (`A-Z` or `a-z`). If a derived name starts with a number, prefix it with an alphabetic label such as `suite-`.
 
 | Source | Parameters |
 |--------|------------|
@@ -53,7 +55,7 @@ Use this path when the selected agent root has `eval.yaml` and the user chooses 
 1. Parse `agent.name`, `dataset_file`, `evaluators[]`, `name`, `options.eval_model`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction`.
 2. Verify `agent.name` matches the effective selected agent from azd/metadata. If it differs, stop and ask which target is authoritative.
 3. Confirm the `dataset_file` exists under the selected agent root. Treat it as a local seed dataset until `evaluation_dataset_create` or a remote lookup succeeds.
-4. For each evaluator name, call `evaluator_catalog_get` before treating it as remote. If missing, ask whether to create/register it or generate a new adaptive evaluator.
+4. For each evaluator name, call `evaluator_catalog_get` before treating it as remote. If missing, ask whether to create/register it or generate a new rubric-based evaluator.
 5. If `name` is populated, call `evaluation_suite_get` before storing it as `suiteName`. If no suite exists, either create/register a reviewed suite or persist a local-draft entry without `suiteName`.
 6. Persist only synced remote refs and local cache paths to `.foundry/agent-metadata*.yaml` with `generationSource: eval-yaml`; do not copy azd-owned deployment context into metadata.
 
@@ -93,7 +95,7 @@ If the generation job output includes direct file/session references (rare — m
 
 Use `data_generation_job_create` when the user wants fresh data without replacing the whole suite. It accepts `jobName`, `projectEndpoint`, optional `agentName`/`agentVersion`, `datasetName`/`datasetVersion`, `fileId`, `promptSource`, trace parameters, `generationType`, `questionTypes`, `scenario`, `maxSamples`, and `trainSplit`. Poll with `data_generation_job_get` in the background using the same clean-output rules.
 
-Use `evaluator_generation_job_create` to create or regenerate one adaptive evaluator. To regenerate, pass the existing `evaluatorName` plus updated source inputs and `modelDeploymentName`; poll with `evaluator_generation_job_get` in the background using the same clean-output rules.
+Use `evaluator_generation_job_create` to create or regenerate one rubric-based evaluator. To regenerate, pass the existing `evaluatorName` plus updated source inputs and `modelDeploymentName`; poll with `evaluator_generation_job_get` in the background using the same clean-output rules.
 
 ## Review and Sync Back
 

@@ -17,6 +17,8 @@ Use [Common Project Context Resolution](../../../SKILL.md#agent-common-project-c
 | `suiteName` | verified `eval.yaml` name or `<agent-name>-smoke` unless user provided one |
 | generation deployment | `model_deployment_get`; choose a chat-completions deployment |
 
+`suiteName` must start with a letter (`A-Z` or `a-z`). If a derived name starts with a number, prefix it with an alphabetic label such as `suite-`.
+
 Do not assume `gpt-4o` exists.
 
 ### 2. Reuse or Refresh Cache

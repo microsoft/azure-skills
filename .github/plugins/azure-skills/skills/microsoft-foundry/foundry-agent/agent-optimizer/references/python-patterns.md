@@ -4,19 +4,11 @@ Use the Azure SDK optimization package and a local baseline folder. The baseline
 
 ## Install and Import
 
-Until the official PyPI package is available, download the preview wheel into the target agent repo:
-
-```bash
-curl -L -o azure_ai_agentserver_optimization-1.0.0b1.dev1-py3-none-any.whl https://github.com/Zyysurely/tool/raw/main/preview/azure_ai_agentserver_optimization-1.0.0b1.dev1-py3-none-any.whl
-```
-
-Then add the local wheel path to `requirements.txt` or the project dependency file:
+Add `azure-ai-agentserver-optimization` to `requirements.txt` or the project dependency file:
 
 ```text
-./azure_ai_agentserver_optimization-1.0.0b1.dev1-py3-none-any.whl
+azure-ai-agentserver-optimization
 ```
-
-If the project has a Dockerfile, ensure it copies the wheel before `pip install -r requirements.txt`. Do not commit the wheel to this skill repo. When the package is released, replace the local wheel entry with `azure-ai-agentserver-optimization`.
 
 Import from the SDK namespace:
 
@@ -140,7 +132,7 @@ The SDK reads optimization context from supported runtime sources. Keep `.agent_
 
 ## Verification Checklist
 
-- Dependency file includes the local preview wheel path, or `azure-ai-agentserver-optimization` after PyPI release
+- Dependency file includes `azure-ai-agentserver-optimization`
 - `from azure.ai.agentserver.optimization import load_config` succeeds
 - `.agent_configs/baseline/metadata.yaml` exists and points to existing files
 - `load_config()` is called without defaults unless using an intentional `config_dir` or `required=False`

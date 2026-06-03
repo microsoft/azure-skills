@@ -30,13 +30,8 @@ options:
   optimization_model: <allowed-optimizer-model-deployment-name>
   max_iterations: 4
   optimization_config:
-    model: '["<allowed-target-model-deployment-name>"]'
-    baselineModel: '"<baseline-model-deployment-name>"'
-  keep_versions: false
-generation_instruction: >-
-  <goal-specific quality or data-generation instruction>
-max_samples: 15
-trace_days: 3
+    model:
+      - <allowed-target-model-deployment-name>
 ```
 
 Use existing model deployments for `agent.model` and `options.eval_model`; do not assume `gpt-4o`.
@@ -51,7 +46,7 @@ For `options.optimization_model` and `options.optimization_config.model`, first 
 - `DeepSeek-V4-Pro`
 - `DeepSeek-V-3.2`
 
-If none exist, ask the user to deploy one of these models before configuring optimization.
+If none exist, ask the user to deploy one of these models before configuring optimization. Do not include the current agent model (`agent.model`) in `options.optimization_config.model`; that list is for target model candidates only.
 
 ## Skip
 
@@ -60,6 +55,11 @@ Do not add these fields unless the user explicitly asks and understands the trad
 - `target_attributes`
 - `budget`
 - `min_improvement`
+- `pass_threshold`
+- `keep_versions`
+- `generation_instruction`
+- `max_samples`
+- `trace_days`
 
 Keep `target_attributes` omitted so azd can auto-detect optimizable attributes.
 
@@ -68,11 +68,10 @@ Keep `target_attributes` omitted so azd can auto-detect optimizable attributes.
 | Source | eval.yaml field |
 |--------|-----------------|
 | effective azd context | `agent.name`, `agent.version`, `agent.kind` |
-| baseline config | `agent.model`, `agent.config`, `options.optimization_config.baselineModel` |
+| baseline config | `agent.model`, `agent.config` |
 | selected local dataset JSONL | `dataset_file` |
 | selected remote/local dataset | `dataset_reference` |
 | selected validation dataset | `validation_reference` |
 | selected Foundry/local evaluators | `evaluators[]` |
 | selected judge/eval deployment | `options.eval_model` |
 | selected allowlisted optimizer deployment | `options.optimization_model`, `options.optimization_config.model` |
-| optimization goal | `generation_instruction` |
