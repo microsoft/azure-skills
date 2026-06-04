@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.67
+
+- feat: (azure-cost) add storage optimization guide and fix token limit ([#2554](https://github.com/microsoft/azure-skills/pull/2554))
+
+## 1.1.66
+
+- eval: migrate infra-planner tests to Vally ([#2483](https://github.com/microsoft/azure-skills/pull/2483))
+
 ## 1.1.64
 
 - Fix: hard gate deployment phase for infra-planner skill ([#2427](https://github.com/microsoft/azure-skills/pull/2427))
