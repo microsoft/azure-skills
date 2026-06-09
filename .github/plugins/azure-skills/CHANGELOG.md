@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.68
+
+- feat(azure-compute): add VM creation workflow with approval gate before deploy ([#2297](https://github.com/microsoft/azure-skills/pull/2297))
+
 ## 1.1.67
 
 - feat: (azure-cost) add storage optimization guide and fix token limit ([#2554](https://github.com/microsoft/azure-skills/pull/2554))
