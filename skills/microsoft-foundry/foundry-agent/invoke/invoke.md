@@ -57,7 +57,21 @@ Key difference: `responses` takes a natural language `inputText` message with pl
 
 Use `agent_get` to verify the agent exists. For hosted agents, also verify the targeted version is `active`.
 
-### Step 2: Create Session (Hosted Agents)
+### Step 2: Fast smoke test for azd-deployed agents
+
+When the current folder is an azd agent project and deployment just completed, prefer the azd CLI first:
+
+```bash
+azd ai agent invoke "hello, are you up?"
+```
+
+Use `azd ai agent show --output json` only when you need structured status, version, endpoints, or troubleshooting details; a successful remote invocation is the fast smoke test.
+
+If `azd ai agent invoke` returns a `confirmation_required` envelope, summarize the change and proceed only when the user already requested remote invocation or explicitly consents. Prefer the returned `confirmCommand` over inventing flags. If azd cannot resolve the service or agent name, fall back to the MCP workflow below with the resolved `projectEndpoint` and `agentName`.
+
+For a post-deploy smoke test, invoke once unless the user explicitly asked to validate multi-turn/session behavior. If that single invoke returns a successful response, the smoke test passes;
+
+### Step 3: Create Session (Hosted Agents)
 
 For hosted agents, create a session before invoking using `session_create` with `projectEndpoint` and `agentName`. Optionally provide a `sessionId` (must match `^[A-Za-z0-9_-]{8,128}$`). Store the returned `sessionId` for subsequent calls.
 
@@ -65,7 +79,7 @@ For hosted agents, create a session before invoking using `session_create` with 
 
 For full session lifecycle details, see [Session Management](references/session-management.md).
 
-### Step 3: Invoke Agent
+### Step 4: Invoke Agent
 
 Use the project endpoint and agent name from the project context. Use `agent_invoke` with:
 - `projectEndpoint`, `agentName`, `inputText` (required)
@@ -88,17 +102,17 @@ agent_invoke(projectEndpoint, agentName, inputText: "{\"message\":\"hello\"}", p
 
 See [Invocations Protocol Guide](references/invocations-protocol.md) for full details and examples.
 
-### Step 4: Multi-Turn Conversations
+### Step 5: Multi-Turn Conversations
 
 **Responses protocol** → Pass `conversationId` from previous response to continue the thread. Platform manages history.
 
 **Invocations protocol** → Reuse same `sessionId`; conversation state is agent-managed via `$HOME`. Do **not** pass `conversationId` — it has no effect for invocations.
 
-### Step 5: File Operations (Hosted Agents)
+### Step 6: File Operations (Hosted Agents)
 
 Upload/download files to pass data to and retrieve results from agents. All file operations require an active session. See [File Operations](references/file-operations.md).
 
-### Step 6: Clean Up
+### Step 7: Clean Up
 
 Use `session_delete` to release compute resources when done. Undeleted sessions expire per platform policies.
 
@@ -119,7 +133,9 @@ Use `session_delete` to release compute resources when done. Undeleted sessions 
 | Agent not found | Invalid name or endpoint | Use `agent_get` to list agents |
 | Hosted agent not active | Version still provisioning or failed | Check version status via `agent_get` |
 | Session not found | Invalid ID or expired | Create new session with `session_create` |
-| `424 FailedDependency` or `session_not_ready` | Hosted agent session is still warming up or readiness has not completed | Wait 15-30 seconds, check `session_logstream` if needed, then retry `agent_invoke` with the same `sessionId` if one was returned; if no `sessionId` was returned, retry `session_create` |
+| `424 FailedDependency` or `session_not_ready` | Hosted agent session is still warming up or readiness has not completed | Wait 15-30 seconds, check `session_logstream` if needed, then retry `agent_invoke` with the same `sessionId` if one was returned; if no `sessionId` was returned, retry `session_create`. If this persists across 3+ retries (with exponential backoff: 15s, 30s, 60s), the container likely cannot start within the readiness probe deadline — redeploy with higher CPU/memory (recommended minimum: `1` CPU / `2Gi` for direct-code deployments). Also verify the model deployment name is correct via `model_deployment_get`. |
+| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. | Update the agent name to the deployed agent name. |
+| `invalid value "json" for --output` from `azd ai agent invoke` | Invoke supports only `default` and `raw` currently. | Retry without `--output json`. |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment |
 | Invocations schema mismatch | Request body does not match what the agent expects | Inspect agent's route handler or API docs for the correct JSON schema; do not guess |
 | File operation failed | Session not active or invalid path | Verify session with `session_get` |

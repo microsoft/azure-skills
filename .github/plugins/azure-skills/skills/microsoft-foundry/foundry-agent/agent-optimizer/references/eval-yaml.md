@@ -1,6 +1,6 @@
 # eval.yaml Guidance
 
-Create `eval.yaml` directly when the conversation or `.foundry/agent-metadata*.yaml` already selected the dataset/evaluators. Otherwise ask whether to run `azd ai agent eval init` or let optimize use built-in defaults.
+Create `eval.yaml` directly when the conversation or `.foundry/agent-metadata*.yaml` already selected the dataset/evaluators. Otherwise ask whether to run `azd ai agent eval generate` or let optimize use built-in defaults.
 
 ## Include
 

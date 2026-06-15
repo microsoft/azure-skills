@@ -1,5 +1,7 @@
 # Standard Agent Setup
 
+> ⚠️ **Warning:** This page covers Foundry's **Standard Agent Setup** (capability host + bring-your-own Cosmos DB / Azure Storage / Azure AI Search). The default `azd ai agent` flow uses **Basic Agent Setup** and does **not** provision a `capabilityHosts/agents` resource — *stop reading this page* if you arrived from `azd ai agent`. See [foundry-agent/create/create-hosted.md](../foundry-agent/create/create-hosted.md) and the canonical env vars in [environment-variables.md](https://github.com/Azure/azure-dev/blob/main/cli/azd/docs/environment-variables.md).
+
 > **MANDATORY:** Read [Standard Agent Setup docs](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/standard-agent-setup?view=foundry) before proceeding with standard setup.
 
 ## Overview

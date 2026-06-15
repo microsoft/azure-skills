@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.70
+
+- feat: improve the hosted agent getting started with coding ([#2610](https://github.com/microsoft/azure-skills/pull/2610))
+
+## 1.1.69
+
+- feat: add python-appservice-deploy skill for Python/Flask/Django/FastAPI on App Service ([#2487](https://github.com/microsoft/azure-skills/pull/2487))
+
 ## 1.1.68
 
 - feat(azure-compute): add VM creation workflow with approval gate before deploy ([#2297](https://github.com/microsoft/azure-skills/pull/2297))

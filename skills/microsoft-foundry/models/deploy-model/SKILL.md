@@ -9,6 +9,8 @@ metadata:
 
 # Deploy Model
 
+> **Scope — read this first.** This skill creates model deployments **out-of-band** via Azure CLI / MCP / portal. For azd-managed Foundry projects (those scaffolded from `azd-ai-starter-basic` or via `azd ai agent init`), declare deployments in `azure.yaml services.<name>.config.deployments[]` instead — `azd ai agent init` writes the entry from the sample manifest and `azd provision` creates the deployment through Bicep. See [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md) for the Golden Path. Use this skill only for: (a) Foundry projects not managed by an azd project, (b) ad-hoc deployments outside the azd lifecycle.
+
 Unified entry point for all Azure OpenAI model deployment workflows. Analyzes user intent and routes to the appropriate deployment mode.
 
 ## Quick Reference

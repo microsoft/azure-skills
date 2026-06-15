@@ -1,10 +1,10 @@
 ---
 name: azure-prepare
-description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). DO NOT USE FOR: copilot-sdk apps (use azure-hosted-copilot-sdk). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"create frontend\", \"create back end\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"deploy to Azure Container Apps using Terraform\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"containerized Node.js app\", \"social media app\", \"static portfolio website\", \"todo list with frontend and API\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
+description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). DO NOT USE FOR: copilot-sdk apps (use azure-hosted-copilot-sdk), or Python code-only App Service deploys (use python-appservice-deploy). WHEN: \"create app\", \"build web app\", \"create API\", \"modernize application\", \"host on Azure\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"managed identity\"."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.13"
+  version: "1.2.14"
 ---
 
 # Azure Prepare
@@ -68,6 +68,7 @@ Activate this skill when user wants to:
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
+| Python + App Service (e.g., "deploy Python to App Service", "Flask on Azure App Service", "publish Python web app to App Service") | **python-appservice-deploy** |
 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** |
 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
