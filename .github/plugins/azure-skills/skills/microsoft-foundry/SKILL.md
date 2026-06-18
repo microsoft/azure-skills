@@ -4,7 +4,7 @@ description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.25"
+  version: "1.1.26"
 ---
 
 # Microsoft Foundry Skill
@@ -164,10 +164,12 @@ If the selected environment exposes older `testSuites[]` metadata but not `evalu
 If `eval.yaml` exists in the selected agent root, parse it before generating new suites:
 
 - `agent.name` -> target agent candidate; verify it matches the selected azd/metadata agent before using it.
-- `dataset_file` -> local seed dataset candidate.
+- `dataset.local_uri` -> local seed dataset candidate; legacy `dataset_file` may be normalized in memory.
+- `dataset.name` / `dataset.version` -> registered dataset candidate.
+- `validation_dataset` -> optional validation dataset candidate.
 - `evaluators[]` -> candidate Foundry evaluator names; verify with `evaluator_catalog_get` before treating them as remote evaluators.
 - `name` -> local eval/suite candidate; verify remotely before persisting as `suiteName`.
-- `options.eval_model`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction` -> setup defaults.
+- `options.eval_model`, `options.optimization_model`, `options.max_candidates`, `options.optimization_config.model_search_space`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction` -> setup defaults.
 
 Treat `eval.yaml` as local evaluation intent, not proof that a Foundry suite exists. Persist synced suite/dataset/evaluator references to `.foundry` only after remote lookup or registration succeeds.
 

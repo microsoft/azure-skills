@@ -52,9 +52,9 @@ Poll with `evaluation_suite_generation_job_get(projectEndpoint, jobId)` until th
 
 Use this path when the selected agent root has `eval.yaml` and the user chooses it:
 
-1. Parse `agent.name`, `dataset_file`, `evaluators[]`, `name`, `options.eval_model`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction`.
+1. Parse `agent.name`, `dataset.local_uri`, `dataset.name`, `dataset.version`, `validation_dataset`, `evaluators[]`, `name`, `options.eval_model`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction`. Legacy `dataset_file`, `dataset_reference`, and `validation_reference` may be normalized in memory when reading older files.
 2. Verify `agent.name` matches the effective selected agent from azd/metadata. If it differs, stop and ask which target is authoritative.
-3. Confirm the `dataset_file` exists under the selected agent root. Treat it as a local seed dataset until `evaluation_dataset_create` or a remote lookup succeeds.
+3. Confirm `dataset.local_uri` exists under the selected agent root when present. Treat it as a local seed dataset until `evaluation_dataset_create` or a remote lookup succeeds.
 4. For each evaluator name, call `evaluator_catalog_get` before treating it as remote. If missing, ask whether to create/register it or generate a new rubric-based evaluator.
 5. If `name` is populated, call `evaluation_suite_get` before storing it as `suiteName`. If no suite exists, either create/register a reviewed suite or persist a local-draft entry without `suiteName`.
 6. Persist only synced remote refs and local cache paths to `.foundry/agent-metadata*.yaml` with `generationSource: eval-yaml`; do not copy azd-owned deployment context into metadata.

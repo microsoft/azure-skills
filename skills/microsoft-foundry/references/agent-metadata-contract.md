@@ -103,12 +103,19 @@ When `eval.yaml` exists in the selected agent root, treat it as local evaluation
 | eval.yaml field | Use |
 |-----------------|-----|
 | `agent.name` | Candidate target agent; verify it matches selected context |
-| `dataset_file` | Local seed dataset candidate |
+| `dataset.local_uri` | Local seed dataset candidate |
+| `dataset.name`, `dataset.version` | Registered dataset candidate |
+| `validation_dataset` | Optional validation dataset candidate |
 | `evaluators[]` | Candidate evaluator names; verify with `evaluator_catalog_get` |
 | `name` | Candidate eval/suite name; verify remotely before storing as `suiteName` |
 | `options.eval_model` | Candidate judge/generation deployment |
+| `options.optimization_model` | Candidate optimizer reasoning deployment |
+| `options.max_candidates` | Candidate optimization iteration limit |
+| `options.optimization_config.model_search_space` | Candidate target model search space |
 | `options.pass_threshold` | Candidate evaluator threshold/default pass gate |
 | `max_samples`, `trace_days`, `generation_instruction` | Suite setup defaults |
+
+Legacy `dataset_file`, `dataset_reference`, and `validation_reference` keys may be normalized in memory when reading older files, but new files should use `dataset` and `validation_dataset`.
 
 Persist eval.yaml-derived suite metadata only after the relevant dataset/evaluator/suite has been registered or found in Foundry. Use `generationSource: eval-yaml` for synced suite entries created from local eval config.
 
