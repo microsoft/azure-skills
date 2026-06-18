@@ -7,18 +7,25 @@ Use this after azd setup and scaffold review are complete.
 1. Resolve the hosted agent with [azd Setup](azd-setup.md).
 2. If SDK wiring or `.agent_configs/baseline/` is missing, run [Scaffold Workflow](scaffold.md) first.
 3. If scaffolding changed files, stop and ask the user to review before optimization.
-4. Ensure `eval.yaml` exists using [eval.yaml Guidance](eval-yaml.md), or ask whether to use built-in optimize defaults.
-5. Before setting optimizer models, verify the project has deployments named `GPT-5`, `GPT-5.1`, `GPT-5.2`, `GPT-5.4`, `GPT-5.5`, `DeepSeek-V4-Pro`, or `DeepSeek-V-3.2`. Use only existing deployments from that allowlist.
+4. Ensure `eval.yaml` exists using [eval.yaml Guidance](eval-yaml.md), generate it with `azd ai agent eval generate`, or ask whether to use built-in optimize defaults.
+5. Before setting `--optimize-model` or `options.optimization_model`, verify the project has an existing deployment from the allowed optimizer list: `GPT-5`, `GPT-5.1`, `GPT-5.2`, `GPT-5.4`, `GPT-5.5`, `DeepSeek-V4-Pro`, or `DeepSeek-V-3.2`.
+
+When evaluation inputs are not already selected, generate them from a reviewed seed dataset or regenerate defaults:
+
+```bash
+azd ai agent eval generate --dataset <path-to-jsonl>
+azd ai agent eval generate --reset-defaults
+```
 
 ## 2. Run optimize
 
 Run from the azd project/agent root:
 
 ```bash
-azd ai agent optimize
+azd ai agent optimize --optimize-model <allowed-optimizer-model-deployment-name>
 ```
 
-If multiple services are detected, let azd prompt or ask the user which service to use. If `eval.yaml` exists, use it when it matches the selected agent; otherwise ask before regenerating or ignoring it.
+If multiple services are detected, let azd prompt or ask the user which service to use. If `eval.yaml` exists or was generated, use it when it matches the selected agent; otherwise ask before regenerating or ignoring it.
 
 ## 3. Monitor
 

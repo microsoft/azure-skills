@@ -26,7 +26,7 @@ Do not assume `gpt-4o` exists.
 Inspect `.foundry/suites/`, `.foundry/evaluators/`, `.foundry/datasets/`, matching `eval.yaml`, and the selected environment's `evaluationSuites[]` in the selected agent root only. Do **not** merge sibling agent folders.
 
 - **Suite metadata has `suiteName` and current cache** -> call `evaluation_suite_get` to verify the remote suite, then reuse it.
-- **`eval.yaml` exists and matches the selected agent** -> verify its `dataset_file`, `evaluators[]`, and optional `name` remotely or register them before persisting a synced suite entry.
+- **`eval.yaml` exists and matches the selected agent** -> verify its `dataset.local_uri` or registered `dataset.name`/`dataset.version`, `evaluators[]`, and optional `name` remotely or register them before persisting a synced suite entry. Normalize legacy `dataset_file` in memory only.
 - **Cache is missing/stale or user asks refresh** -> generate a new suite after confirming any overwrite.
 - **Legacy entry without `suiteName`** -> keep it as legacy fallback metadata unless the user approves generating a new suite.
 
