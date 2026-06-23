@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.72
+
+- fix: add Network Isolation Errors hint to microsoft-foundry SKILL.md ([#2685](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2685))
+
 ## 1.1.70
 
 - feat: improve the hosted agent getting started with coding ([#2610](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2610))
