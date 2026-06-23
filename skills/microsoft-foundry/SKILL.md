@@ -4,7 +4,7 @@ description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.26"
+  version: "1.1.27"
 ---
 
 # Microsoft Foundry Skill
@@ -240,3 +240,23 @@ Use `agent_get` MCP tool to determine an agent's type when needed.
 ## SDK Quick Reference
 
 - [Python](references/sdk/foundry-sdk-py.md)
+
+## Network Isolation Errors
+
+Applies to **any** call against a Foundry project or its parent Foundry account — Foundry MCP tools, `azd`, `az` CLI, `curl`, REST, or SDK.
+
+If an error matches `Public access is disabled` / `PublicNetworkAccessDisabled` / `403 Forbidden` from a private endpoint / connection timeout / the project endpoint FQDN resolves to a public IP, this typically means the parent Foundry account has `publicNetworkAccess=Disabled` or `Enabled from selected IP addresses`, and the current shell is outside its VNet.
+
+Only if the error is ambiguous, confirm against the Foundry account using a management-plane call (works from anywhere with reader access):
+
+```bash
+az cognitiveservices account show \
+  --name <account> --resource-group <rg> \
+  --query "properties.{publicNetworkAccess:publicNetworkAccess, networkAcls:networkAcls, privateEndpointConnections:privateEndpointConnections[].properties.privateLinkServiceConnectionState.status}"
+```
+
+`publicNetworkAccess: "Disabled"` — or `"Enabled"` together with non-empty `networkAcls.ipRules` / `virtualNetworkRules` — confirms isolation. If `publicNetworkAccess: "Enabled"` and `networkAcls` is empty, the failure is a caller-side network issue (e.g. Private DNS resolving the FQDN to a public IP from inside a VNet with a private endpoint), not an account-config issue.
+
+If it's indeed a network isolation issue, supported connection options are documented in [Choose a secure connection method to Foundry](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#choose-a-secure-connection-method-to-foundry).
+
+> ℹ️ Foundry MCP tools cannot reach a VNet-isolated project even from inside the VNet.
