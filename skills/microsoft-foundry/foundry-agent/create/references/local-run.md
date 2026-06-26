@@ -47,11 +47,11 @@ What this does:
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
-> First startup takes 30-60 seconds. Wait before sending the first invocation.
+> Wait for the ready log line before sending the first invocation. Poll the log at short intervals; do not pre-sleep on a fixed duration.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
 
 Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 
