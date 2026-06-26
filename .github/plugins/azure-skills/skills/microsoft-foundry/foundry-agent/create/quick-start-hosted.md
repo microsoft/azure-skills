@@ -163,8 +163,10 @@ If recovery still fails → escape to [create-hosted.md](create-hosted.md).
 ### Step 9 — Provision Azure resources
 
 ```bash
-azd provision --no-prompt
+azd provision --no-state --no-prompt
 ```
+
+`--no-state` skips the existing-deployment check; safe here because the golden path starts from a fresh environment (Step 5). Keep it for this quickstart; you can omit it later when re-provisioning the same environment.
 
 ⏳ May take time — creates the resource group, Foundry account + project, model deployment, App Insights, Log Analytics. Wait for the prompt to return; do not interrupt.
 
@@ -212,7 +214,8 @@ Run the agent locally. For Python, do this **with the service-dir venv still act
 Start it in a **managed** background session your shell tool can poll and stop (most tools detect a long-running foreground process and return a session/shell id — use that id). Do **not** use job operators (`bash &`, `nohup`, `start /B`, popped windows): on Linux/macOS the child gets `SIGHUP` and **dies when its parent bash exits**, so the next command sees `could not connect` even though `ss` from inside the *same* bash just showed `:8088` bound.
 
 > ⚠️ **Readiness gate — do not skip.** After starting `azd ai agent run`, **watch the server log for the ready line, something like `Running` (e.g. `Running on http://0.0.0.0:8088`) — not just `Starting …`**, which azd prints as a banner before the Python process has bound the socket. Invoking before the socket is bound fails with `could not connect`.
-> - **Poll the log every ~15 seconds**, fire the invoke as soon as the ready line appears. Do **not** wait long blocks (60s+).
+> - **Never invoke before the most recent log read shows the ready line.** Premature invokes waste a poll cycle and return a misleading `could not connect`.
+> - **Poll short — 2–5s per read.** Boot time is unbounded; long sleeps cost wall-clock directly. No 15s+ blocks or `sleep N` waits.
 > - **Don't substitute log polling** with `sleep N && curl`, `netstat` / `ss` / `lsof`, or `ps aux` probes — only the log tells you readiness.
 > - **If `invoke --local` fails,** re-read the server log. Error before the ready line (missing env var, auth, port in use) → fix the cause and restart `azd ai agent run` in the managed session. Ready line present but request still fails → the issue is in the request, not the server. Either way, do **not** bypass with `python main.py` or raw `curl POST /responses` — those skip the wiring the deployed agent uses.
 > - **If `invoke --local` returns `could not connect` after you saw the ready line in a previous shell,** the server died when that shell exited (classic `&` symptom). Restart in the managed session — do not retry with another `&`.

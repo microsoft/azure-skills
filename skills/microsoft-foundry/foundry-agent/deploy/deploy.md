@@ -79,6 +79,8 @@ azd provision --no-prompt
 ```
 
 > Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
+>
+> Optional: add `--no-state` on a fresh azd environment to skip the existing-deployment check and provision faster; omit it when re-provisioning an existing one.
 
 What this does:
 

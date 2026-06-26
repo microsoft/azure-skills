@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.73
+
+- fix(microsoft-foundry): improve quick start provision and local run polling ([#2694](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2694))
+
 ## 1.1.72
 
 - fix: add Network Isolation Errors hint to microsoft-foundry SKILL.md ([#2685](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2685))
