@@ -25,18 +25,33 @@ if [ -f /etc/environment ]; then
 fi
 hash -r 2>/dev/null || true
 
-# 1. azd present + version
+# 1. Required CLIs
+AZD_AVAILABLE=1
+AZ_AVAILABLE=1
+
 if ! command -v azd >/dev/null 2>&1; then
   note_action "Azure Developer CLI (azd) is not installed. Install it from https://aka.ms/azd-install, then re-run."
+  AZD_AVAILABLE=0
+fi
+
+if ! command -v az >/dev/null 2>&1; then
+  note_action "Azure CLI (az) is not installed. Install it from https://aka.ms/installazurecli, then re-run."
+  AZ_AVAILABLE=0
+fi
+
+if [ "$AZD_AVAILABLE" -eq 0 ] || [ "$AZ_AVAILABLE" -eq 0 ]; then
   echo ""
-  echo "Summary: azd missing -- cannot continue."
+  echo "Summary: CLI missing -- cannot continue."
   exit 1
 fi
 
 AZD_VERSION="$(azd version --output json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("azd",{}).get("version","unknown"))' 2>/dev/null || echo unknown)"
 note_ok "azd installed (version ${AZD_VERSION})."
 
-# 2. Required extensions
+AZ_VERSION="$(az version --query '"azure-cli"' -o tsv 2>/dev/null || echo unknown)"
+note_ok "Azure CLI installed (version ${AZ_VERSION})."
+
+# 2. Required azd extensions
 EXT_JSON="$(azd extension list --output json 2>/dev/null || echo '[]')"
 for ext in azure.ai.agents azure.ai.projects; do
   if printf '%s' "$EXT_JSON" | grep -q "$ext"; then
@@ -47,10 +62,48 @@ for ext in azure.ai.agents azure.ai.projects; do
 done
 
 # 3. Auth status
-if azd auth login --check-status >/dev/null 2>&1; then
+AZD_AUTH_OUTPUT="$(azd auth login --check-status 2>&1)"; AZD_AUTH_EXIT=$?
+if printf '%s' "$AZD_AUTH_OUTPUT" | grep -Eiq '(not[[:space:]]+logged[[:space:]]+in|not[[:space:]]+authenticated|no[[:space:]]+account|login[[:space:]]+required|please[[:space:]]+run.*azd[[:space:]]+auth[[:space:]]+login|run.*azd[[:space:]]+auth[[:space:]]+login|expired)'; then
+  note_action "Not logged in to azd. Ask the user to run 'azd auth login' (it opens a browser; never run it for them)."
+elif printf '%s' "$AZD_AUTH_OUTPUT" | grep -Eiq '(logged[[:space:]]+in|authenticated|already[[:space:]]+logged[[:space:]]+in)'; then
+  note_ok "Logged in to azd."
+elif [ "$AZD_AUTH_EXIT" -eq 0 ]; then
+  # Unrecognized output -- fall back to exit code
   note_ok "Logged in to azd."
 else
-  note_action "Not logged in. Ask the user to run 'azd auth login' (it opens a browser; never run it for them)."
+  note_action "Unable to verify azd auth status. Ask the user to run 'azd auth login' and re-run this script."
+fi
+
+AZ_ACCOUNT_JSON="$(az account show --output json 2>/dev/null || true)"
+if [ -z "$AZ_ACCOUNT_JSON" ]; then
+  note_action "Not logged in to Azure CLI. Ask the user to run 'az login' (it opens a browser; never run it for them)."
+else
+  AZ_ACCOUNT_PARSED="$(printf '%s' "$AZ_ACCOUNT_JSON" | python3 -c 'import json,sys
+try:
+    d=json.load(sys.stdin)
+except Exception:
+    raise SystemExit(1)
+if not isinstance(d, dict):
+    raise SystemExit(1)
+print((d.get("name") or "unknown").replace("\t", " "), d.get("state") or "", sep="\t")
+' 2>/dev/null || true)"
+  if [ -z "$AZ_ACCOUNT_PARSED" ]; then
+    note_action "Unable to verify Azure CLI login status. Ask the user to run 'az login' and re-run this script."
+  else
+    IFS=$'\t' read -r AZ_SUB_NAME AZ_SUB_STATE <<< "$AZ_ACCOUNT_PARSED"
+    AZ_SUB_STATE="${AZ_SUB_STATE//$'\r'/}"
+    if [ -n "$AZ_SUB_STATE" ] && [ "$AZ_SUB_STATE" != "Enabled" ]; then
+      note_action "Azure CLI active subscription state is '${AZ_SUB_STATE}'. Ask the user to select an enabled subscription with 'az account set --subscription <id>'."
+    else
+      note_ok "Azure CLI logged in (subscription: ${AZ_SUB_NAME:-unknown})."
+    fi
+  fi
+fi
+
+if [ "$ACTION_REQUIRED" -eq 1 ]; then
+  echo ""
+  echo "Summary: action required -- resolve the [ACTION] items above before continuing."
+  exit 1
 fi
 
 # 4. Foundry project endpoint (optional at this stage)

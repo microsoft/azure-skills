@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.75
+
+- feat: improve foundry skill in more real user scenarios. ([#2705](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2705))
+
+## 1.1.74
+
+- feat: add skill related knowledge into foundry skill ([#2664](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2664))
+
 ## 1.1.73
 
 - fix(microsoft-foundry): improve quick start provision and local run polling ([#2694](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2694))
