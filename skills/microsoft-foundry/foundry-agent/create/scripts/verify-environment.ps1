@@ -32,38 +32,103 @@ function Get-AzdJson {
 # Refresh PATH to pick up recently-installed tools (e.g. azd installed in same session)
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 
-# 1. azd present + version
-# Check PATH first, then probe common install locations (winget, MSI, chocolatey)
-if (-not (Get-Command azd -ErrorAction SilentlyContinue)) {
-    $azdFallbackPaths = @(
-        "$env:LOCALAPPDATA\Programs\Azure Dev CLI"
-        "$env:ProgramFiles\Azure Dev CLI"
-        "${env:ProgramFiles(x86)}\Azure Dev CLI"
-        "$env:USERPROFILE\.azd\bin"
+function Add-CommandFallbackPath {
+    param(
+        [string] $CommandName,
+        [string[]] $Directories
     )
-    $found = $false
-    foreach ($dir in $azdFallbackPaths) {
-        if (Test-Path "$dir\azd.exe") {
-            $env:Path = "$dir;$env:Path"
-            Note-Warn "azd found at '$dir' but was not on PATH. Added automatically for this session."
-            $found = $true
-            break
+
+    if (Get-Command $CommandName -ErrorAction SilentlyContinue) {
+        return [pscustomobject]@{ Found = $true; AddedPath = $null }
+    }
+
+    foreach ($dir in $Directories) {
+        if (-not $dir) { continue }
+        foreach ($ext in @(".exe", ".cmd", ".bat")) {
+            $candidate = Join-Path $dir "$CommandName$ext"
+            if (Test-Path $candidate) {
+                $env:Path = "$dir;$env:Path"
+                return [pscustomobject]@{ Found = $true; AddedPath = $dir }
+            }
         }
     }
-    if (-not $found) {
-        Note-Action "Azure Developer CLI (azd) is not installed. Install it from https://aka.ms/azd-install, then re-run."
-        Write-Output ""
-        Write-Output "Summary: azd missing -- cannot continue."
-        exit 1
+
+    return [pscustomobject]@{ Found = [bool](Get-Command $CommandName -ErrorAction SilentlyContinue); AddedPath = $null }
+}
+
+function Test-AzdAuthLoggedIn {
+    $raw = ""
+    try {
+        $raw = (& azd auth login --check-status 2>&1) -join "`n"
+    } catch {
+        $raw = $_ | Out-String
     }
+    $authExit = $LASTEXITCODE
+
+    if ($raw -match "(?i)(not\s+logged\s+in|not\s+authenticated|no\s+account|login\s+required|please\s+run.*azd\s+auth\s+login|run.*azd\s+auth\s+login|expired)") {
+        return $false
+    }
+
+    if ($raw -match "(?i)(logged\s+in|authenticated|already\s+logged\s+in)") {
+        return $true
+    }
+
+    # Unrecognized output -- fall back to exit code
+    return ($authExit -eq 0)
+}
+
+# 1. Required CLIs
+# Check PATH first, then probe common install locations (winget, MSI, chocolatey)
+$azdCommand = Add-CommandFallbackPath "azd" @(
+    "$env:LOCALAPPDATA\Programs\Azure Dev CLI",
+    "$env:ProgramFiles\Azure Dev CLI",
+    "${env:ProgramFiles(x86)}\Azure Dev CLI",
+    "$env:USERPROFILE\.azd\bin"
+)
+$azdInstalled = $azdCommand.Found
+if ($azdCommand.AddedPath) {
+    Note-Warn "azd found at '$($azdCommand.AddedPath)' but was not on PATH. Added automatically for this session."
+}
+if (-not $azdInstalled) {
+    Note-Action "Azure Developer CLI (azd) is not installed. Install it from https://aka.ms/azd-install, then re-run."
+}
+
+$azCommand = Add-CommandFallbackPath "az" @(
+    "$env:ProgramFiles\Microsoft SDKs\Azure\CLI2\wbin",
+    "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\CLI2\wbin"
+)
+$azInstalled = $azCommand.Found
+if ($azCommand.AddedPath) {
+    Note-Warn "az found at '$($azCommand.AddedPath)' but was not on PATH. Added automatically for this session."
+}
+if (-not $azInstalled) {
+    Note-Action "Azure CLI (az) is not installed. Install it from https://aka.ms/installazurecli, then re-run."
+}
+
+if (-not $azdInstalled -or -not $azInstalled) {
+    Write-Output ""
+    Write-Output "Summary: CLI missing -- cannot continue."
+    exit 1
 }
 
 $verJson = Get-AzdJson @("version", "--output", "json")
 $azdVersion = if ($verJson -and $verJson.azd -and $verJson.azd.version) { $verJson.azd.version } else { "unknown" }
 Note-Ok "azd installed (version $azdVersion)."
 
-# 2. Required extensions
-$extRaw = (& azd extension list --output json 2>$null) -join "`n"
+try {
+    $azVersionRaw = (& az version --query '"azure-cli"' -o tsv 2>$null) -join "`n"
+} catch {
+    $azVersionRaw = ""
+}
+$azVersion = if ($azVersionRaw) { $azVersionRaw.Trim() } else { "unknown" }
+Note-Ok "Azure CLI installed (version $azVersion)."
+
+# 2. Required azd extensions
+try {
+    $extRaw = (& azd extension list --output json 2>$null) -join "`n"
+} catch {
+    $extRaw = ""
+}
 foreach ($ext in @("azure.ai.agents", "azure.ai.projects")) {
     if ($extRaw -match [regex]::Escape($ext)) {
         Note-Ok "Extension '$ext' is installed."
@@ -73,11 +138,38 @@ foreach ($ext in @("azure.ai.agents", "azure.ai.projects")) {
 }
 
 # 3. Auth status
-& azd auth login --check-status *> $null
-if ($LASTEXITCODE -eq 0) {
+if (Test-AzdAuthLoggedIn) {
     Note-Ok "Logged in to azd."
 } else {
-    Note-Action "Not logged in. Ask the user to run 'azd auth login' (it opens a browser; never run it for them)."
+    Note-Action "Not logged in to azd. Ask the user to run 'azd auth login' (it opens a browser; never run it for them)."
+}
+
+try {
+    $azAccountRaw = (& az account show --output json 2>$null) -join "`n"
+} catch {
+    $azAccountRaw = ""
+}
+if (-not $azAccountRaw) {
+    Note-Action "Not logged in to Azure CLI. Ask the user to run 'az login' (it opens a browser; never run it for them)."
+} else {
+    try {
+        $azAccount = $azAccountRaw | ConvertFrom-Json -ErrorAction Stop
+        $state = if ($azAccount.PSObject.Properties.Name -contains "state") { $azAccount.state } else { "" }
+        if ($state -and $state -ne "Enabled") {
+            Note-Action "Azure CLI active subscription state is '$state'. Ask the user to select an enabled subscription with 'az account set --subscription <id>'."
+        } else {
+            $subName = if ($azAccount.PSObject.Properties.Name -contains "name" -and $azAccount.name) { $azAccount.name } else { "unknown" }
+            Note-Ok "Azure CLI logged in (subscription: $subName)."
+        }
+    } catch {
+        Note-Action "Unable to verify Azure CLI login status. Ask the user to run 'az login' and re-run this script."
+    }
+}
+
+if ($actionRequired) {
+    Write-Output ""
+    Write-Output "Summary: action required -- resolve the [ACTION] items above before continuing."
+    exit 1
 }
 
 # 4. Foundry project endpoint (optional at this stage)
