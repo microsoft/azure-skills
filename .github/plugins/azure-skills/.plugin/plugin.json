@@ -1,7 +1,7 @@
 {
   "name": "azure",
   "description": "Microsoft Azure MCP and Skills integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from your development environment.",
-  "version": "1.1.75",
+  "version": "1.1.76",
   "author": {
     "name": "Microsoft",
     "url": "https://www.microsoft.com"
@@ -20,9 +20,5 @@
     "diagnostics"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
-  "hooks": {
-    "paths": ["./hooks/copilot-hooks.json"],
-    "exclusive": true
-  }
+  "mcpServers": "./.mcp.json"
 }

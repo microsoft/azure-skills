@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.76
+
+- fix: Get hooks working in Copilot again ([#2719](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2719))
+
 ## 1.1.75
 
 - feat: improve foundry skill in more real user scenarios. ([#2705](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2705))

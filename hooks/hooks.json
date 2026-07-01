@@ -2,12 +2,14 @@
   "hooks": {
     "PostToolUse": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh"
-          }
-        ]
+        "type": "command",
+
+        "windows": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1",
+        "osx": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh",
+        "linux": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh",
+
+        "bash": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh",
+        "powershell": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1"
       }
     ]
   }
