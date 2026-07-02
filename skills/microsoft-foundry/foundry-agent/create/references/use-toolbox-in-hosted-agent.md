@@ -74,7 +74,6 @@ The full set is documented in [agent-tools.md](agent-tools.md) and — authorita
 **Adjacent (not a `type` in a toolbox version):**
 
 - **Agent Memory** — use the `MemorySearchTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox). See [tool-memory.md](tool-memory.md).
-- **Skills** — reusable behavioral guidelines (`SKILL.md`) attached via the `skills[]` array, exposed as MCP resources (`skill://` URIs); the Agent Framework SDK wraps these into a `load_skill` tool for progressive disclosure. See [skill-toolbox.md](skill-toolbox.md).
 - **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. See the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 
 ## Information to Gather Before Building a Toolbox Payload
@@ -186,7 +185,7 @@ See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-d
 
 ## Operational helpers via `azd ai` CLI
 
-> The `azd ai` CLI also exposes `agent connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
+> The `azd ai` CLI also exposes `connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
 
 > All commands require `--project-endpoint <PROJECT_ENDPOINT>` (the value of `PROJECT_ENDPOINT`, e.g. `https://<account>.services.ai.azure.com/api/projects/<project>`). To avoid repeating it, export it once:
 >

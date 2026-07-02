@@ -9,7 +9,7 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 | Property | Value |
 |----------|-------|
 | Agent type | Hosted (Bring Your Own container) only |
-| Protocol id (`agent.yaml`) | `invocations_ws` |
+| Protocol id (`azure.yaml`) | `invocations_ws` |
 | Recommended version | `1.0.0` |
 | Container route | `WS /invocations_ws` (served by `azure-ai-agentserver-invocations`; the host binds the port and probes for you) |
 | Foundry-side URL | `wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws?project_name={project}&agent_name={agentName}&agent_session_id={sessionId}&foundry_features=HostedAgents=V1Preview` |
@@ -63,21 +63,27 @@ Inside the handler, read the session id from `FOUNDRY_AGENT_SESSION_ID` (env var
 
 See [Invocations WebSocket Protocol Guide](references/invocations-ws-protocol.md) for the framing model, the `agent_session_id` query parameter, control-vs-data frame patterns, and discovery guidance.
 
-### Step 2: Declare the Protocol in `agent.yaml`
+### Step 2: Declare the Protocol in `azure.yaml`
+
+In the agent's service block (`host: azure.ai.agent`):
 
 ```yaml
-kind: hosted
-name: my-ws-agent
-protocols:
-  - protocol: invocations_ws
-    version: 1.0.0
-resources:
-  cpu: "1"          # voice/media: at least 1 vCPU / 2 GiB; up to 2 vCPU / 4 GiB
-  memory: 2Gi
-environment_variables:
-  - name: SOME_SECRET
-    value: ${SOME_SECRET}
-  # Resolve every secret from the azd environment; do not bake values into the image.
+services:
+  my-ws-agent:
+    host: azure.ai.agent
+    kind: hosted
+    name: my-ws-agent
+    protocols:
+      - protocol: invocations_ws
+        version: 1.0.0
+    container:
+      resources:
+        cpu: "1"          # voice/media: at least 1 vCPU / 2 GiB; up to 2 vCPU / 4 GiB
+        memory: 2Gi
+    environmentVariables:
+      - name: SOME_SECRET
+        value: ${SOME_SECRET}
+      # Resolve every secret from the azd environment; do not bake values into the image.
 ```
 
 The matching `agent.manifest.yaml` declares the same `protocol: invocations_ws` under `template.protocols`.
@@ -91,7 +97,7 @@ Use the standard hosted-agent flow from the [`deploy`](../deploy/deploy.md) skil
 ```bash
 mkdir ~/azd-deploys/my-ws-agent && cd ~/azd-deploys/my-ws-agent
 azd ai agent init -m <path>/agent.manifest.yaml -p <project-resource-id> --no-prompt
-# azd env set ... for every variable referenced in agent.yaml
+# azd env set ... for every variable referenced in azure.yaml
 azd deploy my-ws-agent
 ```
 

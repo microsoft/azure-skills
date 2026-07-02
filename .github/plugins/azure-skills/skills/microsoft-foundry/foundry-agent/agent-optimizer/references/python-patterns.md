@@ -18,11 +18,11 @@ from azure.ai.agentserver.optimization import load_config
 
 ## Baseline Folder
 
-Create `.agent_configs/baseline/` beside `agent.yaml`:
+Create `.agent_configs/baseline/` in the agent's service source directory (beside the entry point):
 
 ```text
 <agent-root>/
-  agent.yaml
+  main.py
   .agent_configs/
     baseline/
       metadata.yaml

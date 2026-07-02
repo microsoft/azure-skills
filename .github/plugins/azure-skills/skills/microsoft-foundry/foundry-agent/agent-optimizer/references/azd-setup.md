@@ -26,10 +26,10 @@ Confirm:
 - agent kind is `hosted`
 - project endpoint/project ID and deployed agent name/version are known
 
-If `agent.yaml` is missing, ask before initializing:
+If the agent's `azure.yaml` service block is missing, ask before initializing:
 
 ```bash
 azd ai agent init --project-id <project-id>
 ```
 
-Use the project ID from azd context when available; otherwise ask the user. After init, stop for review of generated `agent.yaml`.
+Use the project ID from azd context when available; otherwise ask the user. After init, stop for review of the generated `azure.yaml` service block.

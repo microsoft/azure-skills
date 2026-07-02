@@ -125,11 +125,11 @@ Note-Ok "Azure CLI installed (version $azVersion)."
 
 # 2. Required azd extensions
 try {
-    $extRaw = (& azd extension list --output json 2>$null) -join "`n"
+    $extRaw = (& azd extension list --installed --output json 2>$null) -join "`n"
 } catch {
     $extRaw = ""
 }
-foreach ($ext in @("azure.ai.agents", "azure.ai.projects")) {
+foreach ($ext in @("azure.ai.agents", "azure.ai.projects", "microsoft.foundry")) {
     if ($extRaw -match [regex]::Escape($ext)) {
         Note-Ok "Extension '$ext' is installed."
     } else {

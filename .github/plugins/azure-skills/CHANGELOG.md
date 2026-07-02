@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.79
+
+- fix: restructure and update skill reference docs for hosted agent creation ([#2737](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2737))
+
+## 1.1.78
+
+- fix(microsoft-foundry): sync latest azd contract and schema ([#2722](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2722))
+
+## 1.1.77
+
+- feat: add guardrails reference docs for hosted agent creation ([#2731](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2731))
+
 ## 1.1.76
 
 - fix: Get hooks working in Copilot again ([#2719](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2719))

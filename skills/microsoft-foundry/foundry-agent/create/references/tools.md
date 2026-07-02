@@ -1,6 +1,6 @@
 # Tools and Toolboxes (azd ai)
 
-How to attach tools (web search, Azure AI Search, MCP, A2A) to a hosted agent using `azd ai toolbox` and `azd ai agent connection`.
+How to attach tools (web search, Azure AI Search, MCP, A2A) to a hosted agent using `azd ai toolbox` and `azd ai connection`.
 
 A **toolbox** is a curated bundle of connection-backed tools that Foundry exposes as a single MCP-compatible endpoint. The agent connects to one URL and discovers every tool inside. `azd deploy` does NOT auto-create toolboxes -- you drive the lifecycle explicitly.
 
@@ -14,11 +14,11 @@ azd extension install azure.ai.toolboxes
 
 ## The flow (every recipe)
 
-1. Create the **connection** (`azd ai agent connection create ...`).
+1. Create the **connection** (`azd ai connection create ...`).
 2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
 3. Read the endpoint (`azd ai toolbox show <name> --output json`).
 4. `azd env set TOOLBOX_<NAME>_MCP_ENDPOINT "<endpoint>"`.
-5. Reference it in `<service-dir>/agent.yaml` `environment_variables[]`.
+5. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 6. `azd deploy`.
 
 ## Env var naming convention
@@ -65,7 +65,7 @@ connections:
 
 ```bash
 # 1. Connection
-azd ai agent connection create github-mcp-conn \
+azd ai connection create github-mcp-conn \
   --kind remote-tool \
   --target https://api.githubcopilot.com/mcp \
   --auth-type custom-keys \
@@ -82,10 +82,10 @@ ENDPOINT=$(azd ai toolbox show agent-tools --output json | jq -r .endpoint)
 azd env set TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT "$ENDPOINT"
 ```
 
-Add the env var to `<service-dir>/agent.yaml`:
+Add the env var to the agent service's `environmentVariables` in `azure.yaml`:
 
 ```yaml
-environment_variables:
+environmentVariables:
   - name: TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT
     value: ${TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT}
 ```
@@ -95,7 +95,7 @@ Then `azd deploy`.
 ## Recipe: Azure AI Search RAG
 
 ```bash
-azd ai agent connection create my-search-conn \
+azd ai connection create my-search-conn \
   --kind cognitive-search \
   --target https://my-search.search.windows.net/ \
   --auth-type api-key --key "<search-admin-key>"
@@ -108,7 +108,7 @@ For multiple indexes, add multiple entries with different `index` values.
 ## Recipe: A2A peer agent
 
 ```bash
-azd ai agent connection create peer-agent-conn \
+azd ai connection create peer-agent-conn \
   --kind remote-a2a \
   --target https://other-agent.foundry-account.westus2.azure.com/ \
   --auth-type none
@@ -201,7 +201,7 @@ azd ai agent invoke "list the tools you have access to"
 | Symptom | Likely cause |
 |---------|--------------|
 | `TOOLBOX_<NAME>_MCP_ENDPOINT` not set | Run `azd ai toolbox show` + `azd env set`. |
-| Env var missing in deployed agent | Add to `agent.yaml` `environment_variables[]`, `azd deploy`. |
+| Env var missing in deployed agent | Add to the agent service's `environmentVariables` in `azure.yaml`, `azd deploy`. |
 | `400` mentioning `Toolboxes` | Missing `Foundry-Features: Toolboxes=V1Preview` header. |
 | `401` on MCP calls | Expired / wrong-scope token. Use `https://ai.azure.com/.default`; refresh per request. |
 | `403 Forbidden` | Caller missing `Foundry User` role. |

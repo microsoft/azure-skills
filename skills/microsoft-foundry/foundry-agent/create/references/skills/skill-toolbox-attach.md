@@ -4,10 +4,6 @@ How to attach, list, remove, and version **skills** (reusable behavioral guideli
 
 Skills are not a tool `type` — they live in a separate `skills[]` array in the toolbox manifest. At the MCP level, skills are exposed as **resources** (`resources/list` / `resources/read` with `skill://` URIs).
 
-> 📘 For skill resource CRUD (`azd ai skill create/update/list/download/delete`), see [skill-management.md](skill-management.md).
->
-> 📘 For consuming skills in agent code (Agent Framework SDK integration, progressive disclosure, `load_skill`), see [use-skills-in-hosted-agent.md](use-skills-in-hosted-agent.md).
-
 ## Install
 
 ```bash
@@ -62,6 +58,13 @@ tools:
 
 ```bash
 azd ai toolbox create agent-tools --from-file tools.yaml
+```
+
+Get the toolbox endpoint after creation:
+
+```bash
+ENDPOINT=$(azd ai toolbox show agent-tools -o json | jq -r .endpoint)
+azd env set TOOLBOX_ENDPOINT "$ENDPOINT"
 ```
 
 When `version` is omitted from a skill entry, the toolbox resolves the skill's `default_version` at read time. If the skill is updated (`azd ai skill update`), agents on the consumer endpoint pick up the new content without a toolbox republish.
@@ -124,12 +127,11 @@ curl -s -X POST "$URL" \
   -d '{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"skill://my-skill/SKILL.md"}}'
 ```
 
-> For how the Agent Framework SDK wraps these MCP resources into a `load_skill` tool for progressive disclosure, see [use-skills-in-hosted-agent.md](use-skills-in-hosted-agent.md).
-
 ## Skill + Tool Search interaction
 
 When `toolbox_search_preview` is enabled, regular tools are hidden from `tools/list` and discovered via `tool_search`. Skills remain in `resources/list` regardless of this setting — they are not affected by Tool Search.
 
-## Skills via Toolbox vs SkillsProvider: when to use which
+## References
 
-See [use-skills-in-hosted-agent.md § Choosing an approach](use-skills-in-hosted-agent.md) for a comparison table.
+- [skill-manage.md](skill-manage.md) — create, version, and manage skills
+- [skill-attach.md](skill-attach.md) — consume skills in agent code (direct download or toolbox MCP), choosing an approach

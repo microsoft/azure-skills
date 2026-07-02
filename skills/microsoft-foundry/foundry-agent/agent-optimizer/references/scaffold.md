@@ -18,7 +18,7 @@ Use [Python Patterns](python-patterns.md#target-selection) to map evaluator/data
 
 ## Step 3: Scaffold Baseline Files
 
-Create the required `.agent_configs/baseline/` folder beside `agent.yaml`:
+Create the required `.agent_configs/baseline/` folder in the agent's service source directory (beside the entry point):
 
 ```text
 .agent_configs/
@@ -68,7 +68,7 @@ Map resolved values:
 - Skills -> `config.skills_dir` with `load_skills_from_dir(...)` only when the runtime has a safe skill/tool mechanism
 - Function tool definitions -> `config.apply_tool_descriptions(tools)` when tool metadata can be patched safely
 
-Do not add optimization runtime env vars to `agent.yaml`. The default local config path is `.agent_configs/`; use `load_config(config_dir="...")` only when the scaffold intentionally uses a non-default local config directory.
+Do not add optimization runtime env vars to the agent's `environmentVariables` in `azure.yaml`. The default local config path is `.agent_configs/`; use `load_config(config_dir="...")` only when the scaffold intentionally uses a non-default local config directory.
 
 ## Step 5: Verify and Stop
 

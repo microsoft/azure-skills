@@ -8,7 +8,7 @@ After deployment, immediately prepare a Foundry evaluation suite and local refer
 
 ### 1. Resolve Context
 
-Use [Common Project Context Resolution](../../../SKILL.md#agent-common-project-context-resolution) to compute effective context. In azd projects, prefer `azd env get-values` for deployment context and use the selected `.foundry/agent-metadata*.yaml` file only as an overlay/cache. Use `agent_get`, local `agent.yaml`, and matching `eval.yaml` as needed to resolve:
+Use [Common Project Context Resolution](../../../SKILL.md#agent-common-project-context-resolution) to compute effective context. In azd projects, prefer `azd env get-values` for deployment context and use the selected `.foundry/agent-metadata*.yaml` file only as an overlay/cache. Use `agent_get`, the local `azure.yaml` service block, and matching `eval.yaml` as needed to resolve:
 
 | Value | Source |
 |-------|--------|

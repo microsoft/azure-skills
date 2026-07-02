@@ -28,7 +28,7 @@ Resolve deployment and evaluation context by layering sources in this order:
 | Agent root | `azure.yaml` service `project` for `host: azure.ai.agent` | `.foundry` discovery, user path | Do not write except to initialize cache |
 | Environment | user/session, then azd env/default | metadata `defaultEnvironment` | Store azd binding only when useful |
 | Project endpoint | `azd env get-values` | metadata, user input | Do not duplicate azd values |
-| Agent name/version | azd `AGENT_<SERVICE>_*` vars | `agent.yaml`, metadata, user input | Do not duplicate azd values |
+| Agent name/version | azd `AGENT_<SERVICE>_*` vars | `azure.yaml`, metadata, user input | Do not duplicate azd values |
 | ACR | azd registry vars | metadata, user input | Do not duplicate azd values |
 | Observability | azd App Insights vars | metadata, user input | Do not copy secrets if azd has them |
 | Local eval draft | `eval.yaml` | metadata, user input | Sync to `.foundry` only after remote lookup/registration |
@@ -122,7 +122,7 @@ Persist eval.yaml-derived suite metadata only after the relevant dataset/evaluat
 ## Workflow Rules
 
 1. Prefer azd service discovery before `.foundry` discovery when `azure.yaml` has `host: azure.ai.agent`.
-2. Once an agent root is selected, use only that root's `.foundry`, source tree, `agent.yaml`, and `eval.yaml` unless the user switches roots.
+2. Once an agent root is selected, use only that root's `.foundry`, source tree, `azure.yaml`, and `eval.yaml` unless the user switches roots.
 3. Select metadata files in this order: explicit file/path, environment sidecar, `.foundry/agent-metadata.yaml`, then prompt if ambiguous.
 4. Resolve environment from user/session, azd env/default, single-environment metadata, then `defaultEnvironment`.
 5. Keep the selected root, environment, metadata overlay file, and primary context source visible in deploy/eval/trace summaries.

@@ -12,7 +12,7 @@ Generate a seed evaluation dataset for a Foundry agent by producing realistic, d
 
 ## Prerequisites
 
-- Agent deployed and running (or local `agent.yaml` available with instructions and tool definitions)
+- Agent deployed and running (or the local agent source / `azure.yaml` service block available with instructions and tool definitions)
 - Selected `.foundry/agent-metadata*.yaml` file resolved with `projectEndpoint` and `agentName`
 
 ## Dataset Row Schema
@@ -34,13 +34,13 @@ Example row:
 
 ## Step 1 — Gather Agent Context
 
-Collect the agent's full context from `agent_get` or local `agent.yaml` in the selected agent root:
+Collect the agent's full context from `agent_get` or the local `azure.yaml` service block in the selected agent root:
 
 - **Agent name** — from the selected metadata file
 - **Instructions** — the system prompt / instructions field
 - **Tools** — list of tools with names, descriptions, and parameter schemas
 - **Protocols** — supported protocols (e.g. `responses`, `invocations`, `invocations_ws`, `a2a`, `mcp`)
-- **Example messages** — from `agent.yaml` metadata if available
+- **Example messages** — from the `azure.yaml` service metadata if available
 
 ## Step 2 — Generate Test Queries
 

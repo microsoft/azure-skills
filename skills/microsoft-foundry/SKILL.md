@@ -4,7 +4,7 @@ description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.30"
+  version: "1.1.33"
 ---
 
 # Microsoft Foundry Skill
@@ -180,7 +180,7 @@ Layer sources in this order:
 1. Explicit user input and values already selected in the session
 2. azd environment values for deployment context
 3. `.foundry/agent-metadata*.yaml` overlay values and remote suite/cache references
-4. `agent.yaml` and `eval.yaml` local source configuration
+4. `azure.yaml` and `eval.yaml` local source configuration
 5. User prompts for anything still missing
 
 If azd and metadata both provide the same value and they differ, stop and ask which source is authoritative. If they match, use the azd value and avoid rewriting the duplicate on future metadata writes.
@@ -188,7 +188,7 @@ If azd and metadata both provide the same value and they differ, stop and ask wh
 | Effective Value | Preferred Source | Used By |
 |-----------------|------------------|---------|
 | Project endpoint | azd env | deploy, invoke, observe, trace, troubleshoot |
-| Agent name/version | azd agent variables, then `agent.yaml` | invoke, observe, trace, troubleshoot |
+| Agent name/version | azd agent variables, then `azure.yaml` | invoke, observe, trace, troubleshoot |
 | ACR | azd env | deploy |
 | Evaluation suites and cache paths | `.foundry/agent-metadata*.yaml` | observe, eval-datasets |
 | Local seed dataset/evaluator intent | `eval.yaml` | observe, eval-datasets |

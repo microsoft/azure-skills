@@ -17,7 +17,7 @@ DO NOT USE FOR: non-Python agents, prompt agents, running standalone batch evalu
 | Required runtime | azd project with hosted agent |
 | Required package | `azure-ai-agentserver-optimization` |
 | Required import | `from azure.ai.agentserver.optimization import load_config` |
-| Required baseline | `.agent_configs/baseline/` beside `agent.yaml` |
+| Required baseline | `.agent_configs/baseline/` in the agent's service source directory |
 | Supported targets | instruction, model, skill folder, function tool definitions |
 | azd setup | [azd Setup](references/azd-setup.md) |
 | Detailed scaffold steps | [Scaffold Workflow](references/scaffold.md) |

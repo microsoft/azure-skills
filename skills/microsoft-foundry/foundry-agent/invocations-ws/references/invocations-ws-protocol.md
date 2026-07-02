@@ -28,7 +28,7 @@ wss://{account}.services.ai.azure.com
 | Query parameter | Required | Notes |
 |-----------------|----------|-------|
 | `project_name` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint) |
-| `agent_name` | ✅ | Hosted agent name as declared in `agent.yaml` |
+| `agent_name` | ✅ | Hosted agent name as declared in `azure.yaml` |
 | `agent_session_id` | ❌ | Per-connection identifier — see [Session Management](../../invoke/references/session-management.md). If omitted, the platform (or the container) generates a random id |
 | `foundry_features` | ✅ (preview) | Must be `HostedAgents=V1Preview` while the protocol is in preview. May alternatively be sent as the `Foundry-Features` request header. |
 

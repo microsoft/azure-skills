@@ -2,7 +2,7 @@
 
 Provision Azure resources when needed, deploy the agent, and smoke-test it.
 
-For **hosted agents** (custom container or code), use `azd deploy`. Prefer **direct code deployment through azd** (no Docker/ACR required): `agent.yaml` must contain `code_configuration:`, so `azd deploy` will use direct code deployment and zip the source and let Foundry build it. Use container/ACR deployment only when the agent truly needs a Dockerfile, custom system packages, or a pre-built image.
+For **hosted agents** (custom container or code), use `azd deploy`. Prefer **direct code deployment through azd** (no Docker/ACR required): the agent's `azure.yaml` service block must contain `codeConfiguration:`, so `azd deploy` will use direct code deployment and zip the source and let Foundry build it. Use container/ACR deployment only when the agent truly needs a Dockerfile, custom system packages, or a pre-built image.
 
 For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP `agent_update` tool.
 
@@ -10,8 +10,8 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 | Property | Value |
 |----------|-------|
-| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`code_configuration` present), `azd ai agent invoke` |
-| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `code_configuration:` in agent.yaml) |
+| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), `azd ai agent invoke` |
+| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
@@ -19,28 +19,31 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 ## Hosted vs Prompt
 
-- Shipping Python / .NET / Node code -> **Hosted** (azd workflow below).
+- Shipping Python / .NET code -> **Hosted** (azd workflow below).
 - Updating only model / instructions / tools -> **Prompt** (MCP workflow below).
 
 ## Deployment Method Selection -- Hosted agents
 
-Before running `azd deploy`, inspect `<service-dir>/agent.yaml`.
+Before running `azd deploy`, inspect the agent's service block in `azure.yaml`.
 
-| Agent YAML state | Deployment path |
+| Service block state | Deployment path |
 |------------------|-----------------|
-| `code_configuration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build. |
-| No `code_configuration:` | **Container/ACR deploy** through `azd deploy`; builds/pushes an image or uses a pre-built `image:`. |
+| `codeConfiguration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build. |
+| No `codeConfiguration:` | **Container/ACR deploy** through `azd deploy`; builds/pushes an image or uses a pre-built `image:`. |
 
-`code_configuration:` example in agent.yaml:
+`codeConfiguration:` example in the `azure.yaml` service block:
 
 ```yaml
-code_configuration:
-  runtime: python_3_13
-  entry_point: main.py
-  dependency_resolution: remote_build
+services:
+  <agent-name>:
+    host: azure.ai.agent
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py
+      dependencyResolution: remote_build
 ```
 
-Default to direct code for standard hosted-agent code. If `azd deploy` prints `Packaging container` for an agent that does not need container-specific behavior, add or fix `code_configuration` and retry. Use the container path when the agent depends on Dockerfile behavior, system packages, or a pre-built image.
+Default to direct code for standard hosted-agent code. If `azd deploy` prints `Packaging container` for an agent that does not need container-specific behavior, add or fix `codeConfiguration` and retry. Use the container path when the agent depends on Dockerfile behavior, system packages, or a pre-built image.
 
 ## Workflow -- Hosted agent (azd)
 
@@ -66,7 +69,7 @@ azd ai agent show --output json
 
 Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, do Step 2 first -- `azd provision` will create the project.
 
-> **Important:** Before deploy, also make sure `agent.yaml` and the azd environment are aligned with the user's provided configuration values.
+> **Important:** Before deploy, also make sure the agent's `azure.yaml` service block and the azd environment are aligned with the user's provided configuration values.
 
 ### Step 2 -- Provision Azure resources (one-time per env)
 
@@ -87,7 +90,7 @@ azd provision --no-prompt
 What this does:
 
 - Creates the Foundry project (if not present) and supporting resources under `infra/`.
-- Creates project connections declared in `azure.yaml services.<name>.config.connections[]`. `${PARAM_*}` placeholders resolve from the active azd env.
+- Creates any connections/toolboxes declared as top-level `azure.ai.connection` / `azure.ai.toolbox` services (linked from the agent via `uses:`). Most agents instead reference an existing toolbox through a `TOOLBOX_<NAME>_MCP_ENDPOINT` environment variable created with `azd ai connection` / `azd ai toolbox`. `${PARAM_*}` placeholders resolve from the active azd env.
 - Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
 
 This is a core `azd` command. Skip provision when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` via `azd env set` -- the extension uses the existing project as-is.
@@ -104,15 +107,15 @@ azd deploy <service-name> --no-prompt
 
 What deploy does:
 
-- Reads `<service-dir>/agent.yaml`, packages the agent, uploads it, and registers a new immutable version.
-- **Direct code deploy** (`code_configuration` present): zips source, excludes `.agentignore`, and lets Foundry build the runtime image.
-- **Container deploy** (no code configuration): builds the `Dockerfile`, pushes to the project's ACR, registers the version. When `agent.yaml` has `image:` set, `azd` reuses the pre-built image.
+- Reads the agent's `azure.yaml` service block, packages the agent, uploads it, and registers a new immutable version.
+- **Direct code deploy** (`codeConfiguration` present): zips source, excludes `.agentignore`, and lets Foundry build the runtime image.
+- **Container deploy** (no code configuration): builds the `Dockerfile`, pushes to the project's ACR, registers the version. When the service block has `image:` set, `azd` reuses the pre-built image.
 
 After deploy, azd writes `AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`, and `AGENT_<SVC>_<PROTO>_ENDPOINT` (one per protocol) into the active env.
 
 Re-deploying an identical build still creates a new version; `azd` prints `Agent version <n> is already active.` and skips the poll.
 
-If deploy reports `Done` for the service and then fails only in `postdeploy` with `Agent <service-name> with version <n> not found`, the service key and `agent.yaml name` were mismatched. Rename the `azure.yaml services` key to the deployed agent name and rerun `azd deploy --no-prompt`; do not switch deployment method.
+If deploy reports `Done` for the service and then fails only in `postdeploy` with `Agent <service-name> with version <n> not found`, the `azure.yaml` service key and the service's `name:` were mismatched. Rename the `azure.yaml services` key to the deployed agent name and rerun `azd deploy --no-prompt`; do not switch deployment method.
 
 ### Step 4 -- Verify and invoke
 
@@ -140,7 +143,7 @@ This step runs automatically after deploy. Ask the user which source to use and 
 
 | Choice | Command | What's next |
 |---|---|---|
-| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` — `--gen-instruction` is required (hosted agents don't auto-derive it); use `agent.yaml` `description:`. | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
+| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` — `--gen-instruction` is required (hosted agents don't auto-derive it); use the service's `description:` in `azure.yaml`. | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
 | (b) Historical traces | `azd ai agent eval generate --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
 | (c) Existing `eval.yaml` | Skip `generate`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
 | (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval generate` (and then `eval run`) anytime."* |
@@ -162,11 +165,11 @@ Then proceed to Step 6. See [After Deployment — Auto-Generate Evaluation Suite
 
 ## Endpoint or card edits -- no new version
 
-When only `agentEndpoint:` or `agentCard:` changed in `agent.yaml`:
+When only `agentEndpoint:` or `agentCard:` changed in the `azure.yaml` service block:
 
 ```bash
-azd ai agent endpoint update --dry-run # preview
-azd ai agent endpoint update --force # apply
+azd ai agent endpoint update          # patch in place
+azd ai agent endpoint update --force  # skip confirmation for breaking changes
 ```
 
 Idempotent.
@@ -187,14 +190,14 @@ Each env has its own `AGENT_<SVC>_*` vars.
 |-------|-----|
 | `missing_project_endpoint` | Run `azd env set AZURE_AI_PROJECT_ENDPOINT <url>`, or run `azd provision` for a new project. |
 | `invalid_agent_manifest` | `azd ai agent doctor`; fix the named field. |
-| `invalid_connection` | Inspect with `azd ai agent connection show <name>`. |
-| Docker daemon not running | You are on the container path. Add/fix `code_configuration` and retry direct code deploy. Only install Docker or try remote image build if you specifically need container deploy. |
+| `invalid_connection` | Inspect with `azd ai connection show <name>`. |
+| Docker daemon not running | You are on the container path. Add/fix `codeConfiguration` and retry direct code deploy. Only install Docker or try remote image build if you specifically need container deploy. |
 | ACR push 403 | Foundry project RBAC is missing `AcrPush` for your identity. Consider switching to direct code deployment to avoid ACR entirely. |
 | `container registry endpoint not found` | ACR is not configured. Use `azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <url>`, or switch to direct code deployment. |
 | Agent version poll times out | Build still running; retry `azd ai agent show` after a minute. |
 | `session_not_ready` (424) | Cold start or readiness delay. Wait 15-30 seconds and retry. If persistent, use `1` CPU / `2Gi` memory minimum, verify the model deployment name, capability host, and agent identity role. |
 | `invalid value "json" for --output` from `azd ai agent invoke` | Invoke supports only `default` and `raw` currently. Retry without `--output json`. |
-| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. Use the service name, update `agent.yaml`, or invoke through the Foundry MCP `agent_invoke` tool. |
+| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. Use the service name, update the `azure.yaml` service block, or invoke through the Foundry MCP `agent_invoke` tool. |
 | `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
 | `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |

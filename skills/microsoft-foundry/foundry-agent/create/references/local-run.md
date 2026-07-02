@@ -21,7 +21,7 @@ Use this when iterating on a hosted agent before deploying.
 
 ## Prepare the local environment
 
-For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
+For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and the agent source (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
 
 1. `cd` into the service source directory.
 2. Create a venv, for example `python -m venv .venv`.
@@ -42,7 +42,7 @@ azd ai agent run
 What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
-2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
+2. Detects the project type (Python, .NET) from files in the service source dir.
 3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
@@ -126,7 +126,7 @@ After the local invocation completes, stop the `azd ai agent run` process you st
 
 Local dev validates code shape; remote validates infra + identity + Foundry binding. Move to deploy when:
 
-- You changed `agent.yaml` `model:`, `tools:`, `connections:`, or `protocols:`. Those only take effect on the deployed agent.
+- You changed the agent's `model`, `tools`, `connections`, or `protocols` in `azure.yaml`. Those only take effect on the deployed agent.
 - You need to test against real Foundry connections (search indexes, Bing, MCP, A2A) that have no local mock.
 - You are ready to publish a new immutable agent version.
 

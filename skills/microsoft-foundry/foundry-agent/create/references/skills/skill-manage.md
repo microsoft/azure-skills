@@ -1,12 +1,8 @@
 # Skills (azd ai)
 
-How to create, manage, and version **skills** (reusable behavioral guidelines) in a Foundry project using `azd ai skill` and the Python SDK.
+How to create, manage, and version **skills** (reusable behavioral guidelines) in a Foundry project using `azd ai skill` CLI and SDK.
 
 A **skill** is a Markdown file with YAML front matter (`SKILL.md`), uploaded to a Foundry project, and attached to agents at runtime. Skills enable updating agent behavior **without code changes**.
-
-> 📘 For attaching skills to a toolbox (`azd ai toolbox skill add/remove/list`) and the raw MCP protocol, see [skill-toolbox.md](skill-toolbox.md).
->
-> 📘 For consuming skills in agent code (Agent Framework SDK integration, progressive disclosure, `load_skill`), see [use-skills-in-hosted-agent.md](use-skills-in-hosted-agent.md).
 
 ## Install the extension
 
@@ -37,7 +33,7 @@ Instructions the agent follows when this skill is loaded on demand...
 
 > **The `name` and `description` values must be unquoted** in YAML front matter — quoting causes HTTP 500 on import.
 
-The `description` field drives skill discovery at runtime: the Agent Framework SDK uses it to decide when to load the skill. Write descriptions that clearly state **when** the agent should use the skill. See [use-skills-in-hosted-agent.md § How progressive disclosure works](use-skills-in-hosted-agent.md) for details.
+The `description` field drives skill discovery at runtime: the Agent Framework SDK uses it to decide when to load the skill. Write descriptions that clearly state **when** the agent should use the skill. See [skill-attach.md § How progressive disclosure works](skill-attach.md) for details.
 
 ## CLI surface — `azd ai skill`
 
@@ -98,37 +94,11 @@ azd ai skill update my-skill --set-default-version 1
 
 ## Python SDK operations
 
-The SDK uses `AIProjectClient.beta.skills` (preview API surface, requires `allow_preview=True`).
+For programmatic skill CRUD (create, list, download, delete) via the Python SDK, see the provisioning script in the sample:
 
-```python
-import os
-from azure.ai.projects.aio import AIProjectClient
-from azure.identity.aio import DefaultAzureCredential
+[provision_skills.py](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/12-foundry-skills/provision_skills.py) — **read the script source** for the current API surface and usage patterns.
 
-async with (
-    DefaultAzureCredential() as credential,
-    AIProjectClient(
-        endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        credential=credential,
-        allow_preview=True,
-    ) as project,
-):
-    # Create from package (in-memory ZIP)
-    imported = await project.beta.skills.create_from_package(zip_bytes)
-
-    # List
-    async for skill in project.beta.skills.list():
-        print(f"{skill.name}: {skill.description}")
-
-    # Download
-    stream = await project.beta.skills.download("my-skill")
-    zip_bytes = b"".join([chunk async for chunk in stream])
-
-    # Delete
-    await project.beta.skills.delete("my-skill")
-```
-
-Full provisioning script: [provision_skills.py](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/12-foundry-skills/provision_skills.py).
+> The Skills SDK API is in preview and may change across versions. Always refer to the sample for the latest usage.
 
 ## RBAC
 
@@ -150,6 +120,9 @@ Skills require **Foundry User** on the Foundry project scope (for both the devel
 | HTTP 500 on skill create | Quoted `name` or `description` in YAML front matter | Remove quotes from front matter values |
 | `403 Forbidden` | Missing RBAC | Grant **Foundry User** on the project scope |
 | `azd ai skill` not recognized | Extension not installed | `azd extension install azure.ai.skills` |
-| Skill attached but agent doesn't use it | Description too vague for progressive disclosure | Improve `description` in SKILL.md front matter |
-| Agent still uses old skill content after `update` | Toolbox skill pinned to old version, or `SkillsProvider` caches at startup | Use consumer endpoint (no version pin), or redeploy agent |
-| `create_from_package` fails | SDK client missing preview flag | `AIProjectClient(allow_preview=True)` |
+| Agent still uses old skill content after `update` | Toolbox skill pinned to old version, or skills provider caches at startup | Use consumer endpoint (no version pin), or redeploy agent |
+
+## References
+
+- [skill-toolbox-attach.md](skill-toolbox-attach.md) — attach skills to a toolbox, MCP protocol
+- [skill-attach.md](skill-attach.md) — consume skills in agent code (direct download or toolbox MCP)
