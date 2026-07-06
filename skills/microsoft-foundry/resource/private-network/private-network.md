@@ -20,9 +20,11 @@ allowed-tools: Read, Write, Bash, AskUserQuestion, microsoft_docs_search, micros
 
 | Topic | URL |
 |-------|-----|
-| Network isolation | https://learn.microsoft.com/azure/ai-foundry/how-to/configure-private-link |
-| Agent Service VNet | https://learn.microsoft.com/azure/ai-services/agents/how-to/virtual-networks |
-| Managed VNet | https://learn.microsoft.com/azure/ai-foundry/how-to/configure-managed-network |
+| Networking options (decision) | https://learn.microsoft.com/azure/foundry/agents/concepts/networking-options |
+| Network isolation | https://learn.microsoft.com/azure/foundry/how-to/configure-private-link |
+| Agent Service VNet | https://learn.microsoft.com/azure/foundry/agents/how-to/virtual-networks |
+| Networking deep dive (subnet/IP) | https://learn.microsoft.com/azure/foundry/agents/concepts/agents-networking-deep-dive |
+| Managed VNet | https://learn.microsoft.com/azure/foundry/how-to/managed-virtual-network |
 | Feature limitations | https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#foundry-feature-limitations |
 
 ## When to Use
@@ -95,9 +97,7 @@ Catch blockers **before** deploying. These checks apply to all paths.
 az cognitiveservices account list-skus --location <region> --kind AIServices -o table
 ```
 
-**Provider Registrations:** `Microsoft.CognitiveServices`, `Microsoft.DocumentDB`, `Microsoft.Search`, `Microsoft.Network`.
-
-**Feature Flags:** For Managed VNet — verify `AI.ManagedVnetPreview` is registered.
+**Provider Registrations:** `Microsoft.CognitiveServices`, `Microsoft.DocumentDB`, `Microsoft.Search`, `Microsoft.Network`, and `Microsoft.App` (required for agent subnet delegation). The template README lists the authoritative set.
 
 > Do NOT deploy until all pre-flight checks pass.
 
@@ -121,6 +121,6 @@ If any test fails, run `microsoft_docs_search` for the error before attempting r
 
 ## Error Handling
 
-> ⚠️ **Critical retry rule:** If a deployment fails after the capability host step starts, the agent subnet gets a `legionservicelink` that cannot be removed. On retry, always use a **new VNet name** — never reuse the same agent subnet. See [references/deploy.md](references/deploy.md).
+> ⚠️ **Critical retry rule:** If a deployment fails after the capability host step starts, a service association (`legionservicelink`) stays on the agent subnet. Simplest retry: use a **new VNet name**. To reuse the same subnet, first purge the account and delete the capability host, then wait for the link to clear before redeploying. See [references/deploy.md](references/deploy.md).
 
 For all other errors, check `microsoft_docs_search` for current remediation before acting.

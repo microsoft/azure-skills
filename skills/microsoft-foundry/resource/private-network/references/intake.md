@@ -38,7 +38,7 @@ Scan the user's message before asking:
 
 For unanswered items, use `AskUserQuestion`:
 
-**VNet model:** BYO VNet or Managed VNet (preview)?
+**VNet model:** BYO VNet or Managed VNet?
 
 **Agents:** Agent workloads, or just models/projects?
 
@@ -101,8 +101,6 @@ Confirm the approach with the user before continuing to Tier 2.
 
 ### Managed VNet only
 
-**Feature flag:** Run `az feature show` to verify `AI.ManagedVnetPreview` is registered. If not, register and wait 15–30 min.
-
 **Outbound mode:** Internet outbound (default) or approved outbound only?
 
 **MCP:** Public MCP endpoints or private MCP on VNet?
@@ -120,6 +118,7 @@ Confirm the approach with the user before continuing to Tier 2.
 **BYO resources:** Reuse existing Cosmos DB / Storage / AI Search, or create new?
 
 > If reusing, confirm all in same region as VNet.
+> If reusing AI Search, it must accept Entra ID (AAD) data-plane auth — a key-only service makes agents fail with HTTP 403. Enable with `az search service update --name <search-name> --resource-group <search-rg> --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge`.
 
 **Key Vault / App Insights:** If user mentions existing ones, collect resource IDs. Optional.
 
@@ -161,12 +160,14 @@ After collecting all requirements, validate the user's configuration against cur
 
 | Topic | URL |
 |-------|-----|
-| Network isolation overview | https://learn.microsoft.com/azure/ai-foundry/how-to/configure-private-link |
-| Agent Service private networking | https://learn.microsoft.com/azure/ai-services/agents/how-to/virtual-networks |
-| Managed VNet configuration | https://learn.microsoft.com/azure/ai-foundry/how-to/configure-managed-network |
+| Networking options (decision) | https://learn.microsoft.com/azure/foundry/agents/concepts/networking-options |
+| Network isolation overview | https://learn.microsoft.com/azure/foundry/how-to/configure-private-link |
+| Agent Service private networking | https://learn.microsoft.com/azure/foundry/agents/how-to/virtual-networks |
+| Networking deep dive (subnet/IP) | https://learn.microsoft.com/azure/foundry/agents/concepts/agents-networking-deep-dive |
+| Managed VNet configuration | https://learn.microsoft.com/azure/foundry/how-to/managed-virtual-network |
 | Agent Service FAQ — VNet | https://learn.microsoft.com/azure/foundry/agents/faq#virtual-networking |
-| Supported regions & availability | https://learn.microsoft.com/azure/ai-foundry/reference/region-support |
-| NSP | https://learn.microsoft.com/en-us/azure/networking/network-security-perimeter |
+| Supported regions & availability | https://learn.microsoft.com/azure/foundry/reference/region-support |
+| NSP | https://learn.microsoft.com/azure/foundry/how-to/add-foundry-to-network-security-perimeter |
 | Feature Limitations | https://learn.microsoft.com/en-us/azure/foundry/how-to/configure-private-link#foundry-feature-limitations |
 
 > These URLs may change. If a fetch returns 404, use `microsoft_docs_search` to find the current page.

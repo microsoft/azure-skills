@@ -14,6 +14,19 @@ az deployment group create \
 
 > ⚠️ Capability host provisioning is **asynchronous** (10–20 min). The CLI produces no output during this phase.
 
+## Managed VNet — Required Post-Deploy Step
+
+After the deployment succeeds, you **must** create the managed network's outbound private endpoint rules:
+
+- A **self-referencing private endpoint** back to the Foundry account.
+- Private endpoints to its dependent data resources.
+
+> ⚠️ **Without them, hosted agents fail with `500 (403: Public access is disabled)`** — the agent container in Microsoft's managed VNet can't reach the account privately. Prompt agents are unaffected.
+
+The account's managed identity must hold `Azure AI Enterprise Network Connection Approver` so the rules auto-approve.
+
+See the Managed VNet doc (Key Documentation) for current steps, or the template README for its specific script.
+
 ## Monitor Progress
 
 Use exponential backoff — do NOT poll every 30 seconds.
@@ -65,7 +78,7 @@ Use `microsoft_docs_search` with the error code or message to find current remed
 
 | Error | Likely cause | Fix |
 |-------|-------------|-----|
-| `legionservicelink` / subnet in use | Orphaned service link from prior attempt | Use a new `vnetName` — do not reuse the prior VNet |
+| `legionservicelink` / subnet in use | Capability host association still linked to the agent subnet | Use a new `vnetName`, or purge the account and delete the capability host, then wait for the link to clear before reusing the subnet |
 | `AuthorizationFailed` on `validate/action` | Missing Contributor role | Assign Contributor + User Access Administrator to deploying identity |
 | `SubnetDelegationAlreadyExists` | Agent subnet already delegated to another resource | Use a new VNet or open a support ticket to remove the delegation |
 | `disableLocalAuth` policy violation | Template defaults to `false` | Set `disableLocalAuth: true` in Bicep params |

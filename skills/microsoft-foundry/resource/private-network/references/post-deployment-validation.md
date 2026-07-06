@@ -46,6 +46,18 @@ All should return `Disabled`.
 
 > **T10 (Private Basic):** Steps 2-5 below do not apply — T10 has no agents, no capability host, and no BYO resources. Setup is complete after Step 1.
 
+### 1.4 Managed VNet — Outbound Private Endpoint Rules
+
+For Managed VNet, verify the managed network's **outbound** private endpoint rules exist, especially the self-referencing private endpoint back to the account:
+
+```bash
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<ai-account>/managedNetworks/default/outboundRules?api-version=2025-10-01-preview" \
+  --query "value[].{name:name,type:properties.type,status:properties.status}" -o table
+```
+
+Expect a self-referencing private endpoint to the account plus private endpoints to its dependent data resources. A missing self-endpoint causes hosted agents to return `500 (403)`.
+
 ## 2. RBAC Role Assignment (no VNet required)
 
 The template does not assign data-plane roles automatically.

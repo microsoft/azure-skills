@@ -638,7 +638,6 @@ $connId = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Cognitiv
 $tok  = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
 $hdr  = @{ Authorization      = "Bearer $tok"
            "Content-Type"     = "application/json"
-           "Foundry-Features" = "Toolboxes=V1Preview"   # REQUIRED
            Accept             = "application/json, text/event-stream" }
 
 # 1. Create a toolbox version with the connection attached.
@@ -669,7 +668,7 @@ Invoke-WebRequest -Method POST -Headers $hdr -UseBasicParsing -Body $call `
    -Uri "$dp/toolboxes/$tb/mcp?api-version=v1"
 ```
 
-The `Foundry-Features: Toolboxes=V1Preview` header is mandatory — without it the dataplane returns 404. The response body for `/mcp` is plain JSON (no SSE `data:` framing) despite the `text/event-stream` Accept.
+The response body for `/mcp` is plain JSON (no SSE `data:` framing) despite the `text/event-stream` Accept.
 
 ## Required RBAC summary
 
@@ -693,7 +692,7 @@ The `Foundry-Features: Toolboxes=V1Preview` header is mandatory — without it t
 - **`metadata.audience` is required for `ProjectManagedIdentity`.** Without it the MCP server returns 401.
 - **Header names for `CustomKeys` come from the catalog**, not from a default `Authorization: Bearer` template.
 - **`ApiKey` is rejected** for `category=RemoteTool`. Use `CustomKeys` for static secrets.
-- **OAuth consent is per-user, per-connection, per-project.** Each new caller hits `CONSENT_REQUIRED` (code `-32007`) once and must open the URL the toolbox returns.
+- **OAuth consent is per-user, per-connection, per-project.** Each new caller hits `CONSENT_REQUIRED` once (returned as a nested string code inside an outer `-32006` error) and must open the URL the toolbox returns.
 - **`api.githubcopilot.com/mcp` rejects user OAuth-App tokens.** Use a self-hosted MCP or fall back to OpenAPI.
 - **PMI forwarder drops `target` query strings and mints a fixed audience.** Setting `properties.audience` is accepted but does not change what is sent.
 - **Network-secured Foundry** projects cannot use private-endpoint-only MCP servers — only public endpoints reachable from the Foundry data plane and the Connector Namespace.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.82
+
+- feat: support foundry routine and add it as a sub-skill ([#2743](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2743))
+
+## 1.1.81
+
+- fix: correct toolbox reference docs from live testing ([#2755](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2755))
+
+## 1.1.80
+
+- fix(microsoft-foundry): vnet ([#2754](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2754))
+
 ## 1.1.79
 
 - fix: restructure and update skill reference docs for hosted agent creation ([#2737](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2737))

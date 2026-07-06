@@ -109,21 +109,18 @@ URL="$PE/toolboxes/<toolbox>/mcp?api-version=v1"
 curl -s -X POST "$URL" \
   -H "Authorization: Bearer $TOK" \
   -H "Content-Type: application/json" \
-  -H "Foundry-Features: Toolboxes=V1Preview" \
   -d '{"jsonrpc":"2.0","id":1,"method":"resources/list","params":{}}'
 
 # Read skill index
 curl -s -X POST "$URL" \
   -H "Authorization: Bearer $TOK" \
   -H "Content-Type: application/json" \
-  -H "Foundry-Features: Toolboxes=V1Preview" \
   -d '{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"skill://index.json"}}'
 
 # Read a specific skill's content
 curl -s -X POST "$URL" \
   -H "Authorization: Bearer $TOK" \
   -H "Content-Type: application/json" \
-  -H "Foundry-Features: Toolboxes=V1Preview" \
   -d '{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"skill://my-skill/SKILL.md"}}'
 ```
 

@@ -22,9 +22,9 @@ azd deploy                           # core azd; packages + registers new agent 
 azd ai agent endpoint update         # patch agentEndpoint / agentCard in place
 
 azd ai connection list / show / create / update / delete
-azd ai toolbox list / show / create / update / delete
+azd ai toolbox list / show / create / publish / delete
 azd ai toolbox connection add / remove / list
-azd ai toolbox version list
+azd ai toolbox versions list
 
 azd ai agent files list / show / upload / download / delete / stat / mkdir
 azd ai agent sessions list / show / create / update / delete
