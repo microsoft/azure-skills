@@ -38,7 +38,7 @@
 # 1. skill_invocation
 #    - Triggered when: the "skill"/"Skill" tool is called with a skill name,
 #      OR a SKILL.md file is read from a recognized azure-skills path
-#    - Tracked field: --skill-name <name>
+#    - Tracked fields: --skill-name <name>, --skill-version <version>
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
@@ -50,7 +50,18 @@
 #      inside a recognized azure-skills path that is NOT a SKILL.md
 #    - These are the reference/instruction files that skills bundle alongside
 #      SKILL.md (e.g., recipes, templates, requirement docs)
-#    - Tracked field: --file-reference <relative-path-after-skills/>
+#    - Tracked fields: --file-reference <relative-path-after-skills/>,
+#      --skill-version <version>
+#
+# === Skill Version ===
+#
+# The skill version is read from the SKILL.md frontmatter (metadata.version),
+# which the build stamps at package time. It is resolved as follows:
+#   - skill/Skill tool call: locate SKILL.md relative to this script's plugin
+#     root ("<plugin-root>/skills/<name>/SKILL.md")
+#   - SKILL.md read:          read the version from the SKILL.md being read
+#   - reference_file_read:    read the version from the sibling SKILL.md at the
+#                             root of the skill folder the reference lives in
 #    - Example: azure-validate/references/recipes/azd/README.md
 #
 # === Reference File Detection ===
@@ -86,6 +97,36 @@ if ($env:AZURE_MCP_COLLECT_TELEMETRY -eq "false") {
 function Write-Success {
     Write-Output '{"continue":true}'
     exit 0
+}
+
+# Resolve this script's directory so we can locate bundled skills. In the
+# installed plugin, hooks/ and skills/ are siblings under the plugin root, so
+# <plugin-root>/skills/<name>/SKILL.md is the skill definition.
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
+$skillsDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'skills'
+
+# Extract the skill version from a SKILL.md frontmatter (metadata.version).
+# Returns $null if the file or version cannot be read.
+function Get-SkillVersion {
+    param([string]$SkillMdPath)
+    if (-not $SkillMdPath) { return $null }
+    $SkillMdPath = $SkillMdPath -replace '\\', '/'
+    if (-not (Test-Path -LiteralPath $SkillMdPath)) { return $null }
+    try {
+        $lines = Get-Content -LiteralPath $SkillMdPath -ErrorAction SilentlyContinue
+    } catch { return $null }
+    $inFrontmatter = $false
+    foreach ($line in $lines) {
+        if ($line -match '^---\s*$') {
+            if (-not $inFrontmatter) { $inFrontmatter = $true; continue }
+            else { break }
+        }
+        if ($inFrontmatter -and $line -match '^\s*version:\s*(.+?)\s*$') {
+            return $Matches[1].Trim().Trim('"').Trim("'")
+        }
+    }
+    return $null
 }
 
 # === Main Processing ===
@@ -190,6 +231,7 @@ $pathPatternAgentsSkills = '\.agents/skills/'
 $shouldTrack = $false
 $eventType = $null
 $skillName = $null
+$skillVersion = $null
 $azureToolName = $null
 $filePath = $null
 
@@ -204,6 +246,7 @@ if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     if ($skillName) {
         $eventType = "skill_invocation"
         $shouldTrack = $true
+        $skillVersion = Get-SkillVersion (Join-Path $skillsDir (Join-Path $skillName 'SKILL.md'))
     }
 }
 
@@ -233,6 +276,7 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
                 $skillName = $Matches[1]
                 $eventType = "skill_invocation"
                 $shouldTrack = $true
+                $skillVersion = Get-SkillVersion $pathToCheck
             }
         }
     }
@@ -272,6 +316,11 @@ if (-not $filePath -and -not $skillName) {
                 if (-not $shouldTrack) {
                     $shouldTrack = $true
                     $eventType = "reference_file_read"
+                    # Resolve the version from the sibling SKILL.md at the root
+                    # of the skill folder this reference lives in.
+                    $skillNameSeg = ($filePath -split '/')[0]
+                    $skillRootAbs = $pathNormalized.Substring(0, $pathNormalized.Length - $filePath.Length)
+                    $skillVersion = Get-SkillVersion ("$skillRootAbs$skillNameSeg/SKILL.md")
                 }
             }
         }
@@ -291,6 +340,7 @@ if ($shouldTrack) {
     if ($eventType) { $mcpArgs += "--event-type"; $mcpArgs += $eventType }
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
+    if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }

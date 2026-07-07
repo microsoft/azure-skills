@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.84
+
+- feat: capture and report skill version in telemetry hooks ([#2763](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2763))
+
+## 1.1.83
+
+- eval: migrate azure-prepare integration tests to vally eval suites ([#2721](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2721))
+
 ## 1.1.82
 
 - feat: support foundry routine and add it as a sub-skill ([#2743](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2743))
