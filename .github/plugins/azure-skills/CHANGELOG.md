@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.86
+
+- feat: add canvas-first entry gate for Foundry agent creation ([#2775](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2775))
+
+## 1.1.85
+
+- feature: retire azure-hosted-copilot-sdk skill ([#2556](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2556))
+
 ## 1.1.84
 
 - feat: capture and report skill version in telemetry hooks ([#2763](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2763))

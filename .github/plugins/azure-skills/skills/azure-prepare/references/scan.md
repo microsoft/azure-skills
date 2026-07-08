@@ -14,16 +14,6 @@ Analyze workspace to identify components, technologies, and dependencies.
 | `pom.xml`, `build.gradle` | Java |
 | `go.mod` | Go |
 
-### ⛔ Specialized SDK Detection — Check FIRST
-
-Before classifying components, grep dependency files for SDKs that require a specialized skill:
-
-| Dependency in code | Invoke instead |
-|--------------------|----------------|
-| `@github/copilot-sdk` · `github-copilot-sdk` · `copilot-sdk-go` · `GitHub.CopilotSdk` | **azure-hosted-copilot-sdk** |
-
-> ⚠️ If ANY match is found, **STOP and invoke that skill**. Do NOT continue with azure-prepare — the skill has tested templates and patterns.
-
 ### Component Types
 
 | Pattern | Component Type |

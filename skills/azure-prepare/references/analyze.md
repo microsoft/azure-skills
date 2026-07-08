@@ -5,11 +5,10 @@
 **STOP. Before choosing a mode, check the user's prompt for specialized technology keywords.**
 If matched, invoke the corresponding skill **immediately** — it has tested templates and correct SDK usage.
 
-> ⚠️ **Re-entry guard**: If azure-prepare was invoked as a **resume** from a specialized skill (e.g., azure-hosted-copilot-sdk Step 4), **skip this check** and go directly to Step 4.
+> ⚠️ **Re-entry guard**: If azure-prepare was invoked as a **resume** from a specialized skill, **skip this check** and go directly to Step 4.
 
 | User prompt mentions | Action |
 |---------------------|--------|
-| copilot SDK, copilot app, copilot-powered, copilot-sdk-service, @github/copilot-sdk, CopilotClient, sendAndWait | **Invoke azure-hosted-copilot-sdk skill NOW** → then resume azure-prepare at Step 4 |
 | Azure Functions, function app, serverless function, timer trigger, func new | Stay in **azure-prepare**. When selecting compute, **prefer Azure Functions** templates and best practices, then continue from Step 4. |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. This is critical for greenfield projects with no codebase. See [full routing table](specialized-routing.md).

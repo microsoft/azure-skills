@@ -78,7 +78,6 @@ Invoke related skills for specialized scenarios:
 
 | Scenario | Action |
 |----------|--------|
-| **Using GitHub Copilot SDK** | **Invoke `azure-hosted-copilot-sdk`** (scaffold + config, then resume azure-prepare) |
 | Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Handle directly without a separate skill |
 | Need detailed security hardening | Handle directly with service-specific security guidance and platform best practices |
@@ -137,11 +136,6 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md)
 3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Review Key Vault and Foundry references directly for API key management
-
-### GitHub Copilot SDK Application
-
-1. Invoke: `azure-hosted-copilot-sdk` skill (scaffold, infra, model config)
-2. After it completes, resume azure-prepare workflow (validate → deploy)
 
 ## After Research
 
