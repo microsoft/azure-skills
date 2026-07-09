@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.87
+
+- fix: use proper tool to execute query in Azure SQL Server ([#2772](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2772))
+
 ## 1.1.86
 
 - feat: add canvas-first entry gate for Foundry agent creation ([#2775](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2775))

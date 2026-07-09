@@ -4,7 +4,7 @@ description: "Prepare azd-based Azure projects for deployment: generates azure.y
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.16"
+  version: "1.2.17"
 ---
 
 # Azure Prepare

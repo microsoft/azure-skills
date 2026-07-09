@@ -74,21 +74,21 @@ IF NOT EXISTS (
 "@
 }
 
-# Ensure the rdbms-connect extension is installed (provides 'az sql db query')
-az extension show --name rdbms-connect *> $null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Azure CLI extension 'rdbms-connect' is not installed. Installing..."
-    az extension add --name rdbms-connect --yes
-    if ($LASTEXITCODE -ne 0) {
-        throw "ERROR: Failed to install Azure CLI extension 'rdbms-connect'. Cannot continue because 'az sql db query' requires it."
-    }
+# Ensure sqlcmd is available to execute the query
+if (-not (Get-Command sqlcmd -ErrorAction SilentlyContinue)) {
+    Write-Error "'sqlcmd' is not installed or not on PATH."
+    Write-Error "Install the modern go-sqlcmd from https://github.com/microsoft/go-sqlcmd and retry."
+    exit 1
 }
 
-az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
-  --auth-mode ActiveDirectoryDefault `
-  --queries $SqlQuery
+sqlcmd `
+  -S "$($env:SQL_SERVER).database.windows.net" `
+  -d $env:SQL_DATABASE `
+  --authentication-method ActiveDirectoryDefault `
+  -Q $SqlQuery
+
+if ($LASTEXITCODE -ne 0) {
+    throw "sqlcmd failed with exit code $LASTEXITCODE. SQL access was not granted."
+}
 
 Write-Host "SQL access granted successfully."
