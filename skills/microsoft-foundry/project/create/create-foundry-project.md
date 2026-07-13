@@ -32,7 +32,7 @@ If multiple subscriptions, ask which to use, then `az account set --subscription
 **3. Role permissions:**
 
 ```bash
-az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv)" --query "[?contains(roleDefinitionName, 'Owner') || contains(roleDefinitionName, 'Contributor') || contains(roleDefinitionName, 'Foundry')].{Role:roleDefinitionName, Scope:scope}" -o table
+az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv)" --include-groups --include-inherited --scope "/subscriptions/$(az account show --query id -o tsv)" --query "[?contains(roleDefinitionName, 'Owner') || contains(roleDefinitionName, 'Contributor') || contains(roleDefinitionName, 'Foundry')].{Role:roleDefinitionName, Scope:scope}" -o table
 ```
 
 Requires Owner, Contributor, or Foundry Owner. If insufficient — STOP, request elevated access from admin.

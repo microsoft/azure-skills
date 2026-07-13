@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.91
+
+- chore: improve agent instruction and quick start ([#2768](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2768))
+
+## 1.1.90
+
+- fix: remove azd init from Foundry agent creation ([#2812](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2812))
+
+## 1.1.89
+
+- feat: update invocations_ws skill for GA and path-based routing ([#2807](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2807))
+
+## 1.1.88
+
+- eval: migrate azure-compute integration tests to vally eval suite ([#2596](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2596))
+
 ## 1.1.87
 
 - fix: use proper tool to execute query in Azure SQL Server ([#2772](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2772))

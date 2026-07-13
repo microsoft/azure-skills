@@ -18,24 +18,24 @@ The `invocations_ws` protocol is a **duplex WebSocket pass-through**. After the 
 
 ```
 wss://{account}.services.ai.azure.com
-   /api/projects/agents/endpoint/protocols/invocations_ws
-   ?project_name={project}
-   &agent_name={agentName}
+   /api/projects/{project}/agents/{agentName}/endpoint/protocols/invocations_ws
+   ?api-version=v1
    &agent_session_id={sessionId}
-   &foundry_features=HostedAgents=V1Preview
 ```
+
+| Path segment | Required | Notes |
+|--------------|----------|-------|
+| `{project}` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint). Literal `_default` resolves to the resource's default project. |
+| `{agentName}` | ✅ | Hosted agent name as declared in `azure.yaml` |
 
 | Query parameter | Required | Notes |
 |-----------------|----------|-------|
-| `project_name` | ✅ | Foundry project name (the segment after `/api/projects/` in the project endpoint) |
-| `agent_name` | ✅ | Hosted agent name as declared in `azure.yaml` |
+| `api-version` | ✅ | Standard Foundry data-plane API version (`v1`). The upgrade is rejected before `101 Switching Protocols` if it is missing. |
 | `agent_session_id` | ❌ | Per-connection identifier — see [Session Management](../../invoke/references/session-management.md). If omitted, the platform (or the container) generates a random id |
-| `foundry_features` | ✅ (preview) | Must be `HostedAgents=V1Preview` while the protocol is in preview. May alternatively be sent as the `Foundry-Features` request header. |
 
 | Header | Required | Notes |
 |--------|----------|-------|
 | `Authorization: Bearer <token>` | ✅ | Entra token for audience `https://ai.azure.com` (scope `https://ai.azure.com/.default`) — `az account get-access-token --resource https://ai.azure.com`. Validated by APIM and the Agents service; the container does **not** see this header. |
-| `Foundry-Features: HostedAgents=V1Preview` | ✅ (preview) | Required unless the equivalent `foundry_features` query parameter is set. |
 
 The container receives the upgrade on path `/invocations_ws`. Inside the container, read the session id from the `FOUNDRY_AGENT_SESSION_ID` environment variable (set by `azure-ai-agentserver-invocations`), or fall back to the `agent_session_id` query string.
 
@@ -88,10 +88,9 @@ import os, uuid, websockets  # requires websockets >= 12 for the additional_head
 
 token = os.popen("az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv").read().strip()
 url = (
-    "wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws"
-    "?project_name={project}&agent_name={name}"
+    "wss://{account}.services.ai.azure.com/api/projects/{project}/agents/{name}/endpoint/protocols/invocations_ws"
+    "?api-version=v1"
     f"&agent_session_id={uuid.uuid4().hex}"
-    "&foundry_features=HostedAgents=V1Preview"
 )
 
 # websockets >= 12 uses `additional_headers`; older versions (<12) expect `extra_headers`.
@@ -108,7 +107,7 @@ async with websockets.connect(url, additional_headers={"Authorization": f"Bearer
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | 401 / 403 on upgrade | Missing or expired Entra token | Re-mint with `az account get-access-token --resource https://ai.azure.com` |
-| 404 on upgrade | Wrong `project_name` or `agent_name`, missing preview flag, or unsupported region | Verify with `agent_get`; ensure `foundry_features=HostedAgents=V1Preview` is set; confirm the deployed version uses `protocol: invocations_ws` and that the region is supported per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
+| 404 on upgrade | Wrong `project` or `agentName` path segment, missing `api-version`, or unsupported region | Verify with `agent_get`; ensure the path segments are correct and `api-version=v1` is set; confirm the deployed version uses `protocol: invocations_ws` and that the region is supported per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
 | WS closes after accept | Container raised in the handler | Tail logs with `azd ai agent monitor --session-id <agent_session_id> --follow` |
 | Frames silently dropped | Wire-format mismatch (binary vs text, wrong schema) | Confirm both ends agree on framing — the platform performs no transcoding |
 | State lost on reconnect | Different `agent_session_id` used | Reuse the same `agent_session_id` to land on the same logical state inside the container |

@@ -2,7 +2,9 @@
 
 Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSocket** endpoint instead of an HTTP request/response surface. Use this for real-time, bidirectional workloads — voice agents, live transcripts, custom streaming protocols, and signaling for out-of-band media transports.
 
-> ℹ️ **Preview.** `invocations_ws` is in public preview. For current region availability see [Foundry Hosted Agents — region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability). Every upgrade must carry the preview flag — either the `foundry_features=HostedAgents=V1Preview` query parameter or the `Foundry-Features: HostedAgents=V1Preview` request header.
+> ℹ️ **Generally available.** `invocations_ws` is GA — **no preview feature flag is required**. Every upgrade must carry the required `api-version=v1` query parameter. For current region availability see [Foundry Hosted Agents — region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability).
+>
+> **Migrating from preview:** the old `HostedAgents=V1Preview` gate (sent via the `foundry_features` query parameter or the `Foundry-Features` header) has been removed — stop sending it. Project and agent are now **path segments** instead of query parameters.
 
 ## Quick Reference
 
@@ -12,7 +14,7 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 | Protocol id (`azure.yaml`) | `invocations_ws` |
 | Recommended version | `1.0.0` |
 | Container route | `WS /invocations_ws` (served by `azure-ai-agentserver-invocations`; the host binds the port and probes for you) |
-| Foundry-side URL | `wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws?project_name={project}&agent_name={agentName}&agent_session_id={sessionId}&foundry_features=HostedAgents=V1Preview` |
+| Foundry-side URL | `wss://{account}.services.ai.azure.com/api/projects/{project}/agents/{agentName}/endpoint/protocols/invocations_ws?api-version=v1&agent_session_id={sessionId}` |
 | Auth | `Authorization: Bearer <Entra token>` for scope `https://ai.azure.com/.default` |
 | Wire format | Developer-defined (binary frames, JSON text frames, protobuf, raw PCM — anything) |
 | Session affinity | Per-connection, keyed by the `agent_session_id` query parameter (optional — auto-generated if omitted) |
@@ -113,17 +115,13 @@ Connect to the Foundry-side WebSocket directly:
    az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv
    ```
 
-2. **Build the upstream URL.** The `agent_session_id` query parameter is **optional** — if you omit it the platform generates one; supply your own (URL-safe; see [Session Management](../invoke/references/session-management.md) for ID format) only when you need to resume an existing session. The preview flag is required:
+2. **Build the upstream URL.** Project and agent are **path segments** (mirroring the HTTP `/invocations` shape); `api-version=v1` is a **required** query parameter. The `agent_session_id` query parameter is **optional** — if you omit it the platform generates one; supply your own (URL-safe; see [Session Management](../invoke/references/session-management.md) for ID format) only when you need to resume an existing session:
 
    ```
-   wss://{account}.services.ai.azure.com/api/projects/agents/endpoint/protocols/invocations_ws
-     ?project_name={project}
-     &agent_name={agentName}
+   wss://{account}.services.ai.azure.com/api/projects/{project}/agents/{agentName}/endpoint/protocols/invocations_ws
+     ?api-version=v1
      &agent_session_id={your-id}        # optional
-     &foundry_features=HostedAgents=V1Preview
    ```
-
-   You can alternatively pass the preview flag as the `Foundry-Features: HostedAgents=V1Preview` request header on the upgrade.
 
 3. **Open the WebSocket** with header `Authorization: Bearer <token>`. Browser code typically needs a small server-side proxy because the browser `WebSocket` constructor cannot set headers.
 
@@ -150,7 +148,7 @@ The same `agent_session_id` can be used to stream container logs (see the [`trou
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | HTTP 401 / 403 on WS upgrade | Missing or stale Entra token | Re-run `az account get-access-token --resource https://ai.azure.com`; ensure the caller has Foundry data-plane RBAC |
-| HTTP 404 on upgrade | Wrong `agent_name` / `project_name`, missing preview flag, or unsupported region | Verify with `agent_get`; ensure `foundry_features=HostedAgents=V1Preview` is on the URL (or `Foundry-Features` header); confirm region per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
+| HTTP 404 on upgrade | Wrong `{project}` / `{agentName}` path segment, missing `api-version`, or unsupported region | Verify with `agent_get`; ensure the project/agent path segments are correct and `api-version=v1` is on the URL; confirm region per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
 | WS closes immediately after accept | Container handler raised inside the request | Check logs via `azd ai agent monitor`; typical causes are missing env vars or unreachable backend services |
 | Browser cannot connect directly | Browser `WebSocket` cannot set `Authorization` | Run a thin server-side proxy that injects the token before forwarding |
 | Frames received but no response | Wire-format mismatch | Confirm both ends use the same framing (binary vs text, codec, sample rate, schema). The platform does **not** validate or transcode frames |
