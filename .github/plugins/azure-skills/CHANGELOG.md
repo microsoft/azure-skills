@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.93
+
+- feat: add cicd sub skill ([#2838](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2838))
+
+## 1.1.92
+
+- fix: clarify canvas-first reminder ([#2837](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2837))
+
 ## 1.1.91
 
 - chore: improve agent instruction and quick start ([#2768](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2768))
