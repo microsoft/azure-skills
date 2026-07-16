@@ -78,7 +78,7 @@ The full set is documented in [agent-tools.md](agent-tools.md) and — authorita
 
 ## Information to Gather Before Building a Toolbox Payload
 
-When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating any JSON or `azure.yaml` snippet:
+When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating a toolbox payload:
 
 | # | Question | Why needed |
 |---|----------|------------|
@@ -147,42 +147,6 @@ When the user asks to "add an MCP tool" or similar, **never guess**. Confirm eac
 }
 ```
 
-### Declarative path via `azd`
-
-If the project already uses `azd ai agent init`, prefer declaring the toolbox in `azure.yaml` so `azd deploy` provisions it and injects `TOOLBOX_ENDPOINT` automatically:
-
-```yaml
-# Declare secret parameters first; azd will prompt for the value on `azd up`
-# (or read it from `AZURE_<NAME>` env vars) and never store it in plaintext.
-params:
-  - name: github_pat
-    type: securestring
-
-resources:
-  - kind: connection
-    name: <CONNECTION_NAME>
-    target: <MCP_SERVER_URL>
-    category: remoteTool
-    credentials:
-      type: CustomKeys
-      keys:
-        # Header name comes from the catalog entry's x-ms-connection-parameters.
-        # {{ github_pat }} is resolved from the `params` block above.
-        Authorization: "Bearer {{ github_pat }}"
-
-  - kind: toolbox
-    name: agent-tools
-    tools:
-      - type: toolbox_search_preview   # recommended for any toolbox > ~5 tools
-      - type: web_search
-      - type: mcp
-        server_label: <LABEL>
-        server_url: <MCP_SERVER_URL>
-        project_connection_id: <CONNECTION_NAME>
-```
-
-See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-schema#params) for the full parameter syntax.
-
 ## Operational helpers via `azd ai` CLI
 
 > The `azd ai` CLI also exposes `connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
@@ -227,6 +191,8 @@ $body = @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} } | Conv
 ```
 
 `?api-version=v1` is required.
+
+> ⚠️ **Agent-identity-authed tools won't work locally — that's expected, not a blocker.** The token above is your **user** identity, not the deployed agent's.
 
 ## Code Integration Patterns
 

@@ -239,7 +239,7 @@ Start it in a **managed** background session your shell tool can poll and stop (
 > - **If `invoke --local` returns `could not connect` after you saw the ready line in a previous shell,** the server died when that shell exited (classic `&` symptom). Restart in the managed session — do not retry with another `&`.
 
 ```bash
-azd ai agent run --no-inspector
+azd ai agent run --no-client
 ```
 
 Smoke-invoke (local):
@@ -272,7 +272,7 @@ Remote invoke (billed):
 azd ai agent invoke "<short representative prompt>"
 ```
 
-`azd ai agent invoke` has **no `--force` flag**. If the command succeeds, read the response. If it surfaces a confirmation prompt or message, summarize the cost implication for the user (*"this will call the deployed agent and incur model usage charges"*), get explicit consent, and re-run — do **not** invent flags.
+Run the smoke invocation only as part of the requested deployment or test.
 
 ### Step 14 — Submit eval suite generation (async, fire-and-forget)
 
@@ -331,7 +331,6 @@ azd down                                    # tear down all resources when done
 | `azd deploy` postdeploy hook fails with missing `AZURE_TENANT_ID` | Run `az account show --query tenantId -o tsv` and `azd env set AZURE_TENANT_ID <tenant-id>`, then re-run `azd deploy --no-prompt`. The deployed agent version from the first deploy is still valid; the postdeploy hook just registers env vars. |
 | Scaffold sanity check fails (Step 8) | Pick a recovery path from Step 8. If still failing → [create-hosted.md](create-hosted.md). |
 | Local invoke returns model `404` / wrong deployment | Stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in azd env overrides `.env`. Re-run Step 10 to sync both. |
-| `azd ai agent invoke ... --force` returns `unknown flag: --force` | `--force` is not a valid flag for invoke. Re-run without it. |
 | Anything else | Escape to [create-hosted.md](create-hosted.md). |
 
 ## Escape Hatch
