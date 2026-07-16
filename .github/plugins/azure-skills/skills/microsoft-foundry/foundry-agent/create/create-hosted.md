@@ -13,10 +13,10 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 | Agent type | Hosted (container or code) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
 | Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` for brownfield) |
-| Local run | `azd ai agent run` + `azd ai agent invoke --local "..."` |
+| Local run | `azd ai agent run --no-client` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
-| Reference docs | [azd-ai-cli](references/azd-ai-cli.md), [local-run](references/local-run.md), [tools](references/tools.md) |
+| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [tools](references/tools.md) |
 
 ## When to Use This Skill
 
@@ -33,7 +33,7 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 |--|--------|--------|
 | Custom Python / .NET code? | Yes -> this skill | No -> [create-prompt.md](create-prompt.md) |
 | Tools / RAG / MCP / A2A | Toolbox + connections | Built-in tool configs |
-| Local debugging | `azd ai agent run` | Limited |
+| Local debugging | `azd ai agent run --no-client` | Limited |
 | Output | New immutable agent version per `azd deploy` | `agent_update` via MCP / SDK |
 
 ## Workflow
@@ -106,7 +106,7 @@ List the curated catalog (filter by language if known):
 azd ai agent sample list --featured-only --language python --output json
 ```
 
-Each entry has a `manifestUrl` and an `initCommand`. Prefer direct code deploy at init time. `--no-prompt` defaults to container deploy unless you pass `--deploy-mode code`, so include the code flags up front.
+Each entry has a `manifestUrl` and an `initCommand`. Prefer code deployment. `azd ai agent init` defaults to code deployment.
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
@@ -136,7 +136,7 @@ Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agen
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore` (code-deploy only). A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore`. A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 
 #### Model deployments (azd Golden Path)
 
@@ -177,9 +177,8 @@ Check the scaffold before local run:
    FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
-4. Prefer direct code deployment. Inspect the agent's `azure.yaml` service block; if `codeConfiguration:` is missing and the agent does not need a custom Dockerfile or system packages, add it before deployment.
-5. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
-6. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
+4. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
+5. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
 
 ### Step 4b -- Brownfield: lift existing code
 
@@ -268,7 +267,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
 3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
-5. **One file** -- the agent is defined as a service block in `azure.yaml` (`host: azure.ai.agent`). See [azd-ai-cli](references/azd-ai-cli.md).
+5. **One file** -- the agent is defined as a service block in `azure.yaml` (`host: azure.ai.agent`). See [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 6. **Reserved env vars** -- `FOUNDRY_*` and `AGENT_*` are platform-injected at runtime; `AI_PROJECT_DEPLOYMENTS`, `AI_PROJECT_RESOURCES`, and `AI_PROJECT_TOOL_CONNECTIONS` are extension-managed transport for Bicep. Never set any of these with `azd env set` -- edit `azure.yaml` and re-run `azd ai agent init`.
 
 ## Non-Interactive / YOLO Mode

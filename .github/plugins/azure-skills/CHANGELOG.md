@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.95
+
+- fix(microsoft-foundry): hosted agents call incoming A2A agent ([#2846](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2846))
+
+## 1.1.94
+
+- feat: align the Microsoft Foundry skill with the latest azd behavior ([#2844](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2844))
+
 ## 1.1.93
 
 - feat: add cicd sub skill ([#2838](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2838))

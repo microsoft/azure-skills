@@ -13,9 +13,9 @@ azd ai agent sample list             # curated catalog -- pick a manifestUrl
 azd ai agent init -m <manifestUrl>   # scaffold from a sample
 azd ai agent init --src <dir>        # scaffold from existing source
 
-azd ai agent run                     # start the agent on localhost:8088
-azd ai agent invoke "<msg>"          # remote invoke (billed; gated)
-azd ai agent invoke --local "<msg>"  # local invoke (no billing)
+azd ai agent run --no-client         # start on localhost:8088 without a client UI
+azd ai agent invoke "<msg>"          # invoke the deployed agent
+azd ai agent invoke --local "<msg>"  # invoke the agent on localhost
 
 azd provision                        # core azd; creates Foundry project + infra
 azd deploy                           # core azd; packages + registers new agent version
@@ -26,15 +26,34 @@ azd ai toolbox list / show / create / publish / delete
 azd ai toolbox connection add / remove / list
 azd ai toolbox versions list
 
-azd ai agent files list / show / upload / download / delete / stat / mkdir
-azd ai agent sessions list / show / create / update / delete
+azd ai agent files upload / download / list / delete / mkdir / stat
+azd ai agent sessions create / show / stop / delete / list
 azd ai agent monitor                 # per-session log stream (SSE)
 
 azd ai agent eval generate / run / show / update / list
 azd ai agent optimize / optimize status / optimize apply / optimize deploy / optimize cancel
 ```
 
-Read-only commands accept `--output json` and never require `--force`. Write commands are gated by a confirmation envelope (see "Confirmation envelope" below).
+Use `--output json` only when a command supports it. `azd ai agent invoke` supports `default` and `raw` output.
+
+### Hosted files and sessions
+
+Use the file commands for an active hosted-agent session:
+
+| Command | Purpose |
+|---------|---------|
+| `azd ai agent files upload` | Upload a local file. |
+| `azd ai agent files download` | Download a remote file. |
+| `azd ai agent files list` | List a remote directory. |
+| `azd ai agent files stat` | Inspect metadata for a remote path. |
+| `azd ai agent files mkdir` | Create a remote directory. |
+| `azd ai agent files delete` | Delete a remote file or directory. |
+
+Directory deletion is not recursive by default. Add `--recursive` only when deleting the directory and all of its contents is intentional.
+
+`azd ai agent invoke` manages the current session automatically. It reuses the saved session for the agent or captures and persists the server-assigned session on the first invoke. Use `--new-session` to reset session-backed state or `--session-id` to select a known session.
+
+Use `sessions create` only when a session must exist before invoke or file operations. The remaining session commands are `show`, `stop`, `delete`, and `list`. `sessions stop` stops compute and preserves the session filesystem. `sessions delete` removes both compute and filesystem state. See [Hosted Session Management](../../invoke/references/session-management.md).
 
 ## The azure.yaml service block
 
@@ -46,7 +65,7 @@ After `azd ai agent init`, every hosted agent is defined as a **service block in
 | `azure.yaml services.ai-project` | Model `deployments[]` (`host: azure.ai.project`). The agent links to it via `uses: [ai-project]`. |
 | `.azure/<env>/.env` (`azd env set`) | Secrets and `PARAM_<CONN>_<KEY>` credential values referenced from `azure.yaml`. |
 
-`azd deploy` reads the agent service block and creates a new immutable agent version. `azd provision` reads `services.ai-project.deployments[]` (and any connection/toolbox services) and applies them via Bicep.
+`azd deploy` reads the agent service block and creates a new immutable agent version. `azd provision` reads project infrastructure such as `services.ai-project.deployments[]` and applies it via Bicep.
 
 `agent.manifest.yaml` (the file passed to `-m`) is the seed format -- it is NOT on disk after init. Init folds its `parameters:` / `resources:` blocks into the `azure.yaml` service block and the azd env.
 
@@ -92,20 +111,19 @@ services:
         version: 1.0.0
 ```
 
-- `protocols` -- `responses` (OpenAI), `invocations` (A2A), `invocations_ws`. Editing requires `azd deploy`.
+- `protocols` -- `responses`, `invocations`, `invocations_ws`. Editing requires `azd deploy`.
 - `container.resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environmentVariables` -- `${VAR}` resolves from the active azd env. Not for secrets.
-- `codeConfiguration` present -> direct code deploy (ZIP, Foundry builds). Absent -> container/ACR deploy: the service uses `language: docker` + `docker.remoteBuild: true` + `startupCommand` (and `image:` skips the Dockerfile build).
-- In non-interactive mode, `azd ai agent init` defaults to container deploy. Pass `--deploy-mode code --runtime <runtime> --entry-point <file>` during init to get `codeConfiguration`.
+- `codeConfiguration` present -> direct code deploy (ZIP, Foundry builds).
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 - `deployments[]` (under the `ai-project` service) -- model deployments provisioned via Bicep. `name` is the literal Azure deployment resource name the agent references through `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
-- Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_<NAME>_MCP_ENDPOINT` env var (see [tools](tools.md)). The emerging declarative form models them as top-level `azure.ai.connection` / `azure.ai.toolbox` services linked via `uses:`.
+- Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_<NAME>_MCP_ENDPOINT` env var (see [tools](../../create/references/tools.md)).
 
 ## State (azd env vars)
 
 | Variable | Read by | Where to set |
 |----------|---------|--------------|
-| `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` or `azd ai project show` |
+| `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` |
 | `AZURE_AI_PROJECT_ID` | `azd ai agent show` (playground URL) | `azd env set` |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | Always set with `azd env set ...` immediately after init |
 | `AGENT_<SVC>_NAME` / `_VERSION` / `_<PROTO>_ENDPOINT` | Auto-written by deploy | Auto |
