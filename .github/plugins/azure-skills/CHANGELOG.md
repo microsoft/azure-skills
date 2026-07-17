@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.98
+
+- fix: improve canvas-entry gate logic and add plugin-contributed extension detection ([#2866](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2866))
+
+## 1.1.97
+
+- fix(microsoft-foundry): support user-entra-token auth for incoming a2a ([#2858](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2858))
+
+## 1.1.96
+
+- feature: retire azure-rbac skill ([#2779](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2779))
+
 ## 1.1.95
 
 - fix(microsoft-foundry): hosted agents call incoming A2A agent ([#2846](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2846))
