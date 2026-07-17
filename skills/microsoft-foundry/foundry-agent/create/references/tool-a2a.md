@@ -18,16 +18,21 @@ azd ai connection create <conn-name> \
 
 `$TARGET_AGENT_A2A_ENDPOINT` is `https://<account>.services.ai.azure.com/api/projects/<project>/agents/<peer>/endpoint/protocols/a2a`.
 
-> 🚦 **Prerequisite: the target Foundry agent must have incoming A2A enabled** and return 200 on `$TARGET_AGENT_A2A_ENDPOINT/agentCard/v1.0`. If that URL 404s, follow [enable-incoming-a2a.md](enable-incoming-a2a.md) on the peer first.
+#### Pick an auth type
 
-Grant the **calling** agent's identity the **Foundry Agent Consumer** role (least privilege) on the peer project.
+| `--auth-type` | Identity passed to the peer | RBAC |
+|---|---|---|
+| `user-entra-token` | End user's Entra token, passed through | Grant the **end user's** identity the **Foundry Agent Consumer** role (least privilege) on the peer project |
+| `agentic-identity` | Calling agent's own identity | Grant the **calling agent's** identity the **Foundry Agent Consumer** role on the peer project |
+
+#### Create the connection
 
 ```bash
 azd ai connection create $CONNECTION_NAME \
   --project-endpoint $PROJECT_ENDPOINT \
   --kind remote-a2a \
   --target $TARGET_AGENT_A2A_ENDPOINT \
-  --auth-type AgenticIdentityToken \
+  --auth-type <user-entra-token | agentic-identity> \
   --audience "https://ai.azure.com" \
   --metadata "ApiType=Azure" \
   --metadata "type=custom_A2A" \
