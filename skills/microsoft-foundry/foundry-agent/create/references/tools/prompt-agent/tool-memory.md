@@ -98,7 +98,7 @@ The `scope` parameter partitions memory per user:
 | Auth/authorization error | Identity or managed identity lacks required roles | Verify roles in Authorization section; refresh access token for REST |
 | Memories don't appear after conversation | Updates are debounced or still processing | Increase wait time or call update API with `update_delay=0` |
 | Memory search returns no results | Scope mismatch between update and search | Use same scope value for storing and retrieving memories |
-| Agent response ignores stored memory | Agent not configured with memory search tool | Confirm agent definition includes `MemorySearchTool` with correct store name |
+| Agent response ignores stored memory | Agent not configured with memory search tool | Confirm agent definition includes `MemorySearchPreviewTool` with correct store name |
 | No embedding model available | Embedding deployment missing | Deploy an embedding model — see Check Embedding Model section |
 
 ## References

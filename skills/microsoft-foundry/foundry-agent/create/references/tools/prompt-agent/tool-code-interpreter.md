@@ -22,4 +22,4 @@ No other fields. Only one `code_interpreter` per toolbox version (unnamed tool).
 
 - [Code Interpreter tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/code-interpreter)
 - [agent-tools.md](agent-tools.md) — tool index
-- [toolbox-reference.md](toolbox-reference.md) — endpoint, auth, and MCP protocol details
+- [toolbox-reference.md](../../toolbox-reference.md) — endpoint, auth, and MCP protocol details

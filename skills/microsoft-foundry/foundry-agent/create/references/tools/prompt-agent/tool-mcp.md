@@ -5,14 +5,14 @@ Connect agents to remote MCP servers to extend capabilities with external tools 
 ## Prerequisites
 
 - A remote MCP server endpoint (e.g., `https://api.githubcopilot.com/mcp`)
-- For authenticated servers: a [project connection](../../../project/connections.md) storing credentials
+- For authenticated servers: a [project connection](../../../../../project/connections.md) storing credentials
 - RBAC: **Contributor** or **Owner** role on the Foundry project
 
 ## Authenticated Server Connections
 
 For authenticated MCP servers, create an `api_key` project connection to store credentials. Unauthenticated servers (public endpoints) don't need a connection — omit `project_connection_id`.
 
-See [Project Connections](../../../project/connections.md) for connection management via Foundry MCP tools.
+See [Project Connections](../../../../../project/connections.md) for connection management via Foundry MCP tools.
 
 ## MCPTool Parameters
 
@@ -63,4 +63,4 @@ Agent Service only accepts **remote** MCP endpoints. To use a local server, depl
 
 - [MCP tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/mcp?view=foundry)
 - [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
-- [Project Connections](../../../project/connections.md)
+- [Project Connections](../../../../../project/connections.md)

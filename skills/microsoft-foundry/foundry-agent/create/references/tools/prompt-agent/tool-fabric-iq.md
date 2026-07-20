@@ -34,4 +34,4 @@ Connect an agent to Microsoft Fabric data — Ontology, Fabric data agents, and 
 For the full Entra app setup, connection-creation walkthrough, and troubleshooting, see [Fabric IQ tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq).
 
 - [agent-tools.md](agent-tools.md) — tool index
-- [foundry-tool-catalog.md](foundry-tool-catalog.md) — connection shape for Fabric IQ
+- [foundry-tool-catalog.md](../../foundry-tool-catalog.md) — connection shape for Fabric IQ

@@ -16,13 +16,13 @@ Access real-time web information via Bing Search. Unlike the [Web Search tool](t
 - A [Grounding with Bing Search resource](https://portal.azure.com/#create/Microsoft.BingGroundingSearch) in Azure portal
 - `Contributor` or `Owner` role at subscription/RG level to create Bing resource and get keys
 - `Foundry Project Manager` role on the project to create a connection
-- A project connection configured with the Bing resource key — see [connections](../../../project/connections.md)
+- A project connection configured with the Bing resource key — see [connections](../../../../../project/connections.md)
 
 ## Setup
 
 1. Register the Bing provider: `az provider register --namespace 'Microsoft.Bing'`
 2. Create a Grounding with Bing Search resource in the Azure portal
-3. Create a project connection with the Bing resource key — see [connections](../../../project/connections.md)
+3. Create a project connection with the Bing resource key — see [connections](../../../../../project/connections.md)
 4. Set `BING_PROJECT_CONNECTION_NAME` environment variable
 
 ## Important Disclosures
@@ -46,5 +46,5 @@ Access real-time web information via Bing Search. Unlike the [Web Search tool](t
 - [Bing Grounding tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/bing-grounding?view=foundry)
 - [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
 - [Grounding with Bing Terms](https://www.microsoft.com/bing/apis/grounding-legal-enterprise)
-- [Connections Guide](../../../project/connections.md)
+- [Connections Guide](../../../../../project/connections.md)
 - [Web Search Tool (default)](tool-web-search.md)
