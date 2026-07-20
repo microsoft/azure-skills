@@ -9,7 +9,7 @@ Ground agent responses with data from an Azure AI Search vector index. Requires 
   - One or more `Collection(Edm.Single)` vector fields (searchable)
   - At least one retrievable text field with content for citations
   - A retrievable field with source URL for citation links
-- A [project connection](../../../project/connections.md) between your Foundry project and search service
+- A [project connection](../../../../../project/connections.md) between your Foundry project and search service
 - `azure-ai-projects` package (`pip install azure-ai-projects --pre`)
 
 ## Required RBAC Roles
@@ -25,7 +25,7 @@ For **keyless authentication** (recommended), assign these roles to the **Foundr
 
 ## Connection Setup
 
-A project connection between your Foundry project and the Azure AI Search resource is required. See [Project Connections](../../../project/connections.md) for connection management via Foundry MCP tools.
+A project connection between your Foundry project and the Azure AI Search resource is required. See [Project Connections](../../../../../project/connections.md) for connection management via Foundry MCP tools.
 
 ## Query Types
 
@@ -66,4 +66,4 @@ A project connection between your Foundry project and the Azure AI Search resour
 
 - [Azure AI Search tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/azure-ai-search?view=foundry)
 - [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
-- [Project Connections](../../../project/connections.md)
+- [Project Connections](../../../../../project/connections.md)
