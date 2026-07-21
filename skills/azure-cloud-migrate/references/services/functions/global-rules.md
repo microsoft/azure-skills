@@ -18,6 +18,7 @@ Always use `ask_user` before:
 - Selecting Azure region/location
 - Deploying infrastructure
 - Making breaking changes to existing code
+- **Selecting a preview-status language runtime** (e.g., Go on Azure Functions). Confirm the user accepts that the runtime's API surface may change and is not covered by the production SLA before scaffolding the project.
 
 ## Best Practices
 
@@ -25,6 +26,7 @@ Always use `ask_user` before:
 - Prefer managed identity over connection strings
 - **Always use the latest supported language runtime** — check [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) for the newest GA version. Never default to older versions
 - **Always prefer bindings over SDKs** — use `input.storageBlob()`, `output.storageBlob()`, `app.storageQueue()`, etc. instead of `BlobServiceClient`, `QueueClient`, or other SDK clients. Only use SDK when no binding exists for the service
+  - **Go exception**: The Azure Functions Go worker (preview) supports **triggers only**; HTTP is the only output binding. All other I/O (blob, queue, cosmos, service bus, event hub, event grid, table, SQL writes) goes through the Azure SDK for Go with `DefaultAzureCredential`. This is intentional and idiomatic for Go — do not attempt to synthesize non-existent Go bindings. See [runtimes/go.md](runtimes/go.md#io-outside-of-triggers--use-the-azure-sdk-for-go).
 - Follow Azure naming conventions
 - Use Flex Consumption hosting plan for new Functions
 

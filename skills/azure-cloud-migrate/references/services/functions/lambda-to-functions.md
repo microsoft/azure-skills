@@ -21,13 +21,14 @@ Detailed guidance for migrating AWS Lambda functions to Azure Functions.
 
 ## Programming Model Mapping
 
-| AWS Lambda | Azure Functions |
-|------------|-----------------|
-| `exports.handler` | `app.http()`, `app.storageBlob()`, etc. (v4) |
-| `event` object | `request` / `blob` / trigger-specific param |
-| `context` object | `context` (InvocationContext) |
-| `callback` | Return value |
-| `function.json` (v1-v3) | Inline bindings in code (v4 JS, v2 Python) |
+| AWS Lambda | Azure Functions (JS v4 / Python v2) | Azure Functions (Go worker, preview) |
+|------------|-----------------|-----------------|
+| `exports.handler` | `app.http()`, `app.storageBlob()`, etc. (v4) | `app.HTTP(name, handler, opts...)`, `app.Blob(...)`, `app.Queue(...)`, etc. |
+| `event` object | `request` / `blob` / trigger-specific param | Typed struct param (e.g., `bindings.QueueMessage`, `bindings.EventGridEvent`, `*blob.Client` for the blob extension trigger) |
+| `context` object | `context` (InvocationContext) | `context.Context` (with invocation metadata via `sdk.FromContext(ctx)`) |
+| `callback` | Return value | `error` return value (`nil` = success, non-nil = host retries per trigger policy) |
+| `function.json` (v1-v3) | Inline bindings in code (v4 JS, v2 Python) | Declared in code via `sdk.FunctionApp()` + functional options; no `function.json` |
+| Lambda destinations (on failure → SQS/SNS) | Trigger-specific retry + poison queue | Non-nil `error` return → host retries; poison-message behavior per trigger. See [runtimes/go.md](runtimes/go.md) |
 
 ## Trigger Mapping
 
@@ -52,6 +53,7 @@ For language-specific migration rules, correct/incorrect patterns, and code exam
 | TypeScript (v4) | [runtimes/typescript.md](runtimes/typescript.md) |
 | C# (Isolated Worker) | [runtimes/csharp.md](runtimes/csharp.md) |
 | Java | [runtimes/java.md](runtimes/java.md) |
+| Go (preview) | [runtimes/go.md — Lambda Migration Rules](runtimes/go.md#lambda-migration-rules) |
 | PowerShell | [runtimes/powershell.md](runtimes/powershell.md) |
 
 ## Project Structure

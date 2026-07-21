@@ -12,10 +12,13 @@ Migrate AWS Lambda function code to Azure Functions.
 
 - If runtime is Python or Node.js: **do NOT create function.json files**
 - If runtime is .NET (in-process or isolated) or Java: **do NOT hand-author function.json** — bindings metadata is generated from attributes/annotations at build time
+- If runtime is Go: **do NOT create function.json files** — triggers are declared in code via `sdk.FunctionApp()` functional options and indexed by the Go worker at startup. See [runtimes/go.md](runtimes/go.md).
 - Use extension bundle version `[4.*, 5.0.0)` in host.json
 - Use latest programming model (v4 for JavaScript, v2 for Python)
 - **Always use bindings and triggers instead of SDKs** — For blob read/write, use `input.storageBlob()` / `output.storageBlob()` with `extraInputs`/`extraOutputs`. For queues, use `app.storageQueue()` or `app.serviceBusQueue()`. Only use SDK when there is no equivalent binding (e.g., Azure AI, custom HTTP calls)
+  - **Go exception**: The Go worker (preview) supports **triggers only** — the sole output binding is HTTP. All other I/O (blob writes, queue sends, cosmos upserts, service bus sends, event grid publishes, table reads/writes, etc.) uses the Azure SDK for Go with `DefaultAzureCredential`. See [runtimes/go.md](runtimes/go.md#io-outside-of-triggers--use-the-azure-sdk-for-go) for the full SDK-vs-binding capability matrix and idiomatic patterns.
 - **Always use the latest supported language runtime** — Consult [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) and select the newest GA version. Do NOT default to an older LTS version when a newer version is available on Azure Functions.
+- **Preview runtimes require explicit user confirmation** — Go is currently in **public preview** on Azure Functions. Before selecting Go as the target runtime, use `ask_user` to confirm the user accepts a preview runtime (API surface may change; not covered by production SLA). Also verify Core Tools ≥ 4.12.1 is installed before running `func init --worker-runtime go`.
 
 ## Steps
 
@@ -119,6 +122,7 @@ Load the appropriate runtime reference for the target language:
 | Python (v2) | [runtimes/python.md](runtimes/python.md) |
 | C# (Isolated Worker) | [runtimes/csharp.md](runtimes/csharp.md) |
 | Java | [runtimes/java.md](runtimes/java.md) |
+| Go (preview) | [runtimes/go.md](runtimes/go.md) |
 | PowerShell | [runtimes/powershell.md](runtimes/powershell.md) |
 
 ## Scenario-Specific Guidance
