@@ -117,7 +117,7 @@ services:
 - `codeConfiguration` present -> direct code deploy (ZIP, Foundry builds).
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 - `deployments[]` (under the `ai-project` service) -- model deployments provisioned via Bicep. `name` is the literal Azure deployment resource name the agent references through `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
-- Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_<NAME>_MCP_ENDPOINT` env var (see [tools](../../create/references/tools.md)).
+- Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_ENDPOINT` env var (see [toolbox.md](../../toolbox/toolbox.md)).
 
 ## State (azd env vars)
 

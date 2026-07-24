@@ -22,7 +22,7 @@ Expose a REST API to the agent by attaching its OpenAPI 3.x spec. The platform p
 
 ## Multi-entry rules
 
-Multiple `openapi` entries are allowed in one toolbox **only if** each entry's spec defines a distinct `info.title` (the title is the implicit identifier). See [toolbox-reference.md § Multi-Tool Toolbox Constraint](../../toolbox-reference.md#multi-tool-toolbox-constraint).
+Multiple `openapi` entries are allowed in one toolbox **only if** each entry's spec defines a distinct `info.title` (the title is the implicit identifier). See [toolbox-azd.md § Multi-tool rule](../../../../toolbox/references/toolbox-azd.md#multi-tool-rule).
 
 ## References
 
