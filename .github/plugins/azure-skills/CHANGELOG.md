@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.5
+
+- fix: auto-install microsoft-foundry plugin in Copilot app ([#2954](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2954))
+
+## 1.2.4
+
+- feat: support re-host scenario ([#2955](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2955))
+
+## 1.2.3
+
+- feat: create toolbox skill for foundry agent ([#2921](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2921))
+
+## 1.2.2
+
+- feature: Introduce azure-app-onboard skill along with azure-app-onboard-prereq + vally tests ([#2938](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2938))
+
+## 1.2.1
+
+- fix: azure-validate eval failures (deploy-intent gating + tool-call-match grading) ([#2928](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2928))
+
 ## 1.2.0
 
 - fix: unify plugin and changelog versioning ([#2927](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2927))

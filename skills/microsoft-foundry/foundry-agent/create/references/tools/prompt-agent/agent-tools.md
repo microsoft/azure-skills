@@ -28,13 +28,10 @@ Two delivery paths exist:
 
 > ⚠️ **Default for web search:** Use `WebSearchPreviewTool` (`type: web_search`) unless the user explicitly requests Bing Grounding or Bing Custom Search.
 
-> Combine multiple tools on one agent or one toolbox version. The model decides which to invoke. For multi-tool toolbox limits (at most one unnamed tool per type, unique `server_label` per MCP tool) see [toolbox-reference.md](../../toolbox-reference.md#multi-tool-toolbox-constraint).
-
 ## How to use this index
 
 When you need details for a specific tool, **load that tool's reference file directly** — each one is self-contained (shape, requirements, references). Don't try to keep all tools in context at once.
 
-For the toolbox runtime contract (endpoint, auth, MCP protocol, citation patterns, troubleshooting) see [toolbox-reference.md](../../toolbox-reference.md). For wiring a toolbox into a hosted agent (env vars, samples, tracing) see [use-toolbox-in-hosted-agent.md](../../use-toolbox-in-hosted-agent.md).
 
 ## Adjacent (not a `type` in a toolbox version)
 
@@ -46,6 +43,4 @@ For the toolbox runtime contract (endpoint, auth, MCP protocol, citation pattern
 - **[Foundry Agents typespec (`main`)](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/cognitiveservices)** — authoritative tool shapes
 - [Tool Catalog](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog)
 - [Toolbox (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
-- [use-toolbox-in-hosted-agent.md](../../use-toolbox-in-hosted-agent.md) — wiring a toolbox into a hosted agent
-- [toolbox-reference.md](../../toolbox-reference.md) — toolbox runtime contract
 - [foundry-tool-catalog.md](../../foundry-tool-catalog.md) — project connections for remote tools

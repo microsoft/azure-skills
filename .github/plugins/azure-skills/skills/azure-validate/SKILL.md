@@ -4,7 +4,7 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.6"
+  version: "1.1.7"
 ---
 
 # Azure Validate
@@ -48,7 +48,7 @@ metadata:
 | 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
 | 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
 | 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
-| 9 | **Deploy** — Invoke **azure-deploy** skill | — |
+| 9 | **Deploy (only if the user asked to deploy)** — If the user explicitly requested deployment, invoke **azure-deploy**. Otherwise STOP and report validation results | — |
 > **⛔ VALIDATION AUTHORITY**
 >
 > This skill is the officially verified way to set plan status to `Validated`. You MUST follow these steps to make sure every prerequisite is fulfilled before setting status to `Validated`:
@@ -60,8 +60,10 @@ metadata:
 
 ---
 
-> **⚠️ MANDATORY NEXT STEP — DO NOT SKIP**
+> **⚠️ NEXT STEP — DEPENDS ON USER INTENT**
 >
-> After ALL validations pass, you **MUST** invoke **azure-deploy** to execute the deployment. Do NOT attempt to run `azd up`, `azd deploy`, or any deployment commands directly. Let azure-deploy handle execution.
+> After ALL validations pass, check whether the user asked to deploy:
+> - **If the user explicitly requested deployment**, you **MUST** invoke **azure-deploy** to execute it. Do NOT run `azd up`, `azd deploy`, or any deployment commands directly — let azure-deploy handle execution.
+> - **If the user only asked to validate or prepare** (not deploy), STOP after recording proof and setting status to `Validated`. Report the validation results and do NOT invoke azure-deploy.
 >
 > If any validation failed, fix the issues and re-run azure-validate before proceeding.

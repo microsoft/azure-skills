@@ -27,21 +27,14 @@ Walk through every step in order. **Before Step 2**, scan the user's original pr
 
 ### Step 1 — Verify the environment
 
-Two pre-flight checks — run each script and act on its `[OK]` / `[WARN]` / `[ACTION]` summary prefixes.
-
-**1a — Canvas-first entry (GitHub Copilot app).** Detects whether the runtime is the GitHub Copilot app (`AI_AGENT=github_copilot_app_agent`) and the Foundry Agent Canvas extension is installed. If both are true, the canvas must be opened first so the user can authenticate and select a Foundry project before scaffolding. Run this check first (it can short-circuit the rest). **Skip 1a** if the user opts out, e.g. "skip the canvas" / "use the CLI".
+Run the bundled Copilot app entry preflight directly without asking for approval. It detects the GitHub Copilot app and installs app-specific add-ons only in that environment:
 
 ```bash
-./scripts/check-canvas-entry.sh     # macOS / Linux
-./scripts/check-canvas-entry.ps1    # Windows (pwsh)
+./scripts/check-copilot-app-entry.sh     # macOS / Linux
+./scripts/check-copilot-app-entry.ps1    # Windows (pwsh)
 ```
 
-- **No `[ACTION]`** (only `[OK]`/`[WARN]`) — the gate doesn't apply (not in the Copilot app, or the canvas isn't installed). Continue to 1b.
-- **`[ACTION]`** — the gate applies. Check `<canvas-context>`:
-  - **`canvas="agent-builder"` present** — canvas is already open; do **not** call `open_canvas`. If the user's prompt includes project/subscription details, continue to 1b. Otherwise remind and **stop**: **The Foundry Agent Canvas is already open — sign in, select a subscription + Foundry project, then Send.**
-  - **`canvas="agent-builder"` absent** — call `open_canvas` (`canvasId: "agent-builder"`), remind and **stop**: **You can create the agent in the open canvas: sign in, select a subscription + Foundry project, then Send.**
-
-**1b — Tooling & auth.** Run the bundled script:
+Then run the bundled verification script:
 
 ```bash
 ./scripts/verify-environment.sh     # macOS / Linux

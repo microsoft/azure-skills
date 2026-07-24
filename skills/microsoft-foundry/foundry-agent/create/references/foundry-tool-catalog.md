@@ -6,7 +6,7 @@ Reference for wiring a **remote tool** (catalog tile or generic MCP server) into
 
 Three catalog backends cooperate: the **asset-gallery** index discovers connectors, the Logic Apps **managedApis** GET supplies OAuth metadata, and the Logic Apps **apiOperations** GET supplies the operation list and input schemas. Skip these calls only for fully BYO `generic_mcp` servers — every catalog-MCP or connector-namespace flow needs all three.
 
-> 📘 For the toolbox MCP endpoint, protocol, and testing, see [toolbox-reference.md](toolbox-reference.md).
+> 📘 For the toolbox MCP endpoint, protocol, and testing, see [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md).
 > 📘 For prompt-agent MCP wiring (without a toolbox), see [tool-mcp.md](tools/prompt-agent/tool-mcp.md).
 
 ## When to use this reference
@@ -627,7 +627,7 @@ Operations registered for the test: `GetEmailsV2` (read emails with `folderPath`
 
 Verifying a fresh connection is the only toolbox operation in scope of this reference. Toolboxes are upserted implicitly by `POST /versions`; no separate container create is needed.
 
-The `$dp` value below is the project's data-plane endpoint, in the same `{project_endpoint}` form used elsewhere in these references — `https://<account>.services.ai.azure.com/api/projects/<project>`. The host segment varies by Foundry account/region; read it from a non-`FOUNDRY_`-prefixed env var (see [toolbox-reference.md § Agent env contract](toolbox-reference.md#agent-env-contract)) rather than hardcoding. The bearer-token resource is `https://ai.azure.com`, NOT ARM.
+The `$dp` value below is the project's data-plane endpoint, in the same `{project_endpoint}` form used elsewhere in these references — `https://<account>.services.ai.azure.com/api/projects/<project>`. The host segment varies by Foundry account/region; read it from a non-`FOUNDRY_`-prefixed env var (see [use-toolbox-in-hosted-agent.md § Set TOOLBOX_ENDPOINT](use-toolbox-in-hosted-agent.md#1-set-toolbox_endpoint)) rather than hardcoding. The bearer-token resource is `https://ai.azure.com`, NOT ARM.
 
 ```pwsh
 # 0. Constants.
@@ -704,6 +704,6 @@ The response body for `/mcp` is plain JSON (no SSE `data:` framing) despite the 
 - [Private tools catalog](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog#private-tools-catalog)
 - [Cognitive Services projects REST API](https://learn.microsoft.com/rest/api/aiservices/)
 - [tool-mcp.md](tools/prompt-agent/tool-mcp.md) — prompt-agent MCP wiring (no toolbox)
-- [toolbox-reference.md](toolbox-reference.md) — MCP endpoint, auth, testing, troubleshooting
+- [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md) — MCP endpoint, auth, testing, troubleshooting
 - [agent-tools.md](tools/prompt-agent/agent-tools.md) — the agent-tools index
 - [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md) — wiring a toolbox into a hosted agent
