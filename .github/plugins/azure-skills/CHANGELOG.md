@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.7
+
+- chore: bump all skill versions ([#2985](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2985))
+
+## 1.2.6
+
+- feature: multi plugin project structure ([#2872](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2872))
+
 ## 1.2.5
 
 - fix: auto-install microsoft-foundry plugin in Copilot app ([#2954](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2954))
