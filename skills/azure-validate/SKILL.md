@@ -4,7 +4,7 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 # Azure Validate
@@ -38,25 +38,23 @@ metadata:
 
 ## Steps
 
-| # | Action | Reference |
-|---|--------|-----------|
-| 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/deployment-plan.md` |
-| 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
-| 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
-| 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
-| 5 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
-| 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
-| 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
-| 9 | **Deploy (only if the user asked to deploy)** — If the user explicitly requested deployment, invoke **azure-deploy**. Otherwise STOP and report validation results | — |
+Run the workflow script and follow its instructions. It walks you through each validation step one at a time, recording progress in `.azure/validate-status.json`. Use [references/scripts/workflow.ps1](references/scripts/workflow.ps1) on Windows or [references/scripts/workflow.sh](references/scripts/workflow.sh) on macOS/Linux.
+
+Start by calling the script **without** the completed-step argument:
+
+```bash
+pwsh references/scripts/workflow.ps1 -WorkspacePath <workspace-path>
+# macOS/Linux: bash references/scripts/workflow.sh --workspace-path <workspace-path>
+```
+
+Each run prints the next action and the value to pass next. Perform the action, then re-run with that value (`-CompletedStep <value>` for pwsh, `--completed-step <value>` for bash). Repeat until it reports the azure-validate workflow is complete.
+
+The steps reference recipe details in [references/recipes/README.md](references/recipes/README.md) and role checks in [references/role-verification.md](references/role-verification.md).
+
 > **⛔ VALIDATION AUTHORITY**
 >
-> This skill is the officially verified way to set plan status to `Validated`. You MUST follow these steps to make sure every prerequisite is fulfilled before setting status to `Validated`:
-> 1. Run actual validation commands (azd provision --preview, bicep build, terraform validate, etc.)
-> 2. Populate **Section 7: Validation Proof** with the commands you ran and their results
-> 3. Only then set status to `Validated`
->
-> Do NOT set status to `Validated` without running checks and recording proof.
+> This skill is the officially verified way to set plan status to `Validated`. You MUST follow the script's instructions to completion before setting status to `Validated`.
+> Do NOT set status to `Validated` without doing so.
 
 ---
 

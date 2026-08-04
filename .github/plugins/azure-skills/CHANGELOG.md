@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.10
+
+- feat: drive azure-validate steps via workflow.ps1 script ([#2969](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2969))
+
+## 1.2.9
+
+- chore: reuse hooks by building for all plugins ([#2991](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2991))
+
 ## 1.2.8
 
 - feat: add Foundry skill dependency check and setup scripts ([#2956](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2956))
