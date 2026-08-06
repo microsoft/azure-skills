@@ -10,7 +10,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 | Property | Value |
 |----------|-------|
-| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), `azd ai agent invoke` |
+| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
@@ -113,6 +113,8 @@ What deploy does:
 
 After deploy, azd writes `AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`, and `AGENT_<SVC>_<PROTO>_ENDPOINT` (one per protocol) into the active env.
 
+For agents with Activity protocol, `azd deploy` also generates `<service-dir>/TEAMS_APP_SETUP.md`; read it and explain the remaining post-deployment steps to the user.
+
 Re-deploying an identical build still creates a new version; `azd` prints `Agent version <n> is already active.` and skips the poll.
 
 If deploy reports `Done` for the service and then fails only in `postdeploy` with `Agent <service-name> with version <n> not found`, the `azure.yaml` service key and the service's `name:` were mismatched. Rename the `azure.yaml services` key to the deployed agent name and rerun `azd deploy --no-prompt`; do not switch deployment method.
@@ -123,13 +125,19 @@ If deploy reports `Done` for the service and then fails only in `postdeploy` wit
 azd ai agent show --output json
 ```
 
-Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Smoke-test:
+Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Inspect the selected service protocols in `azure.yaml`, then smoke-test:
+
+For the Responses or Invocations protocol, smoke-test with azd:
 
 ```bash
 azd ai agent invoke "hello, are you up?"
 ```
 
+For a multi-protocol service, pass `--protocol` explicitly.
+
 > Remote invocation can incur model usage charges. Run it only as part of the requested deployment or test.
+
+For the Activity protocol, `azd ai agent invoke` won't work; follow [invoke](../invoke/invoke.md) to invoke the agent.
 
 Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 

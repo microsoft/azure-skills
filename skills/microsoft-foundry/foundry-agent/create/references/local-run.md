@@ -47,15 +47,25 @@ What this does:
 2. Detects the project type (Python, .NET, or Node.js) from files in the service source dir.
 3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
 4. Starts the agent in the foreground on `localhost:8088` (default).
-5. Opens no client when `--no-client` is set. Without that flag, responses and invocations agents open Agent Inspector.
+5. Opens no client when `--no-client` is set. Without that flag, azd opens Agent Inspector for the Responses and Invocations protocols, and Microsoft 365 Agents Playground for the Activity protocol.
 
 > Wait for the ready log line before sending the first invocation. Poll the log at short intervals; do not pre-sleep on a fixed duration.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-client` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+For headless or CI runs, pass `--no-client` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command when the service exposes the Responses or Invocations protocol, then stop the same background session before deploying or leaving a temporary workspace. For an Activity-only service, headless local run validates startup only; `azd ai agent invoke` cannot perform the Activity round trip.
 
 Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
+
+### Activity protocol
+
+To invoke Activity locally through Microsoft 365 Agents Playground, omit `--no-client`:
+
+```bash
+azd ai agent run
+```
+
+azd opens Microsoft 365 Agents Playground for Activity traffic. If Activity coexists with another protocol, invoke each requested protocol through its own client path.
 
 ## Useful flags
 
@@ -69,6 +79,7 @@ Pass the service name when there are multiple `ai.agent` services:
 
 ```bash
 azd ai agent run my-agent --no-client
+azd ai agent run my-activity-agent
 ```
 
 ## Where the start command comes from
@@ -131,6 +142,8 @@ Other useful flags:
 
 After the local invocation completes, stop the `azd ai agent run` process you started before moving on.
 
+For the Activity protocol, `azd ai agent invoke --local` is not supported; use Microsoft 365 Agents Playground instead.
+
 ## When to graduate to remote
 
 Local dev validates code shape; remote validates infra + identity + Foundry binding. Move to deploy when:
@@ -151,5 +164,5 @@ Next step -> [deploy/deploy.md](../../deploy/deploy.md).
 | `could not detect project type in <dir>` | Missing project marker file | Set `startupCommand` in `azure.yaml` or pass `--start-command`. |
 | `cannot use --version with --local` | `--version` is remote-only | Drop `--version`, or remove `--local` to hit the deployed agent. |
 | Older command uses `--no-inspector` | Deprecated compatibility alias | Replace it with `--no-client`. |
-| Requested client never opens | Agent Inspector extension missing or localhost not ready | Install the Agent Inspector extension with `azd extension install azure.ai.inspector`, then run without `--no-client`. |
+| Requested client never opens | Agent Inspector is missing or localhost not ready | For the Responses or Invocations protocol, install Agent Inspector with `azd extension install azure.ai.inspector`, then run without `--no-client`. |
 | Auth / connection errors against Azure services | Local credentials not wired | Expected -- `DefaultAzureCredential` falls back to your `az login` / VS Code identity. Use `azd auth login` if needed. |

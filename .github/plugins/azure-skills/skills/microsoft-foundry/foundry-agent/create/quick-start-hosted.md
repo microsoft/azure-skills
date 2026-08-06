@@ -6,7 +6,7 @@ Opinionated happy-path for first-time users creating their first hosted Foundry 
 
 ## When to Use This Skill
 
-Use this when the request is to create a new hosted Foundry agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine; bounce to [create-hosted.md](create-hosted.md) for anything else.
+Use this when the request is to create a new hosted Foundry agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine. This skill supports only the `responses` and `invocations` protocols. For the `activity` protocol, use [create-hosted.md](create-hosted.md). Bounce to [create-hosted.md](create-hosted.md) for anything else.
 
 ## Quick Reference
 

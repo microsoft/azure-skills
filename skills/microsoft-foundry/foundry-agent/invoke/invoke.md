@@ -4,10 +4,13 @@ Invoke Prompt Agents with Foundry MCP. Invoke Hosted Agents and manage their ses
 
 ## Route by Agent Type
 
-| Agent type | Invoke path | State management |
-|------------|-------------|------------------|
-| Prompt | Foundry MCP `agent_invoke` | `conversationId`; no hosted session or file operations |
-| Hosted | `azd ai agent invoke` | azd sessions, files, conversations, and monitor commands |
+| Agent type | Protocol | Invoke path | State management |
+|------------|----------|-------------|------------------|
+| Prompt | — | Foundry MCP `agent_invoke` | `conversationId`; no hosted session or file operations |
+| Hosted | `responses` | `azd ai agent invoke` | azd sessions, files, conversations, and monitor commands |
+| Hosted | `invocations` | `azd ai agent invoke --protocol invocations` | azd sessions, files, conversations, and monitor commands |
+| Hosted | `activity` | Microsoft 365 channel, such as Teams | Activity conversation and channel state |
+| Hosted | `invocations_ws` | WebSocket client; follow [invocations-ws](../invocations-ws/invocations-ws.md) | Agent-managed state keyed by `agent_session_id` |
 
 Treat an `azure.yaml` service with `host: azure.ai.agent` as Hosted. If the type is still unknown, use `agent_get` only to classify the agent. Do not use MCP invoke, session, or file tools for a Hosted Agent.
 
@@ -45,7 +48,7 @@ Protocol examples:
 azd ai agent invoke --protocol invocations --input-file request.json
 ```
 
-For invocations, inspect the agent source or OpenAPI contract before preparing the request body.
+For invocations, inspect the agent source or OpenAPI contract before preparing the request body. See [Invocations Protocol Guide](references/invocations-protocol.md) for request schema discovery and examples.
 
 Outside an azd project, use a full protocol endpoint supplied by the user or previously returned by `azd ai agent show`:
 
@@ -56,6 +59,12 @@ azd ai agent invoke --agent-endpoint "<full-agent-protocol-endpoint>" "Hello!"
 Invoke supports `default` and `raw` output. Do not pass `--output json`.
 
 Remote invocation can incur model usage charges. Run it only when it is within the user's request.
+
+#### Activity protocol
+
+`azd ai agent invoke` does not support the Activity protocol. For local invocation, use `azd ai agent run` and Microsoft 365 Agents Playground. For a deployed service, follow its generated `TEAMS_APP_SETUP.md` and invoke through Teams or the configured channel.
+
+If Activity coexists with Responses or Invocations, pass `--protocol responses` or `--protocol invocations` explicitly to test that non-Activity protocol. A successful CLI response does not validate the Activity protocol path.
 
 ### Step 3: Let azd Manage Session State
 
@@ -106,16 +115,6 @@ Delete removes both compute and persistent filesystem state.
 3. Reuse the returned `conversationId` for later turns.
 
 Prompt Agents do not use hosted sessions or hosted file operations.
-
-## Hosted Protocol Selection
-
-| Protocol | Hosted caller | Restriction |
-|----------|---------------|-------------|
-| `responses` | `azd ai agent invoke` | Local and remote |
-| `invocations` | `azd ai agent invoke --protocol invocations` | Local and remote; developer-defined body |
-| `invocations_ws` | WebSocket client | Follow [invocations-ws](../invocations-ws/invocations-ws.md) |
-
-See [Invocations Protocol Guide](references/invocations-protocol.md) for request schema discovery and examples.
 
 ## Error Handling
 

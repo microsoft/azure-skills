@@ -4,7 +4,7 @@ description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.2"
+  version: "1.2.3"
 ---
 
 # Microsoft Foundry Skill
