@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.12
+
+- feat: support activity protocol in Foundry skill ([#3008](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3008))
+
+## 1.2.11
+
+- feat: replace azure-diagnostics AKS baseline sweep with aks-baseline script ([#2936](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2936))
+
 ## 1.2.10
 
 - feat: drive azure-validate steps via workflow.ps1 script ([#2969](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2969))

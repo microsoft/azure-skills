@@ -14,6 +14,7 @@ azd ai agent init -m <manifestUrl>   # scaffold from a sample
 azd ai agent init --src <dir>        # scaffold from existing source
 
 azd ai agent run --no-client         # start on localhost:8088 without a client UI
+azd ai agent run                     # start and open the protocol-appropriate client
 azd ai agent invoke "<msg>"          # invoke the deployed agent
 azd ai agent invoke --local "<msg>"  # invoke the agent on localhost
 
@@ -35,6 +36,8 @@ azd ai agent optimize / optimize status / optimize apply / optimize deploy / opt
 ```
 
 Use `--output json` only when a command supports it. `azd ai agent invoke` supports `default` and `raw` output.
+
+Without `--no-client`, `azd ai agent run` opens Agent Inspector for the Responses and Invocations protocols, or Microsoft 365 Agents Playground for the Activity protocol. `azd ai agent invoke` does not support the Activity protocol; use the Playground locally and the configured Microsoft 365 channel after deployment.
 
 ### Hosted files and sessions
 
@@ -111,7 +114,7 @@ services:
         version: 1.0.0
 ```
 
-- `protocols` -- `responses`, `invocations`, `invocations_ws`. Editing requires `azd deploy`.
+- `protocols` -- `responses`, `invocations`, `invocations_ws`, or `activity`. Editing requires `azd deploy`.
 - `container.resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environmentVariables` -- `${VAR}` resolves from the active azd env. Not for secrets.
 - `codeConfiguration` present -> direct code deploy (ZIP, Foundry builds).

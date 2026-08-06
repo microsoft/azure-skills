@@ -12,15 +12,19 @@ When a user asks a broad question like "what happened in my AKS cluster?" or "ch
 6. System pods health
 7. Activity log
 
+Run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script instead of issuing these commands one by one. It performs the entire read-only sweep above and prints a single labeled digest (provisioning state, node pool summary, recent activity log, node readiness, unhealthy pods, kube-system health, and recent warning events), so you get one summarized result instead of seven raw dumps.
+
 ```bash
-az aks show -g <rg> -n <cluster> --query "provisioningState"
-kubectl get events -A --sort-by='.lastTimestamp' | head -40
-kubectl get nodes -o wide
-kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
-kubectl get pods -A -o wide
-kubectl get pods -n kube-system -o wide
-az monitor activity-log list -g <rg> --max-events 20 -o table
+# bash
+./scripts/aks-baseline.sh -g <rg> -n <cluster> [--namespace <ns>]
 ```
+
+```powershell
+# PowerShell
+.\scripts\aks-baseline.ps1 -ResourceGroup <rg> -Cluster <cluster> [-Namespace <ns>]
+```
+
+After reviewing the digest, deep-dive into a specific pod with `kubectl describe` / `kubectl logs`.
 
 ---
 

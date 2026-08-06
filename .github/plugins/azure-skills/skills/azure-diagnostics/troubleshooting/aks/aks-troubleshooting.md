@@ -69,13 +69,21 @@ If cluster identity is missing, stop and ask for it.
 
 ## Safe Fallback Checks
 
+When AKS-MCP cannot perform the baseline read, run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script. It executes the read-only cluster + Kubernetes baseline sweep (provisioning state, node pools, activity log, node readiness, unhealthy pods, kube-system health, warning events) and returns a single labeled digest:
+
 ```bash
-az aks show -g <resource-group> -n <cluster-name>
-az aks nodepool list -g <resource-group> --cluster-name <cluster-name>
-kubectl cluster-info
-kubectl get nodes -o wide
-kubectl get pods -n kube-system
-kubectl get events -A --sort-by=.lastTimestamp
+# bash
+./scripts/aks-baseline.sh -g <resource-group> -n <cluster-name> [--namespace <namespace>]
+```
+
+```powershell
+# PowerShell
+.\scripts\aks-baseline.ps1 -ResourceGroup <resource-group> -Cluster <cluster-name> [-Namespace <namespace>]
+```
+
+Then deep-dive on a specific pod as the digest indicates:
+
+```bash
 kubectl describe pod <pod-name> -n <namespace>
 kubectl logs <pod-name> -n <namespace> --previous
 ```
