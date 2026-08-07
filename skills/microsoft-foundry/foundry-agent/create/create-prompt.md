@@ -82,6 +82,7 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 |-------|-------|------------|
 | Agent creation fails | Missing model deployment | Deploy a model first via `foundry_models_deploy` or portal |
 | MCP tool not found | MCP server not running | Fall back to SDK — see [SDK Operations](references/sdk-operations.md) |
+| MCP agent operation returns `403 Forbidden` | Insufficient RBAC | Need `Foundry User` role on the project |
 | Permission denied | Insufficient RBAC | Need `Foundry User` role on the project |
 | Agent name conflict | Name already exists | Use a unique name or update the existing agent |
 | Tool not available | Tool not configured for project | Verify tool prerequisites (e.g., Bing resource for grounding) |

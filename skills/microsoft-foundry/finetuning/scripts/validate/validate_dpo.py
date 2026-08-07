@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate DPO (Direct Preference Optimization) JSONL files for Azure AI Foundry.
+"""Validate DPO (Direct Preference Optimization) JSONL files for Microsoft Foundry.
 
 Adapted from foundry-ft agent with additional checks:
 - Identical preferred/non_preferred detection

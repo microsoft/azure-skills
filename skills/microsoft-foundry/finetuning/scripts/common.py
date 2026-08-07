@@ -1,5 +1,5 @@
 """
-common.py — Shared Azure AI Foundry authentication and client setup.
+common.py — Shared Microsoft Foundry authentication and client setup.
 
 Supports three connection methods in order of preference:
 1. /v1/ project endpoint (simplest, preferred)
@@ -186,7 +186,7 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
 
 
 def upload_file(openai_client, filepath: str, purpose: str = "fine-tune") -> str:
-    """Upload a file to Azure AI Foundry and wait for processing."""
+    """Upload a file to Microsoft Foundry and wait for processing."""
     print(f"📤 Uploading {filepath}...")
     with open(filepath, "rb") as f:
         file_obj = openai_client.files.create(file=f, purpose=purpose)

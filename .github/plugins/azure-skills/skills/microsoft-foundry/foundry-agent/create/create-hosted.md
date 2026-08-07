@@ -183,7 +183,7 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
-- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue.
+- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, run `azd ai agent sample list` to browse available samples for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, follow the Re-host steps below.
 
 #### Re-host: collect information

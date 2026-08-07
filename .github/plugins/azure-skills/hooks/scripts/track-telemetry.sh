@@ -86,6 +86,17 @@
 #   If the path matches AND is not a SKILL.md file, the relative path after
 #   "skills/" is extracted and emitted as a reference_file_read event.
 #   SKILL.md reads are tracked as skill_invocation instead (not double-counted).
+#
+# === Debugging ===
+#
+# If the AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, the script will create
+# a "raw-input" subdirectory and write each raw JSON input to a timestamped file
+# for debugging. It will also append a "telemetry.log" file with MCP args for
+# each tracked event.
+#
+# When using `--plugin-dir` to load a local plugin the AZURE_SKILLS_PLUGIN_ROOT
+# env var should be set so that the script can detect local skill paths for
+# reference_file_read events.
 
 set +e  # Don't exit on errors - fail silently for privacy
 
@@ -99,6 +110,27 @@ fi
 return_success() {
     echo '{"continue":true}'
     exit 0
+}
+
+# Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
+# directory for debugging if the env var is set.
+write_raw_input_to_file() {
+    local rawInputValue="$1"
+    [ -n "$AZURE_SKILLS_TELEMETRY_LOG_DIR" ] || return 0
+    local rawInputDir="$AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input"
+    mkdir -p "$rawInputDir" 2>/dev/null || return 0
+    local ts
+    ts=$(date -u +"%Y%m%dT%H%M%SZ")
+    printf '%s\n' "$rawInputValue" > "$rawInputDir/$ts.json" 2>/dev/null || true
+}
+
+# Appends a debug log entry to the AZURE_SKILLS_TELEMETRY_LOG_DIR/telemetry.log
+# file if the env var is set.
+write_telemetry_debug_log() {
+    local content="$1"
+    [ -n "$AZURE_SKILLS_TELEMETRY_LOG_DIR" ] || return 0
+    local logFile="$AZURE_SKILLS_TELEMETRY_LOG_DIR/telemetry.log"
+    echo "$(date +"%Y-%m-%dT%H:%M:%S") | $content" >> "$logFile" 2>/dev/null || true
 }
 
 # Resolve this script's directory so we can locate bundled skills. In the
@@ -184,6 +216,8 @@ if [ -z "$rawInput" ]; then
     return_success
 fi
 
+write_raw_input_to_file "$rawInput"
+
 # === STEP 1: Read and parse input ===
 
 # Extract fields from hook data
@@ -250,6 +284,13 @@ is_azure_skills_path() {
     [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
     [[ "$p" == *".agents/skills/"* ]] && return 0
+    # Local plugin development: match paths under AZURE_SKILLS_PLUGIN_ROOT/skills/
+    # (e.g. when loading a local plugin via `--plugin-dir`)
+    if [ -n "$AZURE_SKILLS_PLUGIN_ROOT" ]; then
+        local localRoot
+        localRoot=$(echo "$AZURE_SKILLS_PLUGIN_ROOT" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
+        [[ "$p" == *"${localRoot}/skills/"* ]] && return 0
+    fi
     return 1
 }
 
@@ -319,8 +360,8 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
             # Extract relative path after 'skills/'
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
 
-            if [[ "$pathNormalized" =~ (azure/([0-9]+\.[0-9]+\.[0-9]+/)?skills|azure-skills/skills|\.agents/skills)/(.+)$ ]]; then
-                filePath="${BASH_REMATCH[3]}"
+            if [[ "$pathNormalized" =~ .*/skills/(.+)$ ]]; then
+                filePath="${BASH_REMATCH[1]}"
 
                 if [ "$shouldTrack" = false ]; then
                     shouldTrack=true
@@ -358,6 +399,10 @@ if [ "$shouldTrack" = true ]; then
 
     # Publish telemetry via npx
     npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1 || true
+
+    # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the
+    # telemetry.log file in that directory (for debugging)
+    write_telemetry_debug_log "MCP Args: ${mcpArgs[*]}"
 fi
 
 # Output success to stdout (required by hooks)

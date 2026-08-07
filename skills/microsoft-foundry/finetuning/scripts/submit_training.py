@@ -7,7 +7,7 @@
 # ]
 # ///
 """
-submit_training.py — Submit SFT, DPO, or RFT training jobs on Azure AI Foundry.
+submit_training.py — Submit SFT, DPO, or RFT training jobs on Microsoft Foundry.
 
 Handles both SDK and REST API submission (REST fallback for OSS models).
 Supports /v1/ project endpoint (preferred) and Azure endpoint (fallback).
@@ -148,7 +148,7 @@ def submit_dpo(client, model, train_id, val_id, epochs=2, lr=1.0, beta=0.1, suff
 
 
 def main():
-    parser = HelpOnErrorParser(description="Submit fine-tuning jobs on Azure AI Foundry")
+    parser = HelpOnErrorParser(description="Submit fine-tuning jobs on Microsoft Foundry")
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
                         help="Project /v1/ URL (preferred)")
     parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),

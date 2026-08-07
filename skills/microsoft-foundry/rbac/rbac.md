@@ -150,7 +150,7 @@ az account set --subscription "<subscription-id>"
 
 ## Additional Resources
 
-- [Azure AI Foundry RBAC Documentation](https://learn.microsoft.com/azure/ai-foundry/concepts/rbac-ai-foundry)
+- [Microsoft Foundry RBAC Documentation](https://learn.microsoft.com/azure/ai-foundry/concepts/rbac-ai-foundry)
 - [Azure Built-in Roles](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles)
 - [Managed Identities Overview](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview)
 - [Service Principal Authentication](https://learn.microsoft.com/azure/developer/github/connect-from-azure)

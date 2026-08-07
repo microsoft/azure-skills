@@ -15,12 +15,26 @@ If the client **cannot connect at all**:
 
 ### Quick Connectivity Test
 
-```bash
-# Test endpoint reachability (expect Atom feed XML on success)
-curl -v https://<namespace>.servicebus.windows.net/
+Run the connectivity probe script. It resolves DNS, tests HTTPS reachability, and probes the messaging ports (AMQP `5671`/`5672`, HTTPS `443`), returning a normalized report instead of raw `curl`/`nslookup` output. Add `--kafka` / `-Kafka` to also probe the Event Hubs Kafka port `9093`.
 
-# Resolve namespace IP
-nslookup <namespace>.servicebus.windows.net
+Scripts (paths below are relative to the skill root, `plugins/azure-skills/skills/azure-diagnostics`, so run them from there): [`scripts/test-messaging-connectivity.sh`](../../scripts/test-messaging-connectivity.sh) (bash) and [`scripts/test-messaging-connectivity.ps1`](../../scripts/test-messaging-connectivity.ps1) (PowerShell).
+
+```powershell
+# from plugins/azure-skills/skills/azure-diagnostics
+.\scripts\test-messaging-connectivity.ps1 -Namespace <namespace>
+```
+```bash
+# from plugins/azure-skills/skills/azure-diagnostics
+bash ./scripts/test-messaging-connectivity.sh <namespace>
+```
+
+The namespace may be a full FQDN or a bare name (`.servicebus.windows.net` is appended automatically).
+
+**Example (Event Hubs, including Kafka):**
+
+```bash
+# from plugins/azure-skills/skills/azure-diagnostics
+bash ./scripts/test-messaging-connectivity.sh contoso.servicebus.windows.net --kafka
 ```
 
 ## Transient Connectivity Issues

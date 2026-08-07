@@ -6,7 +6,7 @@
 # ]
 # ///
 """
-deploy_model.py — Deploy fine-tuned models on Azure AI Foundry via ARM REST API.
+deploy_model.py — Deploy fine-tuned models on Microsoft Foundry via ARM REST API.
 
 Supports all model families with correct format/SKU mapping.
 
@@ -200,7 +200,7 @@ def list_deployments(sub, rg, account):
 
 
 def main():
-    parser = HelpOnErrorParser(description="Deploy fine-tuned models on Azure AI Foundry")
+    parser = HelpOnErrorParser(description="Deploy fine-tuned models on Microsoft Foundry")
     parser.add_argument("--sub", default=DEFAULT_SUB, help="Azure subscription ID")
     parser.add_argument("--rg", default=DEFAULT_RG, help="Resource group")
     parser.add_argument("--account", default=DEFAULT_ACCOUNT, help="Cognitive Services account")

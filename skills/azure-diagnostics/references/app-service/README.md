@@ -174,10 +174,15 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 ## Combined Diagnostic Script
 
+Use the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
+([PowerShell](../../scripts/appservice-diagnostics.ps1)) to collect everything in one call.
+It prints clearly labeled sections — app config, recent deployments, app settings, and
+custom domains — and a summary line describing what it collected. Interpreting the output
+remains your job.
+
+```powershell
+..\..\scripts\appservice-diagnostics.ps1 -Name <app> -ResourceGroup <rg>
+```
 ```bash
-echo "=== App Service Diagnostics ===" && \
-echo "App Config:" && az webapp show -n APP -g RG --query "{state:state, runtime:siteConfig.linuxFxVersion, healthCheck:siteConfig.healthCheckPath, alwaysOn:siteConfig.alwaysOn}" -o table && \
-echo "Recent Deployments:" && az webapp deployment list -n APP -g RG --query "[:3].{id:id, status:status, time:end_time}" -o table && \
-echo "App Settings:" && az webapp config appsettings list -n APP -g RG --query "[].name" -o tsv && \
-echo "Custom Domains:" && az webapp config hostname list -g RG --webapp-name APP -o table
+../../scripts/appservice-diagnostics.sh --name <app> --resource-group <rg>
 ```

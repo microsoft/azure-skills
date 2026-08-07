@@ -47,7 +47,7 @@ After SFT:
 └─ Reasoning needs improvement? → RFT (if model supports it)
 ```
 
-## Model Compatibility (Azure AI Foundry)
+## Model Compatibility (Microsoft Foundry)
 
 | Model | SFT | DPO | RFT | Vision FT |
 |-------|-----|-----|-----|-----------|
@@ -65,6 +65,6 @@ After SFT:
 
 DPO can be applied on top of an already SFT-fine-tuned model. Vision fine-tuning follows the same SFT workflow but with image data in messages.
 
-> ⚠️ **Feature flags**: GPT-5 RFT and agentic RFT with tool calling require access requests. Contact your Microsoft account team or request access through the Azure AI Foundry portal. o4-mini RFT without tools is generally available.
+> ⚠️ **Feature flags**: GPT-5 RFT and agentic RFT with tool calling require access requests. Contact your Microsoft account team or request access through the Microsoft Foundry portal. o4-mini RFT without tools is generally available.
 
-*Check Azure AI Foundry docs for the latest model availability.*
+*Check Microsoft Foundry docs for the latest model availability.*

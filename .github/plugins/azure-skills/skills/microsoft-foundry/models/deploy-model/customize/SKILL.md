@@ -50,7 +50,7 @@ Use this skill when you need **precise control** over deployment configuration:
 ## Prerequisites
 
 - Azure subscription with Cognitive Services Contributor or Owner role
-- Azure AI Foundry project resource ID (format: `/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}`)
+- Microsoft Foundry project resource ID (format: `/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}`)
 - Azure CLI installed and authenticated (`az login`)
 - Optional: Set `PROJECT_RESOURCE_ID` environment variable
 
@@ -153,7 +153,7 @@ az cognitiveservices account deployment delete --name <account> --resource-group
 ## Related Skills
 
 - **preset** - Quick deployment to best region with automatic configuration
-- **microsoft-foundry** - Parent skill for all Azure AI Foundry operations
+- **microsoft-foundry** - Parent skill for all Microsoft Foundry operations
 - **[quota](../../../quota/quota.md)** — For quota viewing, increase requests, and troubleshooting quota errors, defer to this skill instead of duplicating guidance
 - **rbac** - Manage permissions and access control
 

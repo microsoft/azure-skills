@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate SFT (Supervised Fine-Tuning) JSONL files for Azure AI Foundry.
+"""Validate SFT (Supervised Fine-Tuning) JSONL files for Microsoft Foundry.
 
 Adapted from foundry-ft agent with additional checks from our platform gotchas:
 - Token length warnings (4096 limit varies by model)

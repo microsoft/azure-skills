@@ -1,7 +1,7 @@
-# Generate Azure AI Foundry portal URL for a model deployment
-# This script creates a direct clickable link to view a deployment in the Azure AI Foundry portal
+# Generate Microsoft Foundry portal URL for a model deployment
+# This script creates a direct clickable link to view a deployment in the Microsoft Foundry portal
 #
-# NOTE: The encoding scheme for the subscription ID portion is proprietary to Azure AI Foundry.
+# NOTE: The encoding scheme for the subscription ID portion is proprietary to Microsoft Foundry.
 # This script uses a GUID byte encoding approach, but may need adjustment based on the actual encoding used.
 
 param(
