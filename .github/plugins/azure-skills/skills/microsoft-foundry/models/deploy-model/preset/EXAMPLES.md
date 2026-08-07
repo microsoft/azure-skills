@@ -25,7 +25,7 @@
 
 ## Example 5: First-Time User — No Project
 
-**Scenario:** Deploy gpt-4o with no existing AI Foundry project.
+**Scenario:** Deploy gpt-4o with no existing Microsoft Foundry project.
 **Result:** Full onboarding in ~5 min — created resource group, AI Services hub, project, then deployed.
 
 ## Example 6: Deployment Name Conflict

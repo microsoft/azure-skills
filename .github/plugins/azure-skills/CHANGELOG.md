@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.17
+
+- chore: clean out-of-date descriptions in foundry skill ([#3019](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3019))
+
+## 1.2.16
+
+- fix: disambiguate azure-prepare/deploy and azure-app-onboard ([#3036](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3036))
+
+## 1.2.15
+
+- feat: replace azure-diagnostics messaging connectivity probe with a script ([#2932](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2932))
+
+## 1.2.14
+
+- feat: extract azure-diagnostics dump-everything blocks into scripts ([#2935](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2935))
+
+## 1.2.13
+
+- fix: resolve Claude hooks.json validation error and add telemetry debug logging ([#3021](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3021))
+
 ## 1.2.12
 
 - feat: support activity protocol in Foundry skill ([#3008](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3008))

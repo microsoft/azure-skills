@@ -26,7 +26,7 @@ Troubleshoot and debug Foundry agents by collecting Hosted Agent logs with azd, 
 ### Step 1: Collect Agent Information
 
 Use the project endpoint and agent name from the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Ask the user only for values not already resolved:
-- **Project endpoint** — AI Foundry project endpoint URL
+- **Project endpoint** — Microsoft Foundry project endpoint URL
 - **Agent name** — Name of the agent to troubleshoot
 
 ### Step 2: Identify a Hosted Agent

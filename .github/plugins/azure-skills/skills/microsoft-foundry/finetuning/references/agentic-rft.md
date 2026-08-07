@@ -2,7 +2,7 @@
 
 Train reasoning models (o4-mini) for agentic scenarios where the model invokes external tools during chain-of-thought reasoning.
 
-> ⚠️ **Access required**: Agentic RFT with tool calling and GPT-5 RFT are behind feature flags. You must request access through the Azure AI Foundry portal or your Microsoft account team. o4-mini RFT without tools is generally available.
+> ⚠️ **Access required**: Agentic RFT with tool calling and GPT-5 RFT are behind feature flags. You must request access through the Microsoft Foundry portal or your Microsoft account team. o4-mini RFT without tools is generally available.
 
 ## Tool Definition Format
 

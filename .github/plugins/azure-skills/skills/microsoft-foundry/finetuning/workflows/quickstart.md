@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Azure AI Foundry project with a deployed model (e.g., `gpt-4.1-mini`)
+- Microsoft Foundry project with a deployed model (e.g., `gpt-4.1-mini`)
 - Python 3.10+ with `openai` installed
 - Project endpoint URL and API key (Foundry portal → Project Settings)
 
@@ -109,7 +109,7 @@ python scripts/submit_training.py --model gpt-4.1-mini --training-file train.jso
 python scripts/monitor_training.py --job-id <your-job-id>
 ```
 
-Or check [Azure AI Foundry portal](https://ai.azure.com) → Fine-tuning → Jobs.
+Or check [Microsoft Foundry portal](https://ai.azure.com) → Fine-tuning → Jobs.
 
 ## Step 6: Deploy, Test, and Compare
 

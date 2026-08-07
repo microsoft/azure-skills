@@ -9,7 +9,7 @@ metadata:
 
 # Deploy Model
 
-> **Scope — read this first.** This skill creates model deployments **out-of-band** via Azure CLI / MCP / portal. For azd-managed Foundry projects (those scaffolded from `azd-ai-starter-basic` or via `azd ai agent init`), declare deployments in `azure.yaml services.ai-project.deployments[]` instead — `azd ai agent init` writes the entry from the sample manifest and `azd provision` creates the deployment through Bicep. See [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md) for the Golden Path. Use this skill only for: (a) Foundry projects not managed by an azd project, (b) ad-hoc deployments outside the azd lifecycle.
+> **Scope — read this first.** This skill creates model deployments **out-of-band** via Azure CLI / MCP / portal. For azd-managed Foundry projects (those scaffolded from `azd ai agent init`), declare deployments in `azure.yaml services.ai-project.deployments[]` instead — `azd ai agent init` writes the entry from the sample manifest and `azd provision` creates the deployment through Bicep. See [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md) for the Golden Path. Use this skill only for: (a) Foundry projects not managed by an azd project, (b) ad-hoc deployments outside the azd lifecycle.
 
 Unified entry point for all Azure OpenAI model deployment workflows. Analyzes user intent and routes to the appropriate deployment mode.
 
@@ -137,7 +137,7 @@ Before presenting any deployment options (SKU, capacity), always validate both o
 All deployment modes require:
 - Azure CLI installed and authenticated (`az login`)
 - Active Azure subscription with deployment permissions
-- Azure AI Foundry project resource ID (or agent will help discover it via `PROJECT_RESOURCE_ID` env var)
+- Microsoft Foundry project resource ID (or agent will help discover it via `PROJECT_RESOURCE_ID` env var)
 
 ## Sub-Skills
 

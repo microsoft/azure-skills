@@ -1,10 +1,10 @@
 # Full Pipeline Workflow
 
-End-to-end fine-tuning on Azure AI Foundry in 9 phases.
+End-to-end fine-tuning on Microsoft Foundry in 9 phases.
 
 ## Prerequisites
 
-- Azure AI Foundry resource with fine-tuning enabled
+- Microsoft Foundry resource with fine-tuning enabled
 - Python 3.10+ with `openai` and `requests`
 - Azure CLI (`az`) authenticated
 - A clear task definition: what should the model do differently after fine-tuning?

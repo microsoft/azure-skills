@@ -407,4 +407,4 @@ az cognitiveservices account show \
   --query "properties.endpoint" -o tsv
 ```
 
-On success, display deployment name, model, version, SKU, capacity, region, RAI policy, rate limits, endpoint, and Azure AI Foundry portal link.
+On success, display deployment name, model, version, SKU, capacity, region, RAI policy, rate limits, endpoint, and Microsoft Foundry portal link.

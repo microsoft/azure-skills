@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate RFT (Reinforcement Fine-Tuning) JSONL files for Azure AI Foundry.
+"""Validate RFT (Reinforcement Fine-Tuning) JSONL files for Microsoft Foundry.
 
 Adapted from foundry-ft agent with critical additions from our platform gotchas:
 - Grader escaping warnings for newlines (\\n must be \\\\n in JSON strings)
@@ -191,7 +191,7 @@ def validate_rft(filepath, expected_field=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Validate RFT (Reinforcement Fine-Tuning) JSONL files for Azure AI Foundry."
+        description="Validate RFT (Reinforcement Fine-Tuning) JSONL files for Microsoft Foundry."
     )
     parser.add_argument("filepath", help="Path to the JSONL file to validate")
     parser.add_argument(

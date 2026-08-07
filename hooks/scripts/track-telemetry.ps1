@@ -84,8 +84,52 @@
 #   If the path matches AND is not a SKILL.md file, the relative path after
 #   "skills/" is extracted and emitted as a reference_file_read event.
 #   SKILL.md reads are tracked as skill_invocation instead (not double-counted).
+#
+# === Debugging ===
+#
+# If the AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, the script will create
+# a "raw-input" subdirectory and write each raw JSON input to a timestamped file
+# for debugging. It will also append a "telemetry.log" file with MCP args for
+# each tracked event.
+#
+# When using `--plugin-dir` to load a local plugin the AZURE_SKILLS_PLUGIN_ROOT
+# env var should be set so that the script can detect local skill paths for
+# reference_file_read events.
 
 $ErrorActionPreference = "SilentlyContinue"
+
+# Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
+# directory for debugging if the env var is set.
+function Write-RawInputToFile {
+    param([string]$RawInput)
+    if ($env:AZURE_SKILLS_TELEMETRY_LOG_DIR) {
+        $logDir = $env:AZURE_SKILLS_TELEMETRY_LOG_DIR
+        $rawInputDir = Join-Path $logDir 'raw-input'
+        if (-not (Test-Path -LiteralPath $rawInputDir)) {
+            New-Item -ItemType Directory -Path $rawInputDir -Force | Out-Null
+        }
+        $timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
+        $rawInputFile = Join-Path $rawInputDir "$timestamp.json"
+        try {
+            $RawInput | Out-File -FilePath $rawInputFile -Encoding utf8 -Force
+        } catch { }
+    }
+}
+
+# Writes a debug log entry to the AZURE_SKILLS_TELEMETRY_LOG_DIR/telemetry.log file
+# if the env var is set.
+function Write-TelemetryDebugLog {
+    param([string]$Content)
+
+    if ($env:AZURE_SKILLS_TELEMETRY_LOG_DIR) {
+        $logDir = $env:AZURE_SKILLS_TELEMETRY_LOG_DIR
+        $logFile = Join-Path $logDir 'telemetry.log'
+        $logEntry = "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ss') | $Content"
+        try {
+            Add-Content -Path $logFile -Value $logEntry -ErrorAction SilentlyContinue
+        } catch { }
+    }
+}
 
 # Skip telemetry if opted out
 if ($env:AZURE_MCP_COLLECT_TELEMETRY -eq "false") {
@@ -142,6 +186,8 @@ try {
 if ([string]::IsNullOrWhiteSpace($rawInput)) {
     Write-Success
 }
+
+Write-RawInputToFile -RawInput $rawInput
 
 # === STEP 1: Read and parse input ===
 
@@ -228,6 +274,16 @@ $pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-offici
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 $pathPatternAgentsSkills = '\.agents/skills/'
 
+# Put the path patterns into an array for easier iteration
+$pathPatterns = @($pathPatternCopilot, $pathPatternClaude, $pathPatternVscodeAgentPlugins, $pathPatternAgentsSkills)
+
+# If $env:AZURE_SKILLS_PLUGIN_ROOT is set, add it to the path patterns for local skill development
+if ($env:AZURE_SKILLS_PLUGIN_ROOT) {
+    $localSkillsPath = [regex]::Escape($env:AZURE_SKILLS_PLUGIN_ROOT) + '/skills/'
+    $localSkillsPath = $localSkillsPath -replace '\\', '/' -replace '/+', '/'
+    $pathPatterns += $localSkillsPath
+}
+
 $shouldTrack = $false
 $eventType = $null
 $skillName = $null
@@ -258,16 +314,13 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
         # Normalize path: convert to lowercase, replace backslashes, and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        # Check for SKILL.md pattern — only match azure-skills paths (see path patterns above)
+        # Check for SKILL.md pattern — only match azure-skills paths (see pathPatterns above)
         $isAzureSkillMd = $false
-        if ($pathLower -match "${pathPatternCopilot}[^/]+/skill\.md") {
-            $isAzureSkillMd = $true
-        } elseif ($pathLower -match "${pathPatternClaude}[^/]+/skill\.md") {
-            $isAzureSkillMd = $true
-        } elseif ($pathLower -match "${pathPatternVscodeAgentPlugins}[^/]+/skill\.md") {
-            $isAzureSkillMd = $true
-        } elseif ($pathLower -match "${pathPatternAgentsSkills}[^/]+/skill\.md") {
-            $isAzureSkillMd = $true
+        foreach ($pattern in $pathPatterns) {
+            if ($pathLower -match "${pattern}[^/]+/skill\.md") {
+                $isAzureSkillMd = $true
+                break
+            }
         }
 
         if ($isAzureSkillMd) {
@@ -302,15 +355,18 @@ if (-not $filePath -and -not $skillName) {
         # Normalize path for matching: replace backslashes and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        $matchCopilotSkills = $pathLower -match $pathPatternCopilot
-        $matchClaudeSkills = $pathLower -match $pathPatternClaude
-        $matchVscodeAgentPlugins = $pathLower -match $pathPatternVscodeAgentPlugins
-        $matchAgentsSkills = $pathLower -match $pathPatternAgentsSkills
-        if ($matchCopilotSkills -or $matchClaudeSkills -or $matchVscodeAgentPlugins -or $matchAgentsSkills) {
+        $matchesPattern = $false
+        foreach ($pattern in $pathPatterns) {
+            if ($pathLower -match $pattern) {
+                $matchesPattern = $true
+                break
+            }
+        }
+        if ($matchesPattern) {
             # Extract relative path after 'skills/'
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
 
-            if ($pathNormalized -match '(?:azure/(?:[0-9]+\.[0-9]+\.[0-9]+/)?skills|azure-skills/skills|\.agents/skills)/(.+)$') {
+            if ($pathNormalized -match '.*/skills/(.+)$') {
                 $filePath = $Matches[1]
 
                 if (-not $shouldTrack) {
@@ -349,6 +405,9 @@ if ($shouldTrack) {
     try {
         & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
     } catch { }
+
+    # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the telemetry.log file in that directory (for debugging)
+    Write-TelemetryDebugLog -Content "MCP Args: $($mcpArgs -join ' ')"
 }
 
 # Output success to stdout (required by hooks)

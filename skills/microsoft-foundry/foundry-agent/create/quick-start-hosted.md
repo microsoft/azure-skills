@@ -77,7 +77,7 @@ azd ai agent sample list --featured-only --language <lang> --output json
 
 > `--language` here takes the short form (`python`, `dotnetCsharp`) — not the runtime token (`python_3_13` fails with `unknown language`). The runtime tokens are only used in Step 5's `azd ai agent init --runtime ...`.
 
-Pick the basic starter (e.g. `azd-ai-starter-basic` for Python — avoid samples with `parameters:` blocks requiring secrets). Capture the `manifestUrl`.
+Capture the `manifestUrl`.
 
 Step 5 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
@@ -246,6 +246,8 @@ azd ai agent invoke --local "<short representative prompt for the agent's purpos
 Stop the local server via the managed session's stop primitive before continuing — a lingering process holds files in the project and breaks later cleanup.
 
 ### Step 12 — Deploy
+
+Once local invocation succeeds, if the user does not explicitly ask to deploy, tell them the agent is ready and ask if they want to deploy. To deploy:
 
 ```bash
 azd deploy --no-prompt
