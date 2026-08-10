@@ -1,45 +1,49 @@
 # Inspektor Gadget (IG) Reference
 
-Use Inspektor Gadget for real-time, low-level node/pod diagnostics when `kubectl` is insufficient.
+Use Inspektor Gadget for low-level node/pod diagnostics when `kubectl` is insufficient.
 
-## IG Version
+## Run Script
 
-`<ig-version>` = `v0.51.0` — substitute this exact tag (with `v` prefix) wherever `<ig-version>` appears. Bump this line only.
-
-## Base Command Pattern
-
-```bash
-kubectl debug --profile=sysadmin node/<node-name> --attach --quiet \
-  --image=mcr.microsoft.com/oss/v2/inspektor-gadget/ig:<ig-version> \
-  -- ig run <gadget>:<ig-version> -o json --timeout <seconds> [filters...]
-```
-
-Always set `--timeout` after `--` to cap runtime. Use `--timeout 5` for snapshot/top, `--timeout 30` for trace/profile.
-
-> **Note:** IG uses `kubectl debug --profile=sysadmin` (privileged debug pod). Only run with explicit user approval and appropriate RBAC.
-
-**Required:** Resolve the node name first:
+Invoke gadgets with the `run-ig` script ([`scripts/run-ig.sh`](../../../scripts/run-ig.sh) /
+[`scripts/run-ig.ps1`](../../../scripts/run-ig.ps1)). It resolves the node from the pod, injects
+the pinned IG image/version, applies the default `--timeout` for the gadget type, adds the k8s
+filters, and handles the `tcpdump` variant. You still choose **which** gadget (see the
+Symptom-to-Gadget Map) and interpret the output.
 
 ```bash
-kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.nodeName}'
+./scripts/run-ig.sh --gadget trace_dns --pod <pod> --ns <ns>       # node auto-resolved
+./scripts/run-ig.sh --gadget snapshot_process --node <node>        # node-wide
+./scripts/run-ig.sh --gadget trace_dns --pod <pod> --ns <ns> --dry-run
 ```
+```powershell
+.\scripts\run-ig.ps1 -Gadget trace_dns -Pod <pod> -Namespace <ns>
+```
+
+**Options** (bash flags below; PowerShell uses PascalCase equivalents: `-Gadget`, `-Pod`,
+`-Namespace`/`-Ns`, `-Node`, `-Container`, `-Timeout`, `-Filter`, `-Pf`, `-IgVersion`,
+`-DryRun`): `--gadget` (required); target `--pod`/`--ns` **or** `--node`; `--container`;
+`--timeout <s>` override; `--filter <arg>` (repeatable IG-flag passthrough, e.g.
+`--filter --max-entries --filter 20`); `--pf "<expr>"` (tcpdump only); `--ig-version <tag>`;
+`--dry-run`. Default timeout by gadget name: `snapshot_*`/`top_*` → 5s,
+`trace_*`/`profile_*`/`tcpdump` → 30s. Returns the gadget JSON (pcap-ng for tcpdump) plus a
+`Ran gadget X on node Y` summary. IG version is pinned to `v0.51.0` in the scripts.
+
+> **Approval required:** IG uses `kubectl debug --profile=sysadmin` (a privileged debug pod).
+> **Ask the user before running the script** and confirm RBAC; use `--dry-run` to preview.
 
 ## Common Filters
 
+The k8s scope filters and `--timeout` are set by the script. Pass any other IG flag below via
+its repeatable `--filter`, e.g. `--filter --max-entries --filter 20`.
+
 | Filter | Description |
 |---|---|
-| `--k8s-namespace <ns>` | Scope to a Kubernetes namespace |
-| `--k8s-podname <pod>` | Scope to a specific pod |
-| `--k8s-containername <ctr>` | Scope to a specific container |
-| `--timeout <seconds>` | Cap streaming duration for trace/profile gadgets |
 | `--max-entries <n>` | Max entries per batch for top/profile gadgets |
 | `--map-fetch-interval <dur>` | Map fetch interval for top (except `top_process`) and profile gadgets (default `1000ms`) |
 | `--interval <dur>` | Reporting interval for `top_process` only (e.g. `5s`) |
 | `--syscall-filters <list>` | Comma-separated syscalls for `traceloop` (e.g. `open,connect,accept`). **Always specify** to limit data volume |
 
-> **Tip:** For top/profile, set `--map-fetch-interval` ≤ half of `--timeout` to collect at least one batch. E.g. `--timeout 2 --map-fetch-interval 1000ms --max-entries 20`.
->
-> **Note:** `top_process` uses `--interval` instead of `--map-fetch-interval`. E.g. `--timeout 10 --interval 5s --max-entries 20`.
+> **Tip:** For top/profile, keep `--map-fetch-interval` ≤ half of `--timeout` to collect ≥1 batch. `top_process` uses `--interval` instead of `--map-fetch-interval`.
 
 ## Gadget Catalog
 
@@ -57,17 +61,13 @@ kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.nodeName}'
 
 #### tcpdump gadget
 
-Outputs raw pcap-ng data. Pipe to `tcpdump` for readable output:
+Run via `--gadget tcpdump`; the script sets `-o pcap-ng` and pipes to `tcpdump -nvr -` when
+available. Use `--pf "<expr>"` for tcpdump filters (e.g., `port 80`, `host 10.0.0.1`); `--pf`
+is only valid for the `tcpdump` gadget.
 
 ```bash
-kubectl debug --profile=sysadmin node/<node-name> --attach --quiet \
-  --image=mcr.microsoft.com/oss/v2/inspektor-gadget/ig:<ig-version> \
-  -- ig run tcpdump:<ig-version> -o pcap-ng --k8s-namespace <ns> --k8s-podname <pod> \
-     --timeout 30 --pf "port 80" \
-  | tcpdump -nvr -
+./scripts/run-ig.sh --gadget tcpdump --pod <pod> --ns <ns> --pf "port 80"
 ```
-
-Use `--pf "<expr>"` for tcpdump filters (e.g., `port 80`, `host 10.0.0.1`). Output must be `-o pcap-ng` (not `-o json`).
 
 ### Process & Workload
 
@@ -130,6 +130,6 @@ Use `--pf "<expr>"` for tcpdump filters (e.g., `port 80`, `host 10.0.0.1`). Outp
 ## Guardrails
 
 - IG gadgets are **read-only** — they do not modify cluster or application state.
-- Resolve the correct node name before running any IG command.
-- Always set `--timeout` to cap runtime. Prefer snapshot/top for quick checks; trace/profile for behavior over time.
+- Invoke gadgets through `run-ig` (`scripts/run-ig.sh` / `scripts/run-ig.ps1`); it resolves the node and applies the correct timeout. **Ask the user before running it** (privileged debug pod).
+- The script picks the default `--timeout` by gadget type. Prefer snapshot/top for quick checks; trace/profile for behavior over time. Override with `--timeout` when needed.
 - For reproduction: launch a trace gadget first, then reproduce the problem. The debug pod persists after the gadget exits, so run `kubectl logs <debug-pod>` to retrieve the captured output afterward.

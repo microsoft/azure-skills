@@ -1,0 +1,194 @@
+# GitHub Actions workflow: Deploy to AKS
+#
+# This workflow builds a container image, pushes it to Azure Container Registry,
+# and deploys it to an Azure Kubernetes Service cluster.
+#
+# Authentication uses OIDC federation (workload identity) — no stored passwords.
+# Required GitHub secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+#
+# Placeholders to replace (uses __DOUBLE_UNDERSCORE__ style; K8s templates use angle-bracket style):
+#   __ACR_NAME__    — Azure Container Registry name (e.g. myappacr)
+#   __AKS_CLUSTER__ — AKS cluster name (e.g. myapp-aks)
+#   __RG_NAME__     — Azure resource group containing ACR and AKS
+#   __APP_NAME__    — Application / deployment name in Kubernetes
+#   __NAMESPACE__   — Kubernetes namespace to deploy into
+
+name: Deploy to AKS
+
+on:
+  # Trigger on push to main branch (app code changes only)
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/**'
+      - '.vscode/**'
+
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+# OIDC federation requires these permissions so GitHub can issue
+# an ID token that Microsoft Entra ID will accept.
+permissions:
+  id-token: write   # Required for requesting the JWT
+  contents: read     # Required for actions/checkout
+
+# Prevent parallel deployments on the same branch.
+# Uses workflow + ref so staging and production runs can proceed independently.
+# cancel-in-progress: false ensures the running deploy finishes
+# before the queued deploy starts (avoids mid-rollout conflicts).
+# Note: env context is not available here — use github or vars contexts only.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  ACR_NAME: __ACR_NAME__
+  AKS_CLUSTER: __AKS_CLUSTER__
+  RESOURCE_GROUP: __RG_NAME__
+  APP_NAME: __APP_NAME__
+  NAMESPACE: __NAMESPACE__
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------
+      # Validate that no placeholders remain unreplaced
+      #
+      #    Checks for __PLACEHOLDER__ and <placeholder> patterns in
+      #    env vars and k8s/ directory. Fails fast with clear error
+      #    if any found.
+      # -----------------------------------------------------------
+      - name: Validate — no unreplaced placeholders
+        run: |
+          PLACEHOLDERS_FOUND=0
+
+          # Check env variables
+          for VAR in ACR_NAME AKS_CLUSTER RESOURCE_GROUP APP_NAME NAMESPACE; do
+            VALUE="${!VAR}"
+            if [[ "$VALUE" =~ __[A-Z_]+__ ]]; then
+              echo "❌ Placeholder found in \$${VAR}: ${VALUE}"
+              PLACEHOLDERS_FOUND=1
+            fi
+          done
+
+          # Check k8s/ directory if it exists
+          if [ -d k8s ]; then
+            # __PLACEHOLDER__ style (env var style used in this workflow)
+            if grep -rq '__[A-Z_]\+__' k8s/; then
+              echo "❌ Placeholders found in k8s/ manifests:"
+              grep -rn '__[A-Z_]\+__' k8s/ || true
+              PLACEHOLDERS_FOUND=1
+            fi
+            # <placeholder> style (angle-bracket style used in K8s manifest templates).
+            # Exclude <image>: it is intentionally left in place here and replaced
+            # with the SHA-tagged image in the "Substitute image tag" step below.
+            if grep -rnP '<[a-z][a-z0-9-]*>' k8s/ | grep -vq '<image>'; then
+              echo "❌ Angle-bracket placeholders found in k8s/ manifests:"
+              grep -rnP '<[a-z][a-z0-9-]*>' k8s/ | grep -v '<image>' || true
+              PLACEHOLDERS_FOUND=1
+            fi
+          fi
+
+          if [ $PLACEHOLDERS_FOUND -eq 1 ]; then
+            echo ""
+            echo "⚠️  Workflow failed: unreplaced placeholders detected."
+            echo "Replace the following in your deploy.yml:"
+            echo "  - __ACR_NAME__    → Your Container Registry name"
+            echo "  - __AKS_CLUSTER__ → Your AKS cluster name"
+            echo "  - __RG_NAME__     → Your resource group name"
+            echo "  - __APP_NAME__    → Your application name"
+            echo "  - __NAMESPACE__   → Your Kubernetes namespace"
+            exit 1
+          fi
+
+          echo "✓ All placeholders replaced"
+
+      # -----------------------------------------------------------
+      # Authenticate to Azure using OIDC (workload identity)
+      #
+      #    This exchanges the GitHub-issued OIDC token for an Azure
+      #    access token — no client secret required.
+      # -----------------------------------------------------------
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # -----------------------------------------------------------
+      # Build container image and push to ACR
+      #
+      #    `az acr build` runs the Docker build remotely on ACR,
+      #    so no local Docker daemon is needed. The image is tagged
+      #    with the commit SHA for traceability.
+      # -----------------------------------------------------------
+      - name: Build and push image to ACR
+        run: |
+          az acr build \
+            --registry ${{ env.ACR_NAME }} \
+            --image ${{ env.APP_NAME }}:${{ github.sha }} \
+            .
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER }}
+
+      # -----------------------------------------------------------
+      # Deploy to AKS
+      #
+      #    Applies all K8s resources (with substituted image tag),
+      #    then waits for the rollout to complete successfully.
+      #    Sets a step output flag used to gate the rollback step.
+      # -----------------------------------------------------------
+      - name: Substitute image tag in manifests
+        env:
+          IMAGE: ${{ env.ACR_NAME }}.azurecr.io/${{ env.APP_NAME }}:${{ github.sha }}
+        run: |
+          if [ ! -d k8s ]; then
+            echo "❌ k8s/ directory not found — cannot deploy without manifests"
+            exit 1
+          fi
+          # Use xargs to preserve sed exit codes (find|while swallows them)
+          find k8s -name "*.yaml" -o -name "*.yml" \
+            | xargs -I{} sed -i "s|<image>|${IMAGE}|g" "{}"
+          echo "✓ Image tag substituted in all manifests"
+
+      - name: Deploy to AKS
+        id: deploy
+        run: |
+          # Ensure the namespace exists before applying manifests
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml \
+            | kubectl apply -f -
+          kubectl apply -f k8s/ --namespace ${{ env.NAMESPACE }}
+
+          kubectl rollout status deployment/${{ env.APP_NAME }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=300s
+
+          # Signal that the deployment was applied — used to gate rollback
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Rollback on failure
+        if: failure() && steps.deploy.outputs.deployed == 'true'
+        run: |
+          kubectl rollout undo deployment/${{ env.APP_NAME }} \
+            --namespace ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/${{ env.APP_NAME }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=120s
+          echo "⚠️ Rolled back to previous revision"

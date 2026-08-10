@@ -85,7 +85,7 @@ kubectl describe quota -n <namespace>
 ## Deep Diagnostics Flow (Inspektor Gadget)
 
 ```text
-Standard diagnostics inconclusive -> resolve target node -> select gadget from symptom-to-gadget map -> run IG command with namespace/pod filters -> interpret output -> correlate with prior evidence
+Standard diagnostics inconclusive -> select gadget from symptom-to-gadget map -> run `scripts/run-ig.sh` (or `run-ig.ps1`; resolves node, applies timeout) -> interpret output -> correlate with prior evidence
 ```
 
 Use when steps 1–3 of the evidence order (Azure-side, Kubernetes-side, and detector evidence) do not reveal root cause. See [inspektor-gadget.md](inspektor-gadget.md) for the full gadget catalog and command patterns.

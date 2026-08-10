@@ -1,0 +1,16 @@
+**/bin
+**/obj
+**/out
+*.user
+*.suo
+.vs
+.env
+.env.*
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.md
+.vscode
+.idea
+**/TestResults

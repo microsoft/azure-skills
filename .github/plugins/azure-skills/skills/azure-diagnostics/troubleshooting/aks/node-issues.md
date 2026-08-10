@@ -107,7 +107,7 @@ Common culprit: high-volume container logs accumulating in `/var/log/containers`
 
 **Deep diagnostics with Inspektor Gadget** (PID pressure or unknown process load):
 
-Use `snapshot_process` (timeout 5) to list all processes on the node. For node-wide scope, omit pod filters. See [references/inspektor-gadget.md](references/inspektor-gadget.md).
+Use `scripts/run-ig.sh --gadget snapshot_process --node <node-name>` (or `run-ig.ps1`) to list all processes on the node. For node-wide scope, use `--node` (no pod filters). See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
 ---
 

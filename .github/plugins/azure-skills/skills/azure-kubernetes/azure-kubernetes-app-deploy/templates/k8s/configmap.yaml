@@ -1,0 +1,25 @@
+# =============================================================================
+# Kubernetes ConfigMap Template — AKS Deploy Skill
+# =============================================================================
+# Stores non-sensitive configuration data as key-value pairs. Values are
+# injected into pods as environment variables via envFrom or env/valueFrom.
+#
+# Do NOT store secrets here — use Azure Key Vault + Workload Identity instead.
+#
+# REPLACE: <app-name>   — your application name (e.g., order-api)
+# REPLACE: <namespace>  — target namespace (e.g., production)
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <app-name>-config
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+data: {}
+  # Add application configuration as key-value pairs. Remove the `{}` above
+  # when you add real entries (a populated `data:` map cannot also be `{}`).
+  # Example:
+  # LOG_LEVEL: "info"
+  # ASPNETCORE_ENVIRONMENT: "Production"
+  # SPRING_PROFILES_ACTIVE: "prod"

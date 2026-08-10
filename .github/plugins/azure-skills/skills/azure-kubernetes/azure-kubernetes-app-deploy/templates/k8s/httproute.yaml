@@ -1,0 +1,35 @@
+# =============================================================================
+# Gateway API — HTTPRoute Template — AKS Deploy Skill
+# =============================================================================
+# Routes HTTP traffic from a Gateway to a backend Service.
+# Use this together with gateway.yaml on clusters with Istio Gateway API enabled.
+#
+# REPLACE: <app-name>      — your application name (e.g., order-api)
+# REPLACE: <namespace>     — target namespace (e.g., production)
+# REPLACE: <gateway-name>  — name of the Gateway resource (e.g., app-gateway)
+# REPLACE: <hostname>      — FQDN matching the Gateway listener (e.g., api.example.com)
+# REPLACE: <path-prefix>   — URL path prefix to match (e.g., /)
+# REPLACE: <service-port>  — port on the backend Service (e.g., 80)
+# =============================================================================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  parentRefs:
+    - name: <gateway-name>
+      namespace: <namespace>
+  hostnames:
+    - "<hostname>"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "<path-prefix>"
+      backendRefs:
+        - name: <app-name>
+          port: <service-port>
+          kind: Service

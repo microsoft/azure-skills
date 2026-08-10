@@ -1,0 +1,112 @@
+# Kubernetes Deployment Template — AKS Deploy Skill
+# Satisfies Deployment Safeguard rules DS001–DS013. Replace <placeholder> values before applying.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  # DS010: Minimum 2 replicas for high availability.
+  # If HPA is enabled, remove this field or set it to the HPA minReplicas value
+  # to prevent kubectl apply from resetting the replica count on each deploy.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: <app-name>
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: <app-name>
+        # Workload Identity: enables the mutating webhook to inject
+        # AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_FEDERATED_TOKEN_FILE
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: <app-name>
+
+      # DS013: Do not auto-mount the default ServiceAccount token.
+      # Workload Identity uses a separate projected volume managed by its webhook.
+      automountServiceAccountToken: false
+
+      # DS004 (pod-level): Run as non-root
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: <app-name>
+          # DS009: Always use an explicit tag — never :latest or bare image
+          image: <image>
+          ports:
+            - name: http
+              containerPort: <port>
+              protocol: TCP
+
+          # DS001: Resource requests AND limits for cpu and memory
+          resources:
+            requests:
+              cpu: "<cpu-request>"
+              memory: "<memory-request>"
+            limits:
+              cpu: "<cpu-limit>"
+              memory: "<memory-limit>"
+
+          # DS002: Liveness probe
+          livenessProbe:
+            httpGet:
+              path: <health-path>
+              port: <port>
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # DS003: Readiness probe
+          readinessProbe:
+            httpGet:
+              path: <ready-path>
+              port: <port>
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # Startup probe — uncomment for slow-start frameworks (Java/Spring Boot,
+          # .NET with heavy DI). Prevents the liveness probe from killing the pod
+          # before it finishes initializing. The pod has up to 30 * 10s = 300s to start.
+          # startupProbe:
+          #   httpGet:
+          #     path: <health-path>
+          #     port: <port>
+          #   periodSeconds: 10
+          #   failureThreshold: 30
+
+          # DS004, DS008, DS011, DS012
+          securityContext:
+            runAsNonRoot: true
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+          # If the app needs to write to specific paths (logs, tmp, cache),
+          # mount emptyDir volumes below instead of disabling readOnlyRootFilesystem.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
