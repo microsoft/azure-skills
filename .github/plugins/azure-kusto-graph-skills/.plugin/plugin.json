@@ -1,0 +1,23 @@
+{
+  "name": "azure-kusto-graph-skills",
+  "description": "Kusto graph analysis, IRQL security hunting pipelines, and graph visualization skills for Azure Data Explorer.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "kusto",
+    "graph",
+    "irql",
+    "security",
+    "kql"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/copilot-hooks.json"
+}
