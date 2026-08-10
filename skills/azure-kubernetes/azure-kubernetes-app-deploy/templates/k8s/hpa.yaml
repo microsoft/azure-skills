@@ -1,0 +1,45 @@
+# =============================================================================
+# HorizontalPodAutoscaler Template — AKS Deploy Skill
+# =============================================================================
+# Scales the Deployment between min and max replicas based on CPU utilization.
+# Minimum of 2 replicas ensures HA even at low load (aligns with DS010).
+#
+# REPLACE: <app-name>   — your application name (e.g., order-api)
+# REPLACE: <namespace>  — target namespace (e.g., production)
+# REPLACE: <min>        — minimum replicas (default: 2, must be >= 2 for DS010)
+# REPLACE: <max>        — maximum replicas (e.g., 10)
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: <app-name>
+  minReplicas: <min>
+  maxReplicas: <max>
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60

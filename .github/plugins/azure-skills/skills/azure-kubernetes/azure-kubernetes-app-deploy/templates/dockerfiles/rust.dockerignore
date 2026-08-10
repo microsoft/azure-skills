@@ -1,0 +1,11 @@
+target
+*.rs.bk
+.env
+.env.*
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.md
+.vscode
+.idea

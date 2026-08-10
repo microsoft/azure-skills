@@ -1,0 +1,15 @@
+# =============================================================================
+# Kubernetes Namespace Template — AKS Deploy Skill
+# =============================================================================
+# Creates an isolated namespace for the application workload. Using a dedicated
+# namespace (rather than "default") improves resource organization, access
+# control, and makes cleanup easier (delete the namespace to remove everything).
+#
+# REPLACE: <namespace> — target namespace (e.g., myapp, production)
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: <namespace>
+  labels:
+    app.kubernetes.io/managed-by: azure-kubernetes-app-deploy

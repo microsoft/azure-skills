@@ -1,0 +1,26 @@
+# =============================================================================
+# Kubernetes Service Template — AKS Deploy Skill
+# =============================================================================
+# ClusterIP Service that routes traffic to application pods.
+#
+# REPLACE: <app-name>    — your application name (e.g., order-api)
+# REPLACE: <namespace>   — target namespace (e.g., production)
+# REPLACE: <port>        — service port (e.g., 80)
+# REPLACE: <target-port> — container port (e.g., 8080)
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  type: ClusterIP
+  selector:
+    app: <app-name>
+  ports:
+    - name: http
+      port: <port>
+      targetPort: <target-port>
+      protocol: TCP

@@ -1,0 +1,43 @@
+# =============================================================================
+# Gateway API — Gateway Resource Template — AKS Deploy Skill
+# =============================================================================
+# Use this template for AKS clusters with Istio Gateway API enabled
+# (appRoutingIstio.mode: Enabled). This applies to both AKS Automatic and Standard.
+#
+# For clusters using the default Web App Routing add-on, use ingress.yaml instead.
+#
+# REPLACE: <gateway-name> — name for the gateway (e.g., app-gateway)
+# REPLACE: <namespace>    — target namespace (e.g., production)
+# REPLACE: <hostname>     — FQDN for the listener (e.g., api.example.com)
+# =============================================================================
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: <gateway-name>
+  namespace: <namespace>
+  labels:
+    app: <gateway-name>
+spec:
+  # Istio gateway controller — available on both AKS Automatic and Standard when enabled
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "<hostname>"
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # Uncomment for TLS — requires a Secret with the certificate
+    # - name: https
+    #   protocol: HTTPS
+    #   port: 443
+    #   hostname: "<hostname>"
+    #   tls:
+    #     mode: Terminate
+    #     certificateRefs:
+    #       - kind: Secret
+    #         name: <tls-secret-name>
+    #   allowedRoutes:
+    #     namespaces:
+    #       from: Same

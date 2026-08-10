@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.2.25
+
+- fix: mark azure app onboard shell script executable ([#3026](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3026))
+
+## 1.2.24
+
+- Add app-deploy workflow to the azure-kubernetes skill ([#2696](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2696))
+
+## 1.2.23
+
+- feat(azure-diagnostics): add run-ig script for Inspektor Gadget invocation ([#2934](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2934))
+
+## 1.2.22
+
+- fix: mark azure quotas shell script executable ([#3027](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3027))
+
+## 1.2.21
+
+- fix: mark azure-validate shell scripts executable ([#3028](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3028))
+
+## 1.2.20
+
+- fix: mark azure-deploy shell scripts executable ([#3030](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3030))
+
+## 1.2.19
+
+- fix: mark azure-prepare shell script executable ([#3032](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3032))
+
+## 1.2.18
+
+- fix: mark microsoft-foundry shell scripts executable ([#3031](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3031))
+
 ## 1.2.17
 
 - chore: clean out-of-date descriptions in foundry skill ([#3019](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3019))

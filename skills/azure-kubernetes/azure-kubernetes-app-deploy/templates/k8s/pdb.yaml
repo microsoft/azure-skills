@@ -1,0 +1,21 @@
+# =============================================================================
+# PodDisruptionBudget Template — AKS Deploy Skill
+# =============================================================================
+# Ensures at least one pod remains available during voluntary disruptions
+# (node drains, cluster upgrades, spot evictions).
+#
+# REPLACE: <app-name>   — your application name (e.g., order-api)
+# REPLACE: <namespace>  — target namespace (e.g., production)
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: <app-name>

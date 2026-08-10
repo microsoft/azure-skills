@@ -1,0 +1,50 @@
+# =============================================================================
+# Kubernetes Ingress Template — AKS Deploy Skill
+# =============================================================================
+# Use this template for AKS clusters with the Web App Routing add-on
+# This is the default for both AKS Automatic and AKS Standard.
+# For clusters with Istio Gateway API enabled, use gateway.yaml + httproute.yaml instead.
+#
+# REPLACE: <app-name>    — your application name (e.g., order-api)
+# REPLACE: <namespace>   — target namespace (e.g., production)
+# REPLACE: <path>        — URL path (e.g., /)
+# REPLACE: <service-port> — port on the backend Service (e.g., 80)
+# NOTE: <hostname> is in the commented host-based rule — fill it in when DNS is configured
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: <app-name>
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  # Uncomment for TLS — requires a Secret with the certificate
+  # tls:
+  #   - hosts:
+  #       - <hostname>
+  #     secretName: <tls-secret-name>
+  rules:
+    # Initial deploy (no custom domain) — traffic routes to the external IP directly.
+    # Once DNS is configured, replace this rule with the host-based variant below.
+    - http:
+        paths:
+          - path: "<path>"
+            pathType: Prefix
+            backend:
+              service:
+                name: <app-name>
+                port:
+                  number: <service-port>
+    # Host-based rule — uncomment and replace the rule above once DNS is configured:
+    # - host: "<hostname>"
+    #   http:
+    #     paths:
+    #       - path: "<path>"
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: <app-name>
+    #             port:
+    #               number: <service-port>

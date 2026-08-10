@@ -32,11 +32,11 @@ Pods that are running but not Ready are removed from Endpoints. Check `kubectl g
 
 **Deep diagnostics with Inspektor Gadget** (when the above checks are inconclusive):
 
-Use the [IG base command pattern](references/inspektor-gadget.md) with `--k8s-namespace <ns> --k8s-podname <pod-name>` and these gadgets:
+Use [`scripts/run-ig.sh`](references/inspektor-gadget.md) (or `run-ig.ps1`) with `--pod <pod-name> --ns <ns>` and these gadgets:
 
-- `snapshot_socket` (timeout 5) — check what ports the pod is listening on
-- `trace_tcp` (timeout 30) — trace connect/accept/close events
-- `trace_tcpretrans` (timeout 30) — packet retransmissions
+- `snapshot_socket` — check what ports the pod is listening on
+- `trace_tcp` — trace connect/accept/close events
+- `trace_tcpretrans` — packet retransmissions
 
 See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
@@ -81,7 +81,7 @@ Custom VNet DNS must forward `.cluster.local` to the CoreDNS ClusterIP and other
 
 **Deep diagnostics with Inspektor Gadget** (when the above checks are inconclusive):
 
-Use the [IG base command pattern](references/inspektor-gadget.md) with `--k8s-namespace <ns> --k8s-podname <pod-name>` and `trace_dns` (timeout 30). Key signals: `rcode=3` (NXDOMAIN), `rcode=2` (SERVFAIL), high `latency` values, queries going to unexpected destinations.
+Use [`scripts/run-ig.sh`](references/inspektor-gadget.md) (or `run-ig.ps1`) with `--pod <pod-name> --ns <ns>` and `trace_dns`. Key signals: `rcode=3` (NXDOMAIN), `rcode=2` (SERVFAIL), high `latency` values, queries going to unexpected destinations.
 
 See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 

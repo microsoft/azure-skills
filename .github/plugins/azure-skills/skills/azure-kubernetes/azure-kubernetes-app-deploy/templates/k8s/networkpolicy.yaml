@@ -1,0 +1,43 @@
+# =============================================================================
+# Kubernetes NetworkPolicy Template — AKS Deploy Skill
+# =============================================================================
+# Restricts ingress to the application pod so only the ingress controller
+# (or gateway) namespace can reach it. Denies all other inbound traffic.
+#
+# REPLACE: <app-name>             — your application name (e.g., order-api)
+# REPLACE: <namespace>            — target namespace (e.g., production)
+# REPLACE: <ingress-namespace>    — namespace of the ingress controller
+#                                   AKS Web App Routing: app-routing-system
+#                                   Istio Gateway:       aks-istio-ingress
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: <app-name>-allow-ingress
+  namespace: <namespace>
+  labels:
+    app: <app-name>
+spec:
+  podSelector:
+    matchLabels:
+      app: <app-name>
+  policyTypes:
+    - Ingress
+    # Uncomment to also restrict egress (recommended for production):
+    # - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: <ingress-namespace>
+  # Uncomment and customize to restrict egress (e.g., allow only DNS + database):
+  # egress:
+  #   - ports:
+  #       - port: 53
+  #         protocol: UDP
+  #       - port: 53
+  #         protocol: TCP
+  #   - to:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: <database-namespace>

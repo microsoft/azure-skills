@@ -49,17 +49,15 @@ kubectl describe pod <pod-name> -n <namespace> | grep -A2 "Last State"
 
 Fix: increase `resources.limits.memory` or optimize application memory usage. Check `kubectl top pod <pod-name> -n <namespace>` for actual usage.
 
-**OOM kill tracing with Inspektor Gadget:** Use `trace_oomkill` (timeout 30) with `--k8s-namespace <namespace> --k8s-podname <pod-name>` to see which process was killed and memory at kill time. See [references/inspektor-gadget.md](references/inspektor-gadget.md).
+**OOM kill tracing with Inspektor Gadget:** Run `trace_oomkill` for the pod to see which process was killed and memory at kill time: `scripts/run-ig.sh --gadget trace_oomkill --pod <pod-name> --ns <namespace>` (or `run-ig.ps1`).
 
 **Deep diagnostics with Inspektor Gadget** (when logs and describe are inconclusive):
 
-Use the [IG base command pattern](references/inspektor-gadget.md) with `--k8s-namespace <namespace> --k8s-podname <pod-name>` and these gadgets:
+Use [`scripts/run-ig.sh`](references/inspektor-gadget.md) (or `run-ig.ps1`) with `--pod <pod-name> --ns <namespace>` and these gadgets:
 
-- `trace_exec` (timeout 30) — see what the container executes at startup
-- `trace_open` (timeout 30) — find missing configs/secrets (retval -2 = ENOENT, -13 = EACCES)
-- `snapshot_process` (timeout 5) — list running processes in the pod
-
-See [references/inspektor-gadget.md](references/inspektor-gadget.md).
+- `trace_exec` — see what the container executes at startup
+- `trace_open` — find missing configs/secrets (retval -2 = ENOENT, -13 = EACCES)
+- `snapshot_process` — list running processes in the pod
 
 ---
 
