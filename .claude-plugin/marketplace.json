@@ -10,6 +10,12 @@
       "description": "Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from Claude Code.",
       "source": "./.github/plugins/azure-skills",
       "homepage": "https://github.com/microsoft/azure-skills"
+    },
+    {
+      "name": "azure-kusto-graph-skills",
+      "description": "Kusto graph analysis, IRQL security hunting pipelines, and graph visualization skills for Azure Data Explorer.",
+      "source": "./.github/plugins/azure-kusto-graph-skills",
+      "homepage": "https://github.com/microsoft/azure-skills"
     }
   ]
 }
