@@ -4,7 +4,7 @@ description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.4"
+  version: "1.2.5"
 ---
 
 # Microsoft Foundry Skill
@@ -260,14 +260,14 @@ Treat an `azure.yaml` service with `host: azure.ai.agent` as Hosted. Use `agent_
 - Prefer azd for Hosted Agents and Foundry MCP for Prompt Agents.
 - Reference official Microsoft documentation URLs instead of embedding CLI command syntax
 
+## Azure Authentication
+
+- [Azure Authentication Best Practices](references/auth-best-practices.md)
+
 ## Additional Resources
 
 - [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
-
-## SDK Quick Reference
-
-- [Python](references/sdk/foundry-sdk-py.md)
 
 ## Network Isolation Errors
 

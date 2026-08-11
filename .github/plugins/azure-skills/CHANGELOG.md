@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.26
+
+- chore: remove unused py sdk ref and add auth best practices ref in foundry skill's skill.md ([#3041](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3041))
+
 ## 1.2.25
 
 - fix: mark azure app onboard shell script executable ([#3026](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3026))
