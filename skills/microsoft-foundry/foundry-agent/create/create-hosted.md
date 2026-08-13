@@ -54,12 +54,20 @@ Capture the selected sample's `manifestUrl`.
 
 ### Step 1 -- Verify the environment
 
-Run the bundled Copilot app entry preflight directly without asking for approval. It detects the GitHub Copilot app and installs app-specific add-ons only in that environment:
+Run the bundled read-only Copilot app entry preflight without asking for approval; it locates the app's Copilot CLI and reports whether the `microsoft-foundry` canvas plugin needs installation:
 
 ```bash
 ./scripts/check-copilot-app-entry.sh     # macOS / Linux
 ./scripts/check-copilot-app-entry.ps1    # Windows (pwsh)
 ```
+
+Act on the summary prefixes:
+
+- `[OK]` -- nothing to do.
+- `[WARN]` -- non-blocking; continue.
+- `[ACTION]` -- try to resolve by using the exact plugin install command emitted by the preflight; ask before installing in interactive mode, and install directly in non-interactive mode.
+  - **On successful installation, you MUST print:** "The `microsoft-foundry` canvas extension is installed and will be available in a new session." Then rerun the preflight.
+  - If installation is declined or fails, warn and continue; do not retry.
 
 Then run the bundled verification script before any create/deploy command:
 
@@ -68,7 +76,7 @@ Then run the bundled verification script before any create/deploy command:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Do not continue past Step 1 while any `[ACTION]` remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
+Do not continue past Step 1 while any `[ACTION]` from environment verification remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
 
 Act on the summary prefixes:
 
