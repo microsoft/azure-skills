@@ -48,7 +48,9 @@ azd ai agent sample list --language python --output json
 
 Capture the selected sample's `manifestUrl`.
 
-> **Important:** Always select the best-matching sample from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+> **Important:** Always select the best-matching samples from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+
+You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to the user's task as code references.
 
 ## Workflow
 
@@ -136,20 +138,21 @@ azd ai agent init --no-prompt \
 After the `azd ai agent init` completes, go to the project folder and set the collected subscription and location on the active azd environment:
 
 ```bash
-azd env set \
-  AZURE_SUBSCRIPTION_ID="<subscription-id>" \
-  AZURE_LOCATION="<region>"
+azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
+azd env set AZURE_LOCATION "<region>"
 ```
 
 > `--agent-name` at init sets both the `azure.yaml` service key and its `name:` in one shot; renaming after init requires editing both in `azure.yaml`.
 
-Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
+Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. Do not chain `azd env set` after `azd ai agent init` on the same command line. The init command may scaffold the project into a subfolder, so run `azd env set` only after initialization completes and after changing to the scaffolded project directory. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
 `init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore`. A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 
 #### Model deployments (azd Golden Path)
+
+Read [Foundry Model Reference](./references/foundry-model.md) and follow the steps in it when you want to query model related data.
 
 `azure.yaml services.ai-project.deployments[]` is the **single source of truth** for model deployments in azd-managed Foundry projects. Model deployments live under the dedicated `ai-project` service (`host: azure.ai.project`); the agent service links to it via `uses: [ai-project]` and references the model through its `environmentVariables`. The flow is:
 
@@ -198,35 +201,9 @@ Use when the workspace already contains an agent project or source code.
 First determine whether the workspace is already a Foundry hosted agent project.
 
 - **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
-- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, follow the Re-host steps below.
+- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
 
-#### Re-host: collect information
-
-Resolve two independent choices before initialization or edits:
-
-1. **Model** -- keep the existing model or use a Foundry model.
-2. **Agent framework** -- keep the existing framework or migrate it.
-
-Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
-
-#### Re-host: adapt and initialize
-
-Use `azd ai agent sample list --language <language> --output json` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to find the closest relevant sample for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications.
-
-After resolving the choices, run:
-
-```bash
-azd ai agent init --no-prompt \
-  --src ./src/my-agent \
-  --agent-name my-agent \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point <entry-point>
-```
-
-`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Use the existing executable entry point, or a new adapter file only when one is intentionally added. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
-
-Once the agent is configured as a Foundry hosted agent, make the requested changes and continue to the shared flow in Steps 5-8.
+Read [Foundry Model Reference](./references/foundry-model.md) and follow the steps in it when you want to query model related data.
 
 ### Step 5 -- Write the agent instruction file (required)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.29
+
+- refactor: improve re-host scenario in foundry skill ([#3063](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3063))
+
 ## 1.2.28
 
 - fix: improve Foundry Copilot app preflight ([#3061](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3061))
