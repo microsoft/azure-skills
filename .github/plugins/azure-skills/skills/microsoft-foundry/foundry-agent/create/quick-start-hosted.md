@@ -18,6 +18,8 @@ Use this when the request is to create a new hosted Foundry agent end-to-end —
 | Region | `northcentralus` | Ask user to confirm or pick another |
 | Foundry project | Ask if the user doesn't mention one | create new → no `--project-id`; existing → pass `--project-id` (ARM ID / endpoint); no mention → stop and ask (existing vs new) |
 | Model deployment | Whatever the sample's manifest declares | If user supplies a deployment name, `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME` after init |
+| Model version | Whatever the sample's manifest declares | If user supplies a model version, edit `azure.yaml`. If user supplies a model deployment without model version, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
+| Model quota | Skip the quota pre-check | If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
 | Deploy mode | `code` (no Docker, no ACR build) | — |
 | Stops at | Deployed agent + remote smoke invoke + eval generation submitted | — |
 
@@ -89,6 +91,8 @@ Capture the `manifestUrl`.
 
 > **Important:** Always select the best-matching sample from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
 
+You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to user's task as code reference.
+
 Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
 | Language | `--runtime` | `--entry-point` |
@@ -114,9 +118,8 @@ azd ai agent init --no-prompt \
 After the `azd ai agent init` completes, go to the project folder and write the subscription and region collected in Step 2 to the active azd environment:
 
 ```bash
-azd env set \
-  AZURE_SUBSCRIPTION_ID="<id>" \
-  AZURE_LOCATION="<region>"
+azd env set AZURE_SUBSCRIPTION_ID "<id>"
+azd env set AZURE_LOCATION "<region>"
 ```
 
 Values you **must** substitute from Step 3 — do not pass placeholders or guesses:
@@ -129,6 +132,8 @@ If using an existing Foundry project, add `--project-id "<arm-id>"`.
 ⏳ May take time — init resolves the model catalog server-side. Wait for the prompt to return; do not interrupt.
 
 `init` writes `azure.yaml` (appending the agent service), `src/<project>/.agentignore`, and the sample source files under `src/<project>/`.
+
+> **Important:** Do not chain `azd env set` after `azd ai agent init` on the same command line. The init command may scaffold the project into a subfolder, so run `azd env set` only after initialization completes and after changing to the scaffolded project directory.
 
 ### Step 5 — Customize the scaffolded sample (per user's original intent)
 
