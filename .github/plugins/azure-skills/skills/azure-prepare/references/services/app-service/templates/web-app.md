@@ -132,12 +132,12 @@ app.listen(process.env.PORT || 3000);
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     siteConfig: {
-      linuxFxVersion: 'NODE|20-lts'  // or DOTNETCORE|8.0, PYTHON|3.12
+      linuxFxVersion: 'NODE|24-lts'  // or DOTNETCORE|10.0, PYTHON|3.14
       healthCheckPath: '/health'
       appCommandLine: ''              // Custom startup command if needed
       appSettings: [
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'true' }
-        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~20' }
+        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~24' }
       ]
     }
   }

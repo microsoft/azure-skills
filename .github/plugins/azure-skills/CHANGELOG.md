@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.32
+
+- Update outdated runtime references in plugin skills to latest LTS versions ([#3011](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3011))
+
+## 1.2.31
+
+- feat: replace azure-diagnostics AKS pod-failure evidence bundle with a script ([#2933](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2933))
+
+## 1.2.30
+
+- fix: mark Azure diagnostics shell script executable ([#3029](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3029))
+
 ## 1.2.29
 
 - refactor: improve re-host scenario in foundry skill ([#3063](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3063))

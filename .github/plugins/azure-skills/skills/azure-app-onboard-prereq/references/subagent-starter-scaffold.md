@@ -30,7 +30,7 @@ Generate health endpoints, follow stack conventions, and avoid common mistakes:
 - Container Apps: `httpGet.port` must match `targetPort` in ingress config.
 
 **Stack conventions:**
-- **Node.js/Express:** Listen on `process.env.PORT || 3000`. `"start"` script required. `"engines": { "node": ">=20" }`. Production deps in `dependencies`.
+- **Node.js/Express:** Listen on `process.env.PORT || 3000`. `"start"` script required. `"engines": { "node": ">=24" }`. Production deps in `dependencies`.
 - **Python (Flask/FastAPI):** Production: `gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app`. Include `gunicorn` in `requirements.txt`. Bind `0.0.0.0`, not `127.0.0.1`.
 - **Next.js/React:** Static export: `output: 'export'`. Hybrid SSR works on SWA.
 

@@ -4,7 +4,7 @@ description: "Debug Azure production issues on Azure using AppLens, Azure Monito
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.5"
+  version: "1.2.6"
 ---
 
 # Azure Diagnostics

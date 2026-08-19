@@ -49,7 +49,7 @@ Detailed guidance for migrating Google App Engine applications to Azure App Serv
 
 | `app.yaml` Field | Azure Equivalent | Implementation |
 |-------------------|------------------|----------------|
-| `runtime: python312` | Runtime stack: Python 3.12 | Bicep `siteConfig.linuxFxVersion` |
+| `runtime: python314` | Runtime stack: Python 3.14 | Bicep `siteConfig.linuxFxVersion` |
 | `instance_class: F2` | App Service Plan SKU | Bicep `sku.name` |
 | `automatic_scaling` | Autoscale settings | Bicep `Microsoft.Insights/autoscalesettings` |
 | `env_variables` | App Settings | Bicep `siteConfig.appSettings` |
@@ -81,7 +81,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.12'
+      linuxFxVersion: 'PYTHON|3.14'
       alwaysOn: true
       appSettings: [
         { name: 'PGHOST', value: postgresServer.properties.fullyQualifiedDomainName }
