@@ -35,18 +35,18 @@ services:
 
 | Language | linuxFxVersion |
 |----------|----------------|
-| Node.js 18 | `NODE\|18-lts` |
-| Node.js 20 | `NODE\|20-lts` |
-| Python 3.11 | `PYTHON\|3.11` |
-| .NET 8 | `DOTNETCORE\|8.0` |
-| Java 17 | `JAVA\|17-java17` |
+| Node.js 24 | `NODE\|24-lts` |
+| Node.js 22 | `NODE\|22-lts` |
+| Python 3.14 | `PYTHON\|3.14` |
+| .NET 10 | `DOTNETCORE\|10.0` |
+| Java 21 | `JAVA\|21-java21` |
 
 ### Windows
 
 | Language | Setting |
 |----------|---------|
-| Node.js | `WEBSITE_NODE_DEFAULT_VERSION: '~20'` (app setting) |
-| .NET 8 | Built-in (no extra config) |
+| Node.js | `WEBSITE_NODE_DEFAULT_VERSION: '~24'` (app setting) |
+| .NET 10 | Built-in (no extra config) |
 
 ## SKU Selection
 

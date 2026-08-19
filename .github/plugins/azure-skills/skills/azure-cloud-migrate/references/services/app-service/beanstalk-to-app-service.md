@@ -38,13 +38,13 @@ Detailed guidance for migrating AWS Elastic Beanstalk applications to Azure App 
 
 | Beanstalk Platform | App Service Runtime Stack |
 |--------------------|---------------------------|
-| Node.js 20 | Node 20 LTS |
-| Node.js 18 | Node 18 LTS |
-| Python 3.11 | Python 3.11 |
-| Python 3.12 | Python 3.12 |
-| Java 17 (Corretto) | Java 17 (Microsoft Build of OpenJDK) |
+| Node.js 22 | Node 22 LTS |
+| Node.js 24 | Node 24 LTS |
+| Python 3.13 | Python 3.13 |
+| Python 3.14 | Python 3.14 |
 | Java 21 (Corretto) | Java 21 (Microsoft Build of OpenJDK) |
-| .NET 8 on Linux | .NET 8 |
+| Java 24 (Corretto) | Java 24 (Microsoft Build of OpenJDK) |
+| .NET 10 on Linux | .NET 10 |
 | Go (Docker) | Custom Container (Go) |
 | Ruby | Custom Container (Ruby) |
 | PHP 8.x | PHP 8.x |

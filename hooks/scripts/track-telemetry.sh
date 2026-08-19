@@ -76,11 +76,18 @@
 #     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
 #     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
 #
-#   Recognized azure-skills install paths:
+#   Recognized install paths (one set per plugin, see is_azure_skills_path):
+#     azure-skills:
 #     - .copilot/installed-plugins/azure-skills/azure/skills/...
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
+#     azure-kusto-graph-skills:
+#     - .copilot/installed-plugins/azure-kusto-graph-skills/azure-kusto-graph-skills/skills/...
+#     - .claude/plugins/cache/azure-kusto-graph-skills/azure-kusto-graph-skills/<version>/skills/...
+#     - .claude/plugins/cache/claude-plugins-official/azure-kusto-graph-skills/<version>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-kusto-graph-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     shared:
 #     - .agents/skills/...
 #
 #   If the path matches AND is not a SKILL.md file, the relative path after
@@ -275,15 +282,27 @@ fi
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Check if a path matches any known azure-skills folder structure
-# Returns 0 (true) if matched, 1 (false) otherwise
+# Check if a path matches any known plugin skills folder structure.
+# Each plugin has its own block below — add a new block (with the
+# "azure-skills" segments swapped for the new plugin's name) when onboarding
+# another plugin. Returns 0 (true) if matched, 1 (false) otherwise.
 is_azure_skills_path() {
     local p="$1"
+
+    # --- azure-skills plugin ---
     [[ "$p" == *".copilot/installed-plugins/azure-skills/azure/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
+
+    # --- azure-kusto-graph-skills plugin ---
+    [[ "$p" == *".copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/"* ]] && return 0
+    [[ "$p" == *".claude/plugins/cache/azure-skills/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
+    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/"* ]] && return 0
+
+    # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0
+
     # Local plugin development: match paths under AZURE_SKILLS_PLUGIN_ROOT/skills/
     # (e.g. when loading a local plugin via `--plugin-dir`)
     if [ -n "$AZURE_SKILLS_PLUGIN_ROOT" ]; then

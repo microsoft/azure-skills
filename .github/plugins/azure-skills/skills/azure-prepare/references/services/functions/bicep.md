@@ -171,7 +171,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
     serverFarmId: functionAppPlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'Node|20'
+      linuxFxVersion: 'Node|24'
       appSettings: [
         { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value}' }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }

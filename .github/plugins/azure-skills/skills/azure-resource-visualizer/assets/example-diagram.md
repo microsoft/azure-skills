@@ -17,7 +17,7 @@ graph TB
         
         subgraph "Compute Layer"
             APP[App Service<br/>Plan: P1v2]
-            FUNC[Function App<br/>Runtime: .NET 8]
+            FUNC[Function App<br/>Runtime: .NET 10]
         end
         
         subgraph "Data Layer"
