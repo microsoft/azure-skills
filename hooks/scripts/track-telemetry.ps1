@@ -76,12 +76,15 @@
 #
 #   Recognized install paths (one set per plugin, see $pathPatterns below):
 #     azure-skills:
-#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
+#       (<catalog-name> is the marketplace/catalog folder the plugin was
+#       installed under, e.g. "awesome-copilot" — it does not necessarily
+#       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
 #     azure-kusto-graph-skills:
-#     - .copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
 #     shared:
@@ -227,12 +230,14 @@ $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
 # Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
+# Cursor: has hook_event_name AND a "cursor_version" field
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
 $hasHookEventName = $inputData.PSObject.Properties.Name -contains "hook_event_name"
 $hasToolArgs = $inputData.PSObject.Properties.Name -contains "toolArgs"
 $toolUseId = $inputData.tool_use_id
 $transcriptPath = $inputData.transcript_path
+$cursorVersion = $inputData.cursor_version
 $isVscodeToolUseId = $toolUseId -and ($toolUseId -match '__vscode')
 # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
 $isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( - Insiders)?[/\\]')
@@ -240,6 +245,8 @@ $isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( -
 # Copilot CLI check first — env var available since v0.0.421
 if ($env:COPILOT_CLI -eq "1") {
     $clientName = "copilot-cli"
+} elseif ($hasHookEventName -and $cursorVersion) {
+    $clientName = "cursor"
 } elseif ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
     # Detect VS Code variant from transcript_path
     # Insiders: ...AppData\Roaming\Code - Insiders\User\...
@@ -279,12 +286,15 @@ function Get-ToolInputPath {
 # segments swapped for the new plugin's name) when onboarding another plugin.
 
 # --- azure-skills plugin ---
-$pathPatternCopilot = '\.copilot/installed-plugins/azure-skills/azure/skills/'
+# The Copilot CLI pattern wildcards the catalog/marketplace folder name
+# (e.g. "awesome-copilot") since it does not necessarily match the plugin's
+# own name ("azure").
+$pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
 $pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 
 # --- azure-kusto-graph-skills plugin ---
-$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/'
+$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
 $pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
 $pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
 
