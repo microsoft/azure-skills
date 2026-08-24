@@ -74,8 +74,7 @@
 #     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
 #     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
 #
-#   Recognized install paths (one set per plugin, see $pathPatterns below):
-#     azure-skills:
+#   Recognized azure-skills install paths:
 #     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
 #       (<catalog-name> is the marketplace/catalog folder the plugin was
 #       installed under, e.g. "awesome-copilot" — it does not necessarily
@@ -83,11 +82,6 @@
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
-#     azure-kusto-graph-skills:
-#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
-#     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
-#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
-#     shared:
 #     - .agents/skills/...
 #
 #   If the path matches AND is not a SKILL.md file, the relative path after
@@ -179,6 +173,20 @@ function Get-SkillVersion {
             return $Matches[1].Trim().Trim('"').Trim("'")
         }
     }
+    return $null
+}
+
+# Extract the plugin version from the top-level .plugin/plugin.json manifest.
+# Returns $null if the file or expected JSON value cannot be read.
+function Get-PluginVersion {
+    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) '.plugin/plugin.json'
+    if (-not (Test-Path -LiteralPath $pluginManifestPath)) { return $null }
+    try {
+        $manifest = Get-Content -LiteralPath $pluginManifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        if ($manifest.version -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.version)) {
+            return $manifest.version
+        }
+    } catch { }
     return $null
 }
 
@@ -281,32 +289,14 @@ function Get-ToolInputPath {
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Path patterns per client, one block per plugin (used for SKILL.md and
-# file-reference matching). Add a new block (with the "azure-skills"
-# segments swapped for the new plugin's name) when onboarding another plugin.
-
-# --- azure-skills plugin ---
-# The Copilot CLI pattern wildcards the catalog/marketplace folder name
-# (e.g. "awesome-copilot") since it does not necessarily match the plugin's
-# own name ("azure").
+# Azure-skills path patterns per client (used for SKILL.md and file-reference matching)
 $pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
 $pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
-
-# --- azure-kusto-graph-skills plugin ---
-$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
-$pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
-$pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
-
-# --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
 
 # Put the path patterns into an array for easier iteration
-$pathPatterns = @(
-    $pathPatternCopilot, $pathPatternClaude, $pathPatternVscodeAgentPlugins,
-    $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
-    $pathPatternAgentsSkills
-)
+$pathPatterns = @($pathPatternCopilot, $pathPatternClaude, $pathPatternVscodeAgentPlugins, $pathPatternAgentsSkills)
 
 # If $env:AZURE_SKILLS_PLUGIN_ROOT is set, add it to the path patterns for local skill development
 if ($env:AZURE_SKILLS_PLUGIN_ROOT) {
@@ -417,6 +407,8 @@ if (-not $filePath -and -not $skillName) {
 # === STEP 3: Publish event ===
 
 if ($shouldTrack) {
+    $pluginVersion = Get-PluginVersion
+
     # Build MCP command arguments
     $mcpArgs = @(
         "server", "plugin-telemetry",
@@ -428,6 +420,7 @@ if ($shouldTrack) {
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
     if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
+    if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }

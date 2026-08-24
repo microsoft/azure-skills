@@ -44,9 +44,35 @@
 ## Insights Schema
 
 ```ts
-{
-  id: string // Stable identifier (e.g., "insight-001"); cited from inputs.insightsApplied
-  pattern: string // Observed fact from the tenant scan (what is true today)
-  implication: string // Recommended planning action derived from the pattern
-}[]
+type ExistingResource = {
+  id: string // Full ARM ID for actual state; logical or parameter reference otherwise
+  type: string // ARM resource type (e.g., "Microsoft.Network/virtualNetworks")
+  name: string
+  role: "reference-and-integrate" | "retain" | "ignore"
+  must_not_recreate: true
+  integrationPoints: string[] // Connections or dependencies involving the new workload
+}
+
+type Insight =
+  | {
+      id: string // Stable identifier (e.g., "insight-001"); cited from inputs.insightsApplied
+      pattern: string // Observed fact from the tenant scan or referenced workload
+      implication: string // Recommended planning action derived from the pattern
+      existingResource?: ExistingResource
+    }
+  | {
+      id: string // Stable identifier for a resource-only entry
+      existingResource: ExistingResource
+      pattern?: string // Include with implication when the resource produces a broader insight
+      implication?: string
+    }
+
+type Insights = Insight[]
 ```
+
+In referenced mode:
+
+- Include exactly one entry for every inventoried existing resource, uniquely identified by `existingResource.id`.
+- Preserve the full ARM ID in `existingResource.id` for actual-state resources.
+- Use an empty `integrationPoints` array when the resource has no integration points.
+- A resource-only entry may omit `pattern` and `implication`; when recording a broader insight, include both.

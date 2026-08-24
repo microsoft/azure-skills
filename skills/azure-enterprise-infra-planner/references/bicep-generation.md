@@ -69,3 +69,25 @@ infra/
 ## Validation Before Deployment
 
 Run `az bicep build --file infra/main.bicep` to validate syntax before deploying.
+
+## Correctness Checklist (must pass `az bicep build` with zero errors)
+
+Generate against these rules, then run `az bicep build` and fix in-place until clean. These are the
+failures that most often break validation:
+
+1. **No undeclared symbols.** Every `param`, `var`, `resource`, and `module` symbol you reference is
+   declared in the same file. Cross-file values flow only through `module` params and `output`s.
+2. **Cross-module outputs (BCP053).** When one module consumes `moduleX.outputs.Y`, that module MUST
+   declare `output Y ...`. Verify every consumed output exists on the producing module.
+3. **`existing` references are complete.** Referenced resources use the `existing` keyword with the
+   correct type, `name` (and `scope`/`parent` where required); never emit a new `resource` for them.
+4. **Required properties present.** Use the schema fetched in step 3 — include every required property
+   and use only allowed enum values and a valid, real `@apiVersion` for each type.
+5. **Types match.** Parameter/variable types match their usage; no string passed where an object/int is
+   expected; array vs. single-object usage is consistent.
+6. **`main.bicepparam` matches `main.bicep`.** Every `param` assigned in `.bicepparam` exists in
+   `main.bicep`; every required (non-defaulted) param is assigned; `using` points at `./main.bicep`.
+7. **`targetScope` matches the deploy command** and any `resourceGroup()`/`subscription()` usage.
+8. **No secrets in output.** Never `output` a secret; mark secret params `@secure()`.
+
+If `az bicep build` is unavailable, self-review every item above before presenting.
