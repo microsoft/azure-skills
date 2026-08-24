@@ -1,6 +1,6 @@
 # Create Hosted Agent (azd ai)
 
-Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers new agents and continued development of existing agents, then drops you into a local inner-loop so you can iterate before deploying.
+Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers new agents and continued development of existing agents, then drops you into a local inner-loop so you can iterate before deploying.
 
 > **Creating a new agent end-to-end from scratch?** Use [quick-start-hosted.md](quick-start-hosted.md) instead -- an opinionated happy-path with safe defaults. Stay here for anything not covered by the quickstart.
 
@@ -93,7 +93,9 @@ Branch on the agent status reported by `verify-environment`:
 
 ### Step 2 -- New or existing Foundry project?
 
-Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the workspace is already configured as a Foundry hosted agent, or when the prompt supplies an existing project endpoint / project ARM resource ID.
+Skip this `Step 2` when the workspace is already configured as a Foundry hosted agent and its Foundry project target is already resolved.
+
+Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the user supplies an existing project endpoint / project ARM resource ID.
 
 - **New project** -- do NOT pass `--project-id`. `azd provision` (in deploy) will create it.
 - **Existing project with ARM resource ID** -- pass that exact ID to `azd ai agent init --project-id`.

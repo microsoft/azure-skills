@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.33
+
+- refactor: remove duplicate content from Foundry skill description ([#3104](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3104))
+
 ## 1.2.32
 
 - Update outdated runtime references in plugin skills to latest LTS versions ([#3011](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3011))
