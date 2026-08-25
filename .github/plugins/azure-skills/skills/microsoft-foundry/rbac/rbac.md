@@ -23,6 +23,7 @@ Reference for managing RBAC for Microsoft Foundry resources: user permissions, m
 
 | Role | Create Projects | Data Actions | Role Assignments |
 |------|-----------------|--------------|------------------|
+| Foundry Agent Consumer | No | Invoke agents only | No |
 | Foundry User | No | Yes | No |
 | Foundry Project Manager | Yes | Yes | Yes (Foundry User only) |
 | Foundry Account Owner | Yes | No | Yes (Foundry User only) |
@@ -79,7 +80,7 @@ az role definition list --name "Foundry User" --query "[].permissions[].actions"
 
 | Action | Required Role(s) |
 |--------|------------------|
-| Deploy models | Foundry User, Foundry Project Manager, Foundry Owner |
+| Deploy models | Foundry Account Owner, Foundry Owner |
 | Create projects | Foundry Project Manager, Foundry Account Owner, Foundry Owner |
 | Assign Foundry User role | Foundry Project Manager, Foundry Account Owner, Foundry Owner |
 | Full data access | Foundry User, Foundry Project Manager, Foundry Owner |
@@ -124,7 +125,7 @@ az role assignment create --role "Contributor" --assignee "$SP_APP_ID" --scope "
 
 | CI/CD Scenario | Recommended Role | Additional Roles |
 |----------------|------------------|------------------|
-| Deploy models only | Foundry User | None |
+| Deploy models only | Foundry Account Owner | None |
 | Manage projects | Foundry Project Manager | None |
 | Full provisioning | Foundry Owner | Contributor (on RG) |
 | Read-only monitoring | Reader | Foundry User (for data) |
@@ -140,7 +141,7 @@ az account set --subscription "<subscription-id>"
 
 | Issue | Cause | Resolution |
 |-------|-------|------------|
-| "Authorization failed" when deploying | Missing Foundry User role | Assign Foundry User role at resource scope |
+| "Authorization failed" when deploying models | Missing Foundry Account Owner or Foundry Owner role | Assign Foundry Account Owner at account scope |
 | Cannot create projects | Missing Project Manager or Owner role | Assign Foundry Project Manager role |
 | "Access denied" on connected resources | Managed identity missing roles | Assign appropriate roles to MI on each resource |
 | Portal works but CLI fails | Portal auto-assigns roles, CLI doesn't | Explicitly assign Foundry User via CLI |

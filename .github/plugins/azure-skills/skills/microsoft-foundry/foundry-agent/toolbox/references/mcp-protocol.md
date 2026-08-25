@@ -34,7 +34,8 @@ Verify the MCP endpoint end-to-end with a bearer token + raw `tools/list` / `too
 |---------|--------------|
 | `TOOLBOX_ENDPOINT` not set | Run `azd ai toolbox show` + `azd env set`. |
 | Env var missing in deployed agent | Add to the agent service's `environmentVariables` in `azure.yaml`, `azd deploy`. |
-| `403 Forbidden` (incl. `POST /toolboxes`, connection PUT) | Caller lacks `Foundry User` (or `Azure AI Developer`) on the project — grant at project scope. |
+| `403 Forbidden` on toolbox data-plane requests, including `POST /toolboxes` | Caller lacks `Foundry User` on the project — grant at project scope. |
+| `403 Forbidden` on connection PUT | Caller lacks `Foundry Project Manager` (or `Cognitive Services Contributor`) on the project — grant at project scope. |
 | 400 `Multiple tools without identifiers found` | Two unnamed tools (or duplicate `server_label`) — keep **at most one unnamed tool**; name each other. See [toolbox-azd.md § Multi-tool rule](toolbox-azd.md#multi-tool-rule). |
 | `tools/list` returns zero | Version still provisioning, or tool type unavailable in region — wait ~10s, retry, or try another region. |
 | `tools/list` zero for MCP/A2A only | Invalid/missing connection creds — verify `project_connection_id`; for MI auth, check RBAC on the target. |

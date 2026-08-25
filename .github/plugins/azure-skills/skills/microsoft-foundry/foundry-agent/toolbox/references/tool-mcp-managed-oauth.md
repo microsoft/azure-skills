@@ -98,7 +98,8 @@ MCP-sourced tools surface as `{server_label}___{tool_name}` (three underscores).
 |---|---|
 | `tools/list` returns zero after consent | Wrong `--target` (not the MCP server URL), or the connector needs the `gateway_connector` two-PUT flow instead — see [foundry-tool-catalog.md](../../create/references/foundry-tool-catalog.md). |
 | `invalid_payload: unsupported authType` | API version drift — re-check allowed `authType` for `RemoteTool` in the [projects REST API](https://learn.microsoft.com/rest/api/aiservices/). |
-| `403 Forbidden` on connection PUT / toolbox POST | Caller lacks **Foundry User** / **Azure AI Developer** on the project — grant at project scope. |
+| `403 Forbidden` on connection PUT | Caller lacks **Foundry Project Manager** (or **Cognitive Services Contributor**) on the project — grant at project scope. |
+| `403 Forbidden` on toolbox data-plane POST | Caller lacks **Foundry User** on the project — grant at project scope. |
 
 ## References
 

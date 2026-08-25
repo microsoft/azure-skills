@@ -48,13 +48,13 @@ PUT https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}
 
 ### Preflight RBAC
 
-Caller needs **Azure AI Developer** or **Cognitive Services Contributor** on the project scope. Run this before the first PUT to surface 403s early:
+Caller needs **Foundry Project Manager** or **Cognitive Services Contributor** on the project scope. Run this before the first PUT to surface 403s early:
 
 ```pwsh
 $oid = az ad signed-in-user show --query id -o tsv
 $projId = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.CognitiveServices/accounts/$acct/projects/$proj"
-az role assignment list --assignee $oid --scope $projId --all `
-  --query "[?roleDefinitionName=='Azure AI Developer' || roleDefinitionName=='Cognitive Services Contributor'].roleDefinitionName" -o tsv
+az role assignment list --assignee $oid --scope $projId --include-inherited --all `
+  --query "[?roleDefinitionName=='Foundry Project Manager' || roleDefinitionName=='Cognitive Services Contributor'].roleDefinitionName" -o tsv
 ```
 
 Empty output → caller lacks the required role; expect `403 AuthorizationFailed` on PUT until granted.
@@ -674,7 +674,7 @@ The response body for `/mcp` is plain JSON (no SSE `data:` framing) despite the 
 
 | Operation | Role |
 |---|---|
-| PUT any connection above | **Azure AI Developer** on the project (or **Cognitive Services Contributor** on the account) |
+| PUT any connection above | **Foundry Project Manager** on the project (or **Cognitive Services Contributor** on the account) |
 | Drive OAuth consent (`gateway_connector`, `catalog_MCP` managed-OAuth) | The end-user themselves, signed in to the subscription's tenant |
 | `ProjectManagedIdentity` against a Cognitive Services upstream | Project MI needs the upstream's data-plane role (e.g. `Cognitive Services Language Owner` for `/language/mcp`) |
 

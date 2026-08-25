@@ -62,11 +62,11 @@ Expect a self-referencing private endpoint to the account plus private endpoints
 
 The template does not assign data-plane roles automatically.
 
-Assign `Azure AI Developer` at the **account** scope (management-plane):
+Assign `Foundry Account Owner` at the **account** scope (management-plane):
 
 ```bash
 az role assignment create \
-  --role "Azure AI Developer" \
+  --role "Foundry Account Owner" \
   --assignee <your-object-id-or-email> \
   --scope /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<ai-account-name>
 ```
