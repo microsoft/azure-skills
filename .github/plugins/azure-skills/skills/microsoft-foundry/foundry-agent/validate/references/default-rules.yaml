@@ -1,0 +1,16 @@
+version: 4.3.0
+scope: Repository review rules, not certification controls.
+
+rules:
+  - id: TOOL-001
+    title: Configure and access MCP through Foundry Toolbox
+    level: recommendation
+    rationale: Foundry Toolbox centralizes MCP configuration, authentication, credential handling, and policy enforcement while allowing tools to be updated without changing hosted-agent code.
+    guidance:
+      - "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox"
+    when: Apply when the hosted agent uses one or more MCP servers; otherwise skip this rule.
+    checks: >-
+      Inspect azure.yaml and toolbox.yaml when present, together with the hosted-agent code and configuration. Identify every MCP server the agent uses, verify that each server is configured as a tool in a Foundry Toolbox when a local Toolbox definition exists, and verify that every MCP call uses the Toolbox consumer endpoint rather than the original MCP server endpoint. The Toolbox may be defined in either configuration file, in both, or outside the repository; when no local definition exists, accept endpoint-only consumption if the code or configuration clearly targets a Toolbox consumer endpoint. SDK wrappers and generic MCP clients are both valid.
+    statusCriteria:
+      pass: Local configuration places every MCP server in a Foundry Toolbox and the agent uses its consumer endpoint, or no local Toolbox definition exists and the agent clearly consumes an externally managed Toolbox endpoint. No code path accesses an MCP server endpoint directly.
+      fail: Local configuration places an MCP server outside Toolbox, or any hosted-agent code path accesses an MCP server endpoint directly instead of a Toolbox consumer endpoint.

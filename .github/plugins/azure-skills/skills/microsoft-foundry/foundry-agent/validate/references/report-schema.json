@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Microsoft Foundry hosted-agent validation report",
+  "type": "object",
+  "required": [
+    "reportId",
+    "generatedAt",
+    "target",
+    "results",
+    "markdownPath"
+  ],
+  "properties": {
+    "reportId": {
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{6}Z$"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "target": {
+      "type": "object",
+      "required": ["serviceName", "agentRoot"],
+      "properties": {
+        "serviceName": {
+          "type": "string"
+        },
+        "agentRoot": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "title", "level", "status", "details", "guidance"],
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "enum": ["error", "warning", "recommendation"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "inconclusive", "skipped"]
+          },
+          "details": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
+          },
+          "guidance": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Guidance URLs copied from the rule."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "markdownPath": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

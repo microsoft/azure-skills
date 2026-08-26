@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Microsoft Foundry hosted-agent validation rules",
+  "type": "object",
+  "required": ["rules"],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "level",
+          "rationale",
+          "when",
+          "checks",
+          "statusCriteria",
+          "guidance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "enum": ["error", "warning", "recommendation"]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when": {
+            "type": "string",
+            "minLength": 1
+          },
+          "checks": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statusCriteria": {
+            "type": "object",
+            "required": ["pass", "fail"],
+            "properties": {
+              "pass": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fail": {
+                "type": "string",
+                "minLength": 1
+              },
+              "inconclusive": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "guidance": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      }
+    }
+  }
+}
