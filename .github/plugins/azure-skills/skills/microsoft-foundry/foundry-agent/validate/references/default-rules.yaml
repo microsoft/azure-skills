@@ -1,4 +1,4 @@
-version: 4.3.0
+version: 1.0.0
 scope: Repository review rules, not certification controls.
 
 rules:
@@ -14,3 +14,77 @@ rules:
     statusCriteria:
       pass: Local configuration places every MCP server in a Foundry Toolbox and the agent uses its consumer endpoint, or no local Toolbox definition exists and the agent clearly consumes an externally managed Toolbox endpoint. No code path accesses an MCP server endpoint directly.
       fail: Local configuration places an MCP server outside Toolbox, or any hosted-agent code path accesses an MCP server endpoint directly instead of a Toolbox consumer endpoint.
+
+  - id: OBS-001
+    title: Enable supported tracing for hosted agents
+    level: recommendation
+    rationale: Foundry tracing provides end-to-end visibility into agent invocations, model operations, and tool calls. Hosted-agent protocol libraries can emit OpenTelemetry automatically when project monitoring or an OTLP exporter is configured, so explicit application instrumentation is not always required.
+    guidance:
+      - "https://learn.microsoft.com/azure/foundry/agents/how-to/configure-hosted-agent-telemetry"
+      - "https://learn.microsoft.com/azure/foundry/observability/how-to/trace-agent-setup"
+    when: Apply to every hosted agent configured with host azure.ai.agent.
+    checks: >-
+      Inspect azure.yaml, agent configuration, infrastructure, dependencies, and observability documentation. Accept any supported tracing path with an export destination: Foundry project monitoring connected to Application Insights, automatic instrumentation supplied by the hosted-agent library or a framework supported by the Microsoft OpenTelemetry distribution and configured for Application Insights or OTLP export, or explicit OpenTelemetry instrumentation with a configured exporter. Do not require application OpenTelemetry code when the hosted-agent protocol library or Foundry server-side tracing supplies it. Do not treat use of a hosting or instrumentation library alone as proof that telemetry is exported. Treat project-level monitoring that cannot be inspected from the repository as missing evidence, not as proof that tracing is disabled.
+    statusCriteria:
+      pass: Repository evidence identifies both a supported tracing path and an Application Insights or OTLP export destination, and the configuration does not contradict or disable that path.
+      fail: Repository evidence explicitly disables all applicable tracing or telemetry export without documenting an alternative, or claims tracing is enabled while its repository-managed configuration is contradictory.
+      inconclusive: Tracing may be supplied by remotely managed Foundry project monitoring or another external configuration that cannot be established from repository evidence.
+
+  - id: SDK-001
+    title: Use consistent Microsoft Agent Framework dependencies
+    level: recommendation
+    rationale: Microsoft Agent Framework is the recommended orchestration framework for applicable Foundry hosted-agent scenarios, but other supported frameworks and custom implementations remain valid choices. This rule checks repository-level dependency consistency rather than requiring the latest package or proving complete runtime compatibility.
+    guidance:
+      - "https://learn.microsoft.com/azure/foundry/how-to/develop/sdk-overview#agent-framework"
+      - "https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-deploy-own-code#choose-your-framework"
+    when: Apply only when the hosted agent declares or imports Microsoft Agent Framework; otherwise skip this rule.
+    checks: >-
+      Inspect dependency manifests, lock files, central package-management files, and Microsoft Agent Framework imports under the agent root. Verify that the project declares the official Agent Framework package family and that package declarations, effective versions when determinable, and source imports are internally consistent. An exact declaration or fully resolvable central version declaration can establish the effective direct dependency version. Do not execute tests, inspect dependency caches or generated results, infer API availability from an uninstalled package, or require the latest package version.
+    statusCriteria:
+      pass: The official Agent Framework package family is declared, the effective direct dependency version can be determined from repository configuration, and source imports are consistent with that package family.
+      fail: Repository evidence explicitly shows an unrelated package presented as Agent Framework, conflicting effective dependency versions for the deployed agent, or imports inconsistent with the declared package family.
+      inconclusive: The effective package or version is affected by unresolved ranges, unresolved central version management, environment-specific resolution, or other indirection, or imports cannot be mapped reliably to the declared package family.
+
+  - id: AGT-001
+    title: Do not instruct agents to bypass controls or fabricate success
+    level: warning
+    rationale: Operative agent instructions must not authorize fabricated outcomes, unrestricted consequential actions, or bypasses of runtime controls and required approvals.
+    guidance:
+      - "https://learn.microsoft.com/azure/foundry/agents/concepts/tool-best-practice"
+      - "https://learn.microsoft.com/azure/foundry/responsible-ai/agents/transparency-note"
+    when: Apply when the repository stores or references instructions that govern the hosted agent at runtime; otherwise skip this rule.
+    checks: >-
+      Identify instructions that are actually loaded or referenced by the hosted agent, distinguishing them from documentation, comments, tests, examples, and security counterexamples. Inspect the operative instructions for language that requires or permits the agent to fabricate results, represent failed operations as successful, bypass authorization or approval controls, or perform unrestricted consequential actions. Do not treat ordinary error recovery, retries, fallback behavior, or clearly bounded automation as a violation.
+    statusCriteria:
+      pass: Operative instructions do not require or permit fabrication, control or approval bypass, treating failure as success, or unrestricted consequential action.
+      fail: Operative instructions explicitly require or permit at least one of those behaviors.
+      inconclusive: Potentially unsafe wording is ambiguous, or repository evidence cannot establish whether the identified instructions are operative.
+
+  - id: CFG-001
+    title: Do not override platform-managed runtime configuration
+    level: warning
+    rationale: Foundry injects platform-managed runtime values into hosted agents. Redefining reserved FOUNDRY_* or AGENT_* variables can shadow those values and break authentication, routing, telemetry, or agent lifecycle behavior.
+    guidance:
+      - "https://learn.microsoft.com/azure/foundry/agents/how-to/configure-hosted-agent-env-variables#review-platform-environment-variables"
+    when: Apply when hosted-agent runtime or deployment configuration is present.
+    checks: >-
+      Inspect azure.yaml, agent configuration, container configuration, deployment scripts, and source code that writes environment variables for the deployed process. Verify that FOUNDRY_* and AGENT_* values supplied by the platform are consumed but are not declared, assigned, or overwritten by repository-managed deployed runtime configuration. Include deprecated user-defined variables such as FOUNDRY_TOOLBOX_ENDPOINT. Reading a platform-managed variable is valid. Do not fail a local-only development environment file unless repository evidence shows that it is committed as deployed configuration or consumed by the deployed runtime. Do not use this rule for general required-setting validation, credentials, endpoint literals, or other configuration without a reserved prefix.
+    statusCriteria:
+      pass: Repository-managed deployed runtime configuration does not declare, assign, or overwrite FOUNDRY_* or AGENT_* variables; any local-only development values are not consumed by the deployed runtime.
+      fail: Repository evidence explicitly declares, assigns, or overwrites a reserved FOUNDRY_* or AGENT_* variable in deployed hosted-agent runtime configuration.
+      inconclusive: Repository evidence cannot establish whether a local or externally generated configuration is consumed by the deployed runtime or could shadow a platform-managed value.
+
+  - id: PROTO-001
+    title: Keep declared protocols consistent with runtime handlers
+    level: warning
+    rationale: A Foundry hosted agent must implement each protocol endpoint declared by its deployment configuration. A mismatch prevents the platform from invoking the agent through that protocol.
+    guidance:
+      - "https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agent-contract#protocol-endpoints"
+      - "https://learn.microsoft.com/azure/foundry/agents/how-to/add-protocol-adapter"
+    when: Apply when the hosted-agent service declares the Responses or Invocations protocol in azure.yaml; otherwise skip this rule.
+    checks: >-
+      Inspect the target azure.ai.agent service, its locally resolvable configuration references, dependency declarations, and deployed entry point. For each Responses or Invocations value in that service's azure.yaml protocols[].protocol, verify that the deployed entry point provides the matching endpoint and handler through an official protocol adapter or a valid custom implementation. When the project declares a specific hosted-agent protocol SDK, verify that the entry point uses that SDK's corresponding adapter or host, while accepting other documented registration patterns. Consistent examples include responses with ResponsesHostServer, ResponsesAgentServerHost, or a custom POST /responses handler, and invocations with InvocationsHostServer, InvocationAgentServerHost, or a custom POST /invocations handler; these examples are not an exhaustive class-name allowlist. Inspect only these two protocols and runtime paths that can be fully resolved from files under the agent root. Do not execute the server or infer dynamically registered routes. Failure to locate or resolve an adapter, route, or handler is inconclusive, not fail.
+    statusCriteria:
+      pass: Every declared Responses or Invocations protocol has either a statically identifiable official adapter and handler or a statically identifiable custom endpoint and handler, with no explicit protocol mismatch.
+      fail: Repository evidence fully resolves the deployed entry point and explicitly shows that a declared Responses or Invocations protocol is mapped to a different endpoint or handler, or that the complete static route registration omits the declared protocol endpoint.
+      inconclusive: An adapter, route, handler, deployed entry point, local configuration reference, framework registration, or dynamically constructed route cannot be resolved sufficiently to map every declared Responses or Invocations protocol to a valid implementation path.
