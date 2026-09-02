@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.40
+
+- chore: clean duplicate trigger words in Foundry Skill description ([#3145](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3145))
+
 ## 1.2.39
 
 - feat: Add more validate rules ([#3130](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3130))
