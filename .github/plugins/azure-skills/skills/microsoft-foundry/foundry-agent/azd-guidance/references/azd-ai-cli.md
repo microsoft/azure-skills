@@ -117,7 +117,7 @@ services:
 - `protocols` -- `responses`, `invocations`, `invocations_ws`, or `activity`. Editing requires `azd deploy`.
 - `container.resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environmentVariables` -- `${VAR}` resolves from the active azd env. Not for secrets.
-- `codeConfiguration` present -> direct code deploy (ZIP, Foundry builds).
+- `codeConfiguration` present -> code deploy (ZIP, Foundry builds).
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 - `deployments[]` (under the `ai-project` service) -- model deployments provisioned via Bicep. `name` is the literal Azure deployment resource name the agent references through `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
 - Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_ENDPOINT` env var (see [toolbox.md](../../toolbox/toolbox.md)).

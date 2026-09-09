@@ -44,19 +44,7 @@ services:
 
 **Use Flex Consumption for new deployments** (all AZD templates default to Flex).
 
-| Plan | Use Case | Scaling | VNET | Slots |
-|------|----------|---------|------|-------|
-| **Flex Consumption** ⭐ | Default for new projects | Auto, pay-per-execution | ✅ | ❌ |
-| Consumption Windows (Y1) | Legacy/maintenance, Windows-only features | Auto, scale to zero | ❌ | ✅ 1 staging slot |
-| Consumption Linux (Y1) | Legacy/maintenance | Auto, scale to zero | ❌ | ❌ |
-| Premium (EP1-EP3) | No cold starts, longer execution, slots | Auto, min instances | ✅ | ✅ 20 slots |
-| Dedicated | Predictable load, existing App Service | Manual or auto | ✅ | ✅ varies by SKU |
-
-> ⚠️ **Deployment Slots Guidance:**
-> - **Windows Consumption (Y1)** supports 1 staging slot — valid for existing apps or specific Windows requirements.
->   Prefer **Elastic Premium (EP1)** or **Dedicated** for new apps requiring slots, as Consumption cold starts affect swap reliability.
-> - **Linux Consumption and Flex Consumption** do **not** support deployment slots.
-> - For new projects needing slots: use **Elastic Premium** or an **App Service Plan (Standard+)**.
+For the full comparison matrix (scale limits, instance sizing, deployment slots, cost model, and a decision tree), see **[hosting-plans.md](hosting-plans.md)**. For mitigating cold starts on any plan, see **[cold-start.md](cold-start.md)**.
 
 ## Runtime Stacks
 
@@ -94,3 +82,5 @@ services:
 - [Terraform Patterns](terraform.md)
 - [Durable Functions](durable.md)
 - [Aspire + Container Apps](aspire-containerapps.md)
+- [Hosting Plans Comparison](hosting-plans.md) — Consumption vs Flex vs Premium vs Dedicated vs Container Apps
+- [Cold Start Mitigation](cold-start.md) — Per-plan strategies and CLI/Bicep examples

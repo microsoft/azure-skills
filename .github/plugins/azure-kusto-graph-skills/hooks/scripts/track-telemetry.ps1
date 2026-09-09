@@ -130,7 +130,8 @@ function Write-RawInputToFile {
         $timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
         $rawInputFile = Join-Path $rawInputDir "$timestamp.json"
         try {
-            $RawInput | Out-File -FilePath $rawInputFile -Encoding utf8 -Force
+            $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($rawInputFile, $RawInput, $utf8WithoutBom)
         } catch { }
     }
 }
@@ -222,9 +223,18 @@ function Get-PluginVersion {
 
 # Read entire stdin at once - hooks send one complete JSON per invocation
 try {
+    $stdinEncoding = [Console]::InputEncoding
     $rawInput = [Console]::In.ReadToEnd()
+    $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+    # Recover the original UTF-8 bytes when Windows PowerShell decoded stdin with its OEM code page.
+    $rawInput = $utf8WithoutBom.GetString($stdinEncoding.GetBytes($rawInput))
 } catch {
     Write-Success
+}
+
+# Some clients prefix the JSON stream with a UTF-8 BOM; remove that marker before parsing.
+if ($rawInput.Length -gt 0 -and [int]$rawInput[0] -eq 0xFEFF) {
+    $rawInput = $rawInput.Substring(1)
 }
 
 # Return success and exit if no input
@@ -411,14 +421,14 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
-# Cursor:       afterMCPExecution with mcp_server_name "azure"; normalize the
-#               raw tool name to the postToolUse form (e.g., MCP:get_azure_bestpractices)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
+#               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
     if ($clientName -eq "cursor" -and $hookEventName -eq "afterMCPExecution" -and $mcpServerName -eq "azure") {
         $azureToolName = $toolName
-        if (-not $azureToolName.StartsWith("MCP:")) {
-            $azureToolName = "MCP:$azureToolName"
+        if ($azureToolName.StartsWith("MCP:", [System.StringComparison]::Ordinal)) {
+            $azureToolName = $azureToolName.Substring(4)
         }
         $eventType = "tool_invocation"
         $shouldTrack = $true

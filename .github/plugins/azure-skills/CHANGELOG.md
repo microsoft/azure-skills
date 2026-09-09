@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.44
+
+- fix: refine Foundry agent setup and deployment guidance ([#3165](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3165))
+
+## 1.2.43
+
+- fix: remove unnecessary trigger phrase in azure-compliance skill body ([#3118](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3118))
+
+## 1.2.42
+
+- feat: add Azure Functions hosting and cold-start guidance ([#3122](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3122))
+
 ## 1.2.41
 
 - fix: improve langchain-azure-ai migration ([#3160](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3160))

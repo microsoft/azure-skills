@@ -66,7 +66,7 @@ Collect only values the user has not already provided. For values not specified,
      ```
    - Show the generated name to the user before proceeding, but do not block on confirmation — proceed unless the user objects.
    - Examples: `ai-project-3f8a1b2c`, `my-ai-project`, `dev-agents`
-2. **Azure location** (optional) — defaults to North Central US (required for hosted agents preview)
+2. **Azure location** (optional) — defaults to North Central US
 3. **Enable hosted agents?** (yes/no) — enables hosted-agent deployment and provisions an Azure Container Registry. A capability host (`capabilityHosts/agents`, used by Foundry's **Standard Agent Setup** for bring-your-own storage) is also created only when `ENABLE_CAPABILITY_HOST=true`. Defaults to no. See [Step 3](#step-3-create-directory-and-initialize) for how the two flags interact.
 
 ### Step 3: Create Directory and Initialize
@@ -135,7 +135,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ## Best Practices
 
-- Use North Central US for hosted agents (preview requirement)
+- Use North Central US for hosted agents
 - Name must be alphanumeric + hyphens only — no spaces, underscores, or special characters
 - Delete unused projects with `azd down` to avoid ongoing costs
 - `azd down` deletes ALL resources — Foundry account, agents, models, Container Registry, and Application Insights data
