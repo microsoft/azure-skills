@@ -4,7 +4,7 @@ description: "Run Azure compliance and security audits with azqr plus Key Vault 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 # Azure Compliance & Security Auditing
@@ -16,27 +16,6 @@ metadata:
 | Best for | Compliance scans, security audits, Key Vault expiration checks |
 | Primary capabilities | Comprehensive Resources Assessment, Key Vault Expiration Monitoring |
 | MCP tools | azqr, subscription and resource group listing, Key Vault item inspection |
-
-## When to Use This Skill
-
-- Run azqr or Azure Quick Review for compliance assessment
-- Validate Azure resource configuration against best practices
-- Identify orphaned or misconfigured resources
-- Audit Key Vault keys, secrets, and certificates for expiration
-
-## Skill Activation Triggers
-
-Activate this skill when user wants to:
-- Check Azure compliance or best practices
-- Assess Azure resources for configuration issues
-- Run azqr or Azure Quick Review
-- Identify orphaned or misconfigured resources
-- Review Azure security posture
-- "Show me expired certificates/keys/secrets in my Key Vault"
-- "Check what's expiring in the next 30 days"
-- "Audit my Key Vault for compliance"
-- "Find secrets without expiration dates"
-- "Check certificate expiration dates"
 
 ## Prerequisites
 

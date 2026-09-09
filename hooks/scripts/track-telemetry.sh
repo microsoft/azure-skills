@@ -408,13 +408,12 @@ fi
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
-# Cursor:       afterMCPExecution with mcp_server_name "azure"; normalize the
-#               raw tool name to the postToolUse form (e.g., MCP:get_azure_bestpractices)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
+#               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if [ -n "$toolName" ]; then
     if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
-        azureToolName="$toolName"
-        [[ "$azureToolName" == MCP:* ]] || azureToolName="MCP:$azureToolName"
+        azureToolName="${toolName#MCP:}"
         eventType="tool_invocation"
         shouldTrack=true
     elif [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
