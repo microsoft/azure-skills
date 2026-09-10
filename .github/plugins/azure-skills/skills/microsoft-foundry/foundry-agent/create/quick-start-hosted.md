@@ -245,20 +245,15 @@ cd -                                             # back to project root for the 
 
 **.NET:** no pre-install step — `azd ai agent run` runs `dotnet restore` itself on first start.
 
-Run the agent locally. For Python, do this **with the service-dir venv still activated** — activation is what lets `azd ai agent run` find `uv` for the fast dependency install. `azd ai agent run` **is** the local server — a foreground process holding port 8088 that must stay alive from start, through every `invoke --local`, until you explicitly stop it.
+The examples below use the default port `8088`. Confirm it is free; if occupied, choose another port and add the same `--port <n>` to both `run` and `invoke --local` below. Run the agent locally. For Python, do this **with the service-dir venv still activated** — activation is what lets `azd ai agent run` find `uv` for the fast dependency install. `azd ai agent run` **is** the local server — a foreground process holding the selected port that must stay alive from start, through every `invoke --local`, until you explicitly stop it.
 
 Start it in a **managed** background session your shell tool can poll and stop (most tools detect a long-running foreground process and return a session/shell id — use that id). Do **not** use job operators (`bash &`, `nohup`, `start /B`, popped windows): on Linux/macOS the child gets `SIGHUP` and **dies when its parent bash exits**, so the next command sees `could not connect` even though `ss` from inside the *same* bash just showed `:8088` bound.
-
-> ⚠️ **Readiness gate — do not skip.** After starting `azd ai agent run`, **watch the server log for the ready line, something like `Running` (e.g. `Running on http://0.0.0.0:8088`) — not just `Starting …`**, which azd prints as a banner before the Python process has bound the socket. Invoking before the socket is bound fails with `could not connect`.
-> - **Never invoke before the most recent log read shows the ready line.** Premature invokes waste a poll cycle and return a misleading `could not connect`.
-> - **Poll short — 2–5s per read.** Boot time is unbounded; long sleeps cost wall-clock directly. No 15s+ blocks or `sleep N` waits.
-> - **Don't substitute log polling** with `sleep N && curl`, `netstat` / `ss` / `lsof`, or `ps aux` probes — only the log tells you readiness.
-> - **If `invoke --local` fails,** re-read the server log. Error before the ready line (missing env var, auth, port in use) → fix the cause and restart `azd ai agent run` in the managed session. Ready line present but request still fails → the issue is in the request, not the server. Either way, do **not** bypass with `python main.py` or raw `curl POST /responses` — those skip the wiring the deployed agent uses.
-> - **If `invoke --local` returns `could not connect` after you saw the ready line in a previous shell,** the server died when that shell exited (classic `&` symptom). Restart in the managed session — do not retry with another `&`.
 
 ```bash
 azd ai agent run --no-client
 ```
+
+Poll a TCP connection to `localhost:<port>` every 2–5 seconds while the run session is alive; once connected, proceed to the smoke test. If the process exits or the startup timeout expires, inspect the server logs and resolve the cause before retrying.
 
 Smoke-invoke (local):
 

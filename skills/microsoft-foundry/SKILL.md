@@ -4,7 +4,7 @@ description: "Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.17"
+  version: "1.2.18"
 ---
 
 # Microsoft Foundry Skill
