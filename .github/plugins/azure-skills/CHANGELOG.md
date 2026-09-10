@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.45
+
+- fix: use TCP checks for local agent readiness in Foundry Skill ([#3169](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3169))
+
 ## 1.2.44
 
 - fix: refine Foundry agent setup and deployment guidance ([#3165](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3165))
