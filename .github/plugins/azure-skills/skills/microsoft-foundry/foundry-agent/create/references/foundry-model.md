@@ -11,10 +11,11 @@ Query the regional model catalog to obtain the model version, format, capabiliti
 ```pwsh
 $region = "<REGION>"
 $subscription = "<SUBSCRIPTION_ID_OR_NAME>"
-
+$model_name = "<MODEL_NAME>"
 az cognitiveservices model list `
   --location $region `
   --subscription $subscription `
+  --query "[?model.name=='$model_name']" `
   -o json
 ```
 
@@ -23,10 +24,11 @@ az cognitiveservices model list `
 ```bash
 REGION="<REGION>"
 SUBSCRIPTION="<SUBSCRIPTION_ID_OR_NAME>"
-
+MODEL_NAME="<MODEL_NAME>"
 az cognitiveservices model list \
   --location "$REGION" \
   --subscription "$SUBSCRIPTION" \
+  --query "[?model.name=='$MODEL_NAME']" \
   -o json
 ```
 

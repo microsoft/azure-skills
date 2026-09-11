@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.46
+
+- chore: foundry skill improvements on sample selection, model query, trigger words, and evals ([#3177](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3177))
+
 ## 1.2.45
 
 - fix: use TCP checks for local agent readiness in Foundry Skill ([#3169](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3169))
