@@ -100,6 +100,8 @@ Capture the `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to user's task as code reference.
 
+> **Important:** When users want to create new LangChain/LangGraph agents, you MUST read and follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or changing agent code.
+
 Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
 | Language | `--runtime` | `--entry-point` |
@@ -253,7 +255,11 @@ Start it in a **managed** background session your shell tool can poll and stop (
 azd ai agent run --no-client
 ```
 
-Poll a TCP connection to `localhost:<port>` every 2–5 seconds while the run session is alive; once connected, proceed to the smoke test. If the process exits or the startup timeout expires, inspect the server logs and resolve the cause before retrying.
+> **Readiness gate — required before local invocation.**
+> - Start checking TCP connections to `localhost:<port>` immediately after launching the agent in the background; retry failed connections every 2–5 seconds.
+> - **Keep each startup wait at 5 seconds or less**, including sleeps and shell-tool output reads.
+> - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
+> - If the agent process exits or the startup timeout expires before a connection succeeds, inspect the server logs and resolve the cause before retrying.
 
 Smoke-invoke (local):
 
