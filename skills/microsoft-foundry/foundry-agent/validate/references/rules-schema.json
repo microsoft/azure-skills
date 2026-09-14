@@ -75,8 +75,27 @@
             "minItems": 1,
             "uniqueItems": true,
             "items": {
-              "type": "string",
-              "format": "uri"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "object",
+                  "required": ["title", "link"],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
           }
         }

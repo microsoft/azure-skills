@@ -12,7 +12,7 @@
   "properties": {
     "reportId": {
       "type": "string",
-      "pattern": "^[0-9]{8}T[0-9]{6}Z$"
+      "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
     },
     "generatedAt": {
       "type": "string",
@@ -26,7 +26,8 @@
           "type": "string"
         },
         "agentRoot": {
-          "type": "string"
+          "type": "string",
+          "description": "The unchanged agentPath resolved for the validation run; never a manifest-derived subdirectory."
         }
       },
       "additionalProperties": false
@@ -35,7 +36,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["ruleId", "title", "level", "status", "details", "guidance"],
+        "required": ["ruleId", "title", "level", "rationale", "status", "details", "guidance"],
         "properties": {
           "ruleId": {
             "type": "string",
@@ -49,6 +50,11 @@
             "type": "string",
             "enum": ["error", "warning", "recommendation"]
           },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Reason the rule matters, copied from the validation rule."
+          },
           "status": {
             "type": "string",
             "enum": ["pass", "fail", "inconclusive", "skipped"]
@@ -56,16 +62,50 @@
           "details": {
             "type": "string",
             "minLength": 1,
-            "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
+            "description": "Result-specific status explanation and repository evidence."
+          },
+          "recommendedAction": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Concrete action required to resolve a failed result."
+          },
+          "sourceCode": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Plain-text, agentPath-relative source locations using file:line or file:start-end."
           },
           "guidance": {
             "type": "array",
             "minItems": 1,
             "items": {
-              "type": "string",
-              "format": "uri"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "object",
+                  "required": ["title", "link"],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             },
-            "description": "Guidance URLs copied from the rule."
+            "description": "Guidance links as legacy URL strings or titled link objects."
           }
         },
         "additionalProperties": false

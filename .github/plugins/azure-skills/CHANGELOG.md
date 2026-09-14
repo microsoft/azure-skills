@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.47
+
+- feat: improve Foundry validation reports ([#3170](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3170))
+
 ## 1.2.46
 
 - chore: foundry skill improvements on sample selection, model query, trigger words, and evals ([#3177](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3177))
