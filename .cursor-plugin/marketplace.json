@@ -28,6 +28,17 @@
       },
       "homepage": "https://github.com/microsoft/azure-skills",
       "repository": "https://github.com/microsoft/github-copilot-for-azure"
+    },
+    {
+      "name": "azure-local-skills",
+      "source": "./.github/plugins/azure-local-skills",
+      "description": "Azure Local skills covering standard deployments (Azure Stack HCI, 1-16 node hyperconverged, rack-aware clusters) and multi-rack (rack scale) deployments built on Network Fabric Controller, Cluster Manager, and managed network fabric.",
+      "author": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+      },
+      "homepage": "https://github.com/microsoft/azure-skills",
+      "repository": "https://github.com/microsoft/github-copilot-for-azure"
     }
   ]
 }
