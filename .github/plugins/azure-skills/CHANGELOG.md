@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.49
+
+- feat: expand Foundry validation rules ([#3192](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3192))
+
+## 1.2.48
+
+- feat(microsoft-foundry): add MCP-backed agent insights workflow ([#3207](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3207))
+
 ## 1.2.47
 
 - feat: improve Foundry validation reports ([#3170](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3170))

@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.2.0
 scope: Repository review rules, not certification controls.
 
 rules:
@@ -7,14 +7,32 @@ rules:
     level: recommendation
     rationale: Foundry Toolbox centralizes MCP configuration, authentication, credential handling, and policy enforcement while allowing tools to be updated without changing hosted-agent code.
     guidance:
-      - title: "Foundry Toolbox MCP hosted-agent sample"
-        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox"
-    when: Apply when the hosted agent uses one or more MCP servers; otherwise skip this rule.
+      - title: "Agent Framework Foundry Toolbox sample"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox"
+      - title: "LangGraph Foundry Toolbox sample"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/02-langgraph-toolbox"
+    when: Apply when the hosted agent uses an MCP server; otherwise skip.
     checks: >-
-      Inspect azure.yaml and toolbox.yaml when present, together with the hosted-agent code and configuration. Identify every MCP server the agent uses, verify that each server is configured as a tool in a Foundry Toolbox when a local Toolbox definition exists, and verify that every MCP call uses the Toolbox consumer endpoint rather than the original MCP server endpoint. The Toolbox may be defined in either configuration file, in both, or outside the repository; when no local definition exists, accept endpoint-only consumption if the code or configuration clearly targets a Toolbox consumer endpoint. SDK wrappers and generic MCP clients are both valid.
+      Inspect deployed code and configuration to determine whether every MCP connection uses Foundry Toolbox instead of the original MCP server. Evidence can include a local azure.ai.toolbox service, a Foundry Toolbox URL such as /toolboxes/{name}/mcp or /toolboxes/{name}/versions/{version}/mcp, a TOOLBOX-named environment variable connected to the MCP path, or a supported Toolbox SDK or constructor. These examples are not exhaustive; accept any clear repository evidence of Toolbox use.
     statusCriteria:
-      pass: Local configuration places every MCP server in a Foundry Toolbox and the agent uses its consumer endpoint, or no local Toolbox definition exists and the agent clearly consumes an externally managed Toolbox endpoint. No code path accesses an MCP server endpoint directly.
-      fail: Local configuration places an MCP server outside Toolbox, or any hosted-agent code path accesses an MCP server endpoint directly instead of a Toolbox consumer endpoint.
+      pass: Every deployed MCP connection clearly uses Foundry Toolbox.
+      fail: A deployed MCP connection clearly accesses an original MCP server directly or configures it outside Toolbox.
+      inconclusive: MCP use is evident, but repository evidence cannot determine whether every connection uses Toolbox.
+
+  - id: AIGW-001
+    title: Use AI Gateway for required rate limits
+    level: recommendation
+    rationale: Azure API Management AI Gateway can enforce model token or request limits and tool-call limits before traffic reaches backends.
+    guidance:
+      - title: "APIM hosted-agent solution template"
+        link: "https://github.com/microsoft/Foundry-Agent-Solution-Templates/tree/main/apim-hosted-agent"
+    when: Apply when repository requirements or configuration specify a model token or request limit or a tool-call rate limit; otherwise skip.
+    checks: >-
+      1) Establish a model token, model request, or tool-call rate-limit requirement from repository requirements, configuration, or infrastructure; do not infer one from generic retry or 429 handling. 2) For each affected model or tool call path, trace its runtime endpoint through code, configuration, environment variables, and fallbacks. 3) Verify the endpoint belongs to Azure API Management through an azure-api.net hostname, a linked APIM resource, or infrastructure that maps its custom domain to APIM. Local APIM rate-limit policies are supporting evidence, not required evidence, because policies may be managed externally.
+    statusCriteria:
+      pass: Every required rate-limited path is resolved and uses an APIM AI Gateway endpoint.
+      fail: A fully resolved path with a rate-limit requirement calls its model or tool backend directly.
+      inconclusive: A rate-limit requirement exists, but the call endpoint or its APIM identity cannot be resolved.
 
   - id: OBS-001
     title: Enable supported tracing for hosted agents
@@ -49,6 +67,25 @@ rules:
       pass: The official Agent Framework package family is declared, the effective direct dependency version can be determined from repository configuration, and source imports are consistent with that package family.
       fail: Repository evidence explicitly shows an unrelated package presented as Agent Framework, conflicting effective dependency versions for the deployed agent, or imports inconsistent with the declared package family.
       inconclusive: The effective package or version is affected by unresolved ranges, unresolved central version management, environment-specific resolution, or other indirection, or imports cannot be mapped reliably to the declared package family.
+
+  - id: SDK-002
+    title: Use recommended Foundry hosted-agent SDKs
+    level: recommendation
+    rationale: Approved Foundry hosting packages reduce custom protocol code.
+    guidance:
+      - title: "Python hosted-agent framework samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents"
+      - title: ".NET hosted-agent framework samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents"
+      - title: "Python LangGraph hosting samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph"
+    when: Apply to every hosted agent configured with host azure.ai.agent.
+    checks: >-
+      Inspect deployed dependency manifests and lock files only. Require at least one approved hosting dependency: Python agent-framework-foundry-hosting, langchain-azure-ai[hosting] (or resolved lock equivalent), or azure-ai-agentserver-invocations; C# Microsoft.Agents.AI.Foundry.Hosting or Azure.AI.AgentServer.Invocations. Generic web framework dependencies alone do not qualify. Do not inspect source code or protocol wiring.
+    statusCriteria:
+      pass: An approved hosting dependency is resolved and no unapproved agent or hosting SDK is declared.
+      fail: No approved hosting dependency is declared, or dependencies include Python openai-agents or another unapproved agent or hosting SDK.
+      inconclusive: Dependency files cannot be resolved enough to classify.
 
   - id: AGT-001
     title: Do not instruct agents to bypass controls or fabricate success

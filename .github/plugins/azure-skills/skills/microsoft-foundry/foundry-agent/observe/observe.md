@@ -116,6 +116,7 @@ promptText: |
 
 | User Intent | Skill |
 |-------------|-------|
+| "Pull agent insights" / "Show generated recommendations and evidence" | [Agent Insights](../insights/insights.md) (read existing findings without running evaluations or enabling monitoring) |
 | "Analyze production traces" / "Search conversations" / "Find errors in App Insights" | [trace skill](../trace/trace.md) |
 | "Debug hosted agent issues" / "Hosted-agent logs" | [troubleshoot skill](../troubleshoot/troubleshoot.md) |
 | "Deploy or redeploy agent" | [deploy skill](../deploy/deploy.md) |
