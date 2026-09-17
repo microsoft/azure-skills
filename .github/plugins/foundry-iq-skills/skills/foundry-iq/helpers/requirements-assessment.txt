@@ -1,0 +1,3 @@
+# Optional local document assessment; no parser extras or OCR engines.
+pypdf==6.8.0
+defusedxml==0.7.1

@@ -162,6 +162,7 @@ write_telemetry_debug_log() {
 # <script-dir>/../../skills/<name>/SKILL.md is the skill definition.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
+PLUGIN_PATH_ALLOW_PATTERN="$SCRIPT_DIR/pluginPathAllowPattern.sh"
 
 # Return true only when a target belongs to this hook's plugin. Since this hook
 # is copied into every plugin, comparing through the skills directory prevents
@@ -339,27 +340,7 @@ fi
 is_azure_skills_path() {
     local p="$1"
 
-    # --- azure-skills plugin ---
-    # The Copilot CLI pattern wildcards the catalog/marketplace folder name
-    # (e.g. "awesome-copilot") since it does not necessarily match the
-    # plugin's own name ("azure").
-    [[ "$p" == *".copilot/installed-plugins/"*"/azure/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
-    [[ "$p" == *".cursor/plugins/cache/"*"/azure/"*"/skills/"* ]] && return 0
-    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
-
-    # --- azure-kusto-graph-skills plugin ---
-    [[ "$p" == *".copilot/installed-plugins/"*"/azure-kusto-graph-skills/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/azure-skills/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
-    [[ "$p" == *".cursor/plugins/cache/"*"/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
-    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/"* ]] && return 0
-
-    # --- azure-local-skills plugin ---
-    [[ "$p" == *".copilot/installed-plugins/"*"/azure-local-skills/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/azure-skills/azure-local-skills/"*"/skills/"* ]] && return 0
-    [[ "$p" == *".cursor/plugins/cache/"*"/azure-local-skills/"*"/skills/"* ]] && return 0
-    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-local-skills/skills/"* ]] && return 0
+    if . "$PLUGIN_PATH_ALLOW_PATTERN"; then return 0; fi
 
     # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0
