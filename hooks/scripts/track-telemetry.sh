@@ -63,7 +63,17 @@
 #    - Tracked fields: --file-reference <relative-path-after-skills/>,
 #      --skill-version <version>
 #
-# === Skill Version ===
+# 4. session-start
+#    - Triggered when: a client starts or resumes an agent session
+#    - Tracked fields: --plugin-name <name>, --plugin-version <version>,
+#      --client-name <client>, and --session-id <id>
+#
+# === Plugin and Skill Versions ===
+#
+# The plugin name and version are read from the active client's plugin.json:
+#   - Copilot CLI / VS Code: .plugin/plugin.json
+#   - Claude Code:           .claude-plugin/plugin.json
+#   - Cursor:                .cursor-plugin/plugin.json
 #
 # The skill version is read from the SKILL.md frontmatter (metadata.version),
 # which the build stamps at package time. It is resolved as follows:
@@ -193,18 +203,32 @@ get_skill_version() {
         | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
 }
 
-# Extract the plugin version from the top-level .plugin/plugin.json manifest.
+# Extract one field from the plugin manifest for the active client.
 # Prints nothing if the file or expected JSON value cannot be read.
-get_plugin_version() {
+get_plugin_field() {
+    local clientName="$1"
+    local fieldName="$2"
+    local manifestDir=".plugin"
     local pluginManifestPath
-    pluginManifestPath="$(dirname "$SKILLS_DIR")/.plugin/plugin.json"
+
+    case "$clientName" in
+        cursor)
+            manifestDir=".cursor-plugin"
+            ;;
+        claude-code)
+            manifestDir=".claude-plugin"
+            ;;
+    esac
+
+    pluginManifestPath="$(dirname "$SKILLS_DIR")/$manifestDir/plugin.json"
     [ -f "$pluginManifestPath" ] || return 0
     node -e '
         try {
             const manifest = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-            if (typeof manifest.version === "string" && manifest.version) process.stdout.write(manifest.version);
+            const value = manifest[process.argv[2]];
+            if (typeof value === "string" && value) process.stdout.write(value);
         } catch { }
-    ' "$pluginManifestPath" 2>/dev/null
+    ' "$pluginManifestPath" "$fieldName" 2>/dev/null
 }
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
@@ -288,6 +312,10 @@ if [ -z "$sessionId" ]; then
 fi
 
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+isSessionStart=false
+if [ "$hookEventName" = "SessionStart" ] || [ "$hookEventName" = "sessionStart" ]; then
+    isSessionStart=true
+fi
 
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
@@ -306,7 +334,7 @@ elif echo "$rawInput" | grep -q '"hook_event_name"'; then
     if [ -n "$cursorVersion" ]; then
         clientName="cursor"
     # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
-    elif [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
+    elif [ "$AZURE_SKILLS_HOOK_CLIENT_FAMILY" = "copilot-vscode" ] || [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
         # Detect VS Code variant from transcript_path
         # Insiders: ...AppData/Roaming/Code - Insiders/User/...
         # Stable:   ...AppData/Roaming/Code/User/...
@@ -326,8 +354,8 @@ else
     clientName="unknown"
 fi
 
-# Skip if no tool name found in any format
-if [ -z "$toolName" ]; then
+# Skip if no tool name found in any format and this is not a lifecycle event.
+if [ -z "$toolName" ] && [ "$isSessionStart" = false ]; then
     return_success
 fi
 
@@ -361,6 +389,12 @@ skillName=""
 skillVersion=""
 azureToolName=""
 filePath=""
+
+# Report every session-start invocation, including resumed sessions.
+if [ "$isSessionStart" = true ]; then
+    eventType="session-start"
+    shouldTrack=true
+fi
 
 # Check for skill invocation via 'skill'/'Skill' tool
 if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
@@ -450,20 +484,31 @@ fi
 # === STEP 3: Publish event via azmcp ===
 
 if [ "$shouldTrack" = true ]; then
-    pluginVersion=$(get_plugin_version)
+    # The plugin-telemetry command requires a session ID for session-start events.
+    if [ "$eventType" = "session-start" ] && [ -z "$sessionId" ]; then
+        return_success
+    fi
+
+    pluginName=$(get_plugin_field "$clientName" "name")
+    pluginVersion=$(get_plugin_field "$clientName" "version")
+
+    # Session telemetry must identify the plugin.
+    if [ "$eventType" = "session-start" ] && { [ -z "$pluginName" ] || [ -z "$pluginVersion" ]; }; then
+        return_success
+    fi
 
     # Build MCP command arguments (using array for proper quoting)
     mcpArgs=(
         "server" "plugin-telemetry"
-        "--timestamp" "$timestamp"
-        "--client-name" "$clientName"
     )
 
+    [ -n "$pluginName" ] && mcpArgs+=("--plugin-name" "$pluginName")
+    [ -n "$pluginVersion" ] && mcpArgs+=("--plugin-version" "$pluginVersion")
+    mcpArgs+=("--client-name" "$clientName" "--timestamp" "$timestamp")
     [ -n "$eventType" ] && mcpArgs+=("--event-type" "$eventType")
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
     [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
     [ -n "$skillVersion" ] && mcpArgs+=("--skill-version" "$skillVersion")
-    [ -n "$pluginVersion" ] && mcpArgs+=("--plugin-version" "$pluginVersion")
     [ -n "$azureToolName" ] && mcpArgs+=("--tool-name" "$azureToolName")
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
