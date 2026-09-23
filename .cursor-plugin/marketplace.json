@@ -50,6 +50,17 @@
       },
       "homepage": "https://github.com/microsoft/azure-skills",
       "repository": "https://github.com/microsoft/github-copilot-for-azure"
+    },
+    {
+      "name": "azure-cost",
+      "source": "./.github/plugins/azure-cost",
+      "description": "Azure cost analysis, estimation, optimization, and governance workflows backed by Azure Resource Manager MCP.",
+      "author": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+      },
+      "homepage": "https://github.com/microsoft/azure-skills",
+      "repository": "https://github.com/microsoft/github-copilot-for-azure"
     }
   ]
 }
