@@ -132,6 +132,8 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
+$telemetryReporterVersion = "0.1.0"
+
 # Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
 # directory for debugging if the env var is set.
 function Write-RawInputToFile {
@@ -552,10 +554,47 @@ if ($shouldTrack) {
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }
 
-    # Publish telemetry via npx
-    try {
-        & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
-    } catch { }
+    if ($env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY -eq "true") {
+        $installerPath = Join-Path $scriptDir 'install-telemetry.ps1'
+        $powerShellExecutable = (Get-Process -Id $PID).Path
+        $installerArguments = @(
+            '-NoProfile',
+            '-NonInteractive'
+        )
+        if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
+            $installerArguments += '-ExecutionPolicy'
+            $installerArguments += 'Bypass'
+        }
+        $installerArguments += '-File'
+        $installerArguments += $installerPath
+        $installerArguments += '-Version'
+        $installerArguments += $telemetryReporterVersion
+
+        $installerOutput = @(& $powerShellExecutable @installerArguments 2>&1)
+        $installerStatus = $LASTEXITCODE
+        if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0) {
+            $reporterPath = [string]$installerOutput[-1]
+            $reporterArguments = $mcpArgs[2..($mcpArgs.Count - 1)]
+            try {
+                & $reporterPath @reporterArguments 2>&1 | Out-Null
+                $reporterStatus = $LASTEXITCODE
+                if ($reporterStatus -ne 0) {
+                    Write-TelemetryDebugLog -Content "Standalone telemetry reporter exited with status $reporterStatus."
+                }
+            } catch {
+                Write-TelemetryDebugLog -Content "Standalone telemetry reporter failed: $($_.Exception.Message)"
+            }
+        }
+        else {
+            Write-TelemetryDebugLog -Content "Standalone telemetry reporter installation failed: $($installerOutput -join ' ')"
+        }
+    }
+    else {
+        # Preserve the existing publisher unless the standalone path is explicitly enabled.
+        try {
+            & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
+        } catch { }
+    }
 
     # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the telemetry.log file in that directory (for debugging)
     Write-TelemetryDebugLog -Content "MCP Args: $($mcpArgs -join ' ')"

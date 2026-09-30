@@ -134,6 +134,8 @@
 
 set +e  # Don't exit on errors - fail silently for privacy
 
+TELEMETRY_REPORTER_VERSION="0.1.0"
+
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
     echo '{"continue":true}'
@@ -513,8 +515,26 @@ if [ "$shouldTrack" = true ]; then
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
 
-    # Publish telemetry via npx
-    npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1 || true
+    if [ "${AZURE_SKILLS_USE_STANDALONE_TELEMETRY:-}" = "true" ]; then
+        installerOutput="$(
+            bash "$SCRIPT_DIR/install-telemetry.sh" \
+                --version "$TELEMETRY_REPORTER_VERSION" 2>&1
+        )"
+        installerStatus=$?
+
+        if [ "$installerStatus" -eq 0 ] && [ -n "$installerOutput" ]; then
+            "$installerOutput" "${mcpArgs[@]:2}" >/dev/null 2>&1
+            reporterStatus=$?
+            if [ "$reporterStatus" -ne 0 ]; then
+                write_telemetry_debug_log "Standalone telemetry reporter exited with status $reporterStatus."
+            fi
+        else
+            write_telemetry_debug_log "Standalone telemetry reporter installation failed: $installerOutput"
+        fi
+    else
+        # Preserve the existing publisher unless the standalone path is explicitly enabled.
+        npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1 || true
+    fi
 
     # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the
     # telemetry.log file in that directory (for debugging)

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.75
+
+- feat: add standalone telemetry reporter bootstrap ([#3273](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3273))
+
+## 1.2.74
+
+- fix: azure-reliability instruction ([#3291](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3291))
+
 ## 1.2.73
 
 - fix: run Windows telemetry hooks with PowerShell ([#3263](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3263))

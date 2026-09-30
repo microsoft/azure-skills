@@ -4,7 +4,7 @@ description: "Assess and improve the reliability posture of PaaS Applications (A
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.1"
+  version: "1.1.2"
 ---
 
 # Azure Reliability Assessment & Configuration
@@ -60,7 +60,7 @@ Primary query method: Azure Resource Graph via `az graph query` (requires `az ex
 
 1. **Identify scope** — Ask user for resource group, subscription, or app name
 2. **Query Azure Resource Graph** to discover all resources in scope
-3. **Classify resources** by service type (Functions, Storage, etc.). If non-Functions compute (App Service sites that aren't Function Apps, Container Apps) is found, **note it but do not deep-dive** — those services are planned for a future version of this skill.
+3. **Classify resources** by service type (Functions, Storage, etc.). If Container Apps is found, **note it but do not deep-dive**.
 
 **Important:** Always scope queries to the user's specified resource group or subscription. Add these filters to every Resource Graph query:
 - Resource group: `| where resourceGroup =~ '<rg-name>'`
