@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+- misc: document Foundry IQ plugin telemetry ([#3306](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3306))
+
 ## 0.1.8
 
 - feat: add standalone telemetry reporter bootstrap ([#3273](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3273))

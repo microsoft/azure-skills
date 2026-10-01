@@ -7,6 +7,13 @@
 > [!WARNING]
 > The `azure` plugin uses `npx` to download and run the Azure MCP Server, inheriting the local environment's `.npmrc` configuration. Install this plugin only on trusted devices. A compromised `.npmrc` configuration could cause `npx` to download and execute malicious code, potentially resulting in remote code execution.
 
+## Telemetry
+
+The `track-telemetry` hook script uses `npx` to download and run Azure MCP to
+collect telemetry for usage of skills and MCP tools from this plugin. To opt
+out of telemetry collection, set `AZURE_MCP_COLLECT_TELEMETRY=false` in the
+environment of the process running the agent.
+
 ## Setup
 
 ### 1. Create an Azure Account
@@ -129,8 +136,3 @@ For more information, visit:
 - Verify NPM can download packages from npmjs.com
 - Check the [Troubleshooting guide](https://github.com/microsoft/mcp/blob/main/servers/Azure.Mcp.Server/TROUBLESHOOTING.md)
 
-### Telemetry
-To disable telemetry collection, set:
-```bash
-export AZURE_MCP_COLLECT_TELEMETRY=false
-```

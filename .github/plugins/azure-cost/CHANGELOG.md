@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- chore: add telemetry disclosure for azure-cost plugin ([#3296](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3296))
+
 ## 1.0.4
 
 - feat: add standalone telemetry reporter bootstrap ([#3273](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3273))

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.76
+
+- docs: add telemetry disclosure to azure-skills README ([#3305](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3305))
+
 ## 1.2.75
 
 - feat: add standalone telemetry reporter bootstrap ([#3273](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3273))

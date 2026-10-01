@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.21
+
+- misc: add telemetry disclosure to Kusto Graph plugin ([#3304](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3304))
+
 ## 1.0.20
 
 - feat: add standalone telemetry reporter bootstrap ([#3273](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3273))
