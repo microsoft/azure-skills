@@ -4,7 +4,7 @@ description: "Analyze Azure resource groups and generate detailed Mermaid archit
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.2"
+  version: "1.2.3"
 ---
 
 # Azure Resource Visualizer - Architecture Diagram Generator

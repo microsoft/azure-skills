@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10
+
+- use consistent line ending ([#3313](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3313))
+
 ## 0.1.9
 
 - misc: document Foundry IQ plugin telemetry ([#3306](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3306))

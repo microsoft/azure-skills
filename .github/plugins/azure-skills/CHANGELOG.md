@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.77
+
+- use consistent line ending ([#3313](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3313))
+
 ## 1.2.76
 
 - docs: add telemetry disclosure to azure-skills README ([#3305](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3305))
