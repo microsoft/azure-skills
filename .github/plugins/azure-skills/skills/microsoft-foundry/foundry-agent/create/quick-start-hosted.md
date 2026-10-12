@@ -278,7 +278,7 @@ Stop the local server via the managed session's stop primitive before continuing
 
 Once local invocation succeeds, if the user does not explicitly ask to deploy, tell them the agent is ready and ask if they want to deploy.
 
-If you re-ran `uv lock` against a private index in Step 10, the remote build cannot use that lock. If dependencies did not change, restore the backed-up `uv.lock` before deploying. If dependencies changed, tell the user `uv.lock` must be regenerated against public PyPI before deploying.
+If you re-ran `uv lock` against a private index in Step 10, the remote build cannot use that lock. If dependencies did not change, restore the backed-up `uv.lock` before deploying. If dependencies changed, guide the user to regenerate `uv.lock` using the public PyPI index, or export the locked dependencies to a `requirements.txt` file with pinned versions, and then proceed with deployment.
 
 To deploy:
 

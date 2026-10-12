@@ -136,6 +136,8 @@ before continuing.
 
 ### Step 4 -- Deploy the agent
 
+> **Private package index:** If `azd deploy` fails and the user's `uv.lock` points to a private Python package index, the Foundry service might be unable to access the index when installing dependencies. Guide the user to regenerate `uv.lock` using the public PyPI index, or export the locked dependencies to a `requirements.txt` file with pinned versions, and then retry the deployment.
+
 ```bash
 azd deploy --no-prompt
 # Multi-service:

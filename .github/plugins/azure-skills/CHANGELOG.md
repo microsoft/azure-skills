@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.87
+
+- fix: handle private Python indexes in Foundry agent workflows ([#3361](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3361))
+
 ## 1.2.86
 
 - feat: support musl telemetry reporter builds and releases ([#3337](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3337))
