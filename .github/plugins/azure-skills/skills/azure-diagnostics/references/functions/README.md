@@ -78,3 +78,9 @@ az rest --method get \
 
 Compare deployment timestamps against when errors started appearing in App Insights to identify if a deployment caused the issue.
 
+---
+
+## Trigger & Durable Function Troubleshooting
+
+- [Trigger & Binding Troubleshooting](triggers.md) - HTTP, Timer, Queue, Blob, Service Bus, and Cosmos DB trigger diagnostics, plus Flex Consumption specifics and SDK conflicts.
+- [Durable Functions Troubleshooting](durable.md) - stuck orchestrations, non-determinism violations, timeout/cancellation patterns, and task hub conflicts.

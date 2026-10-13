@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.88
+
+- feat: add Functions trigger and Durable troubleshooting ([#3123](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3123))
+
 ## 1.2.87
 
 - fix: handle private Python indexes in Foundry agent workflows ([#3361](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3361))
