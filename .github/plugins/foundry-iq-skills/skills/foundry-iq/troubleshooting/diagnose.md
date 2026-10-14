@@ -6,8 +6,15 @@ For Foundry IQ access/ingestion/retrieval/citation/connection/toolbox/identity/n
 or preserved-agent deployment failures. Diagnose read-only; external causes get owner/handoff.
 
 Scope-only: unsupported connector provisioning or multi-source KB creation/reconfiguration.
-Read this procedure, state the boundary and stop: no credentials, Azure discovery,
-repair, source substitution or partial compound execution.
+Read this procedure, state the boundary and stop: no credentials, Azure discovery, repair, source substitution or partial compound execution.
+Never terminate with a plain "not supported" refusal or a passive lecture. Foundry IQ procedures directly
+automate single-source File, Blob, and ADLS Gen2 KBs. For unsupported sources or connectors (e.g. Web, OneLake,
+SharePoint, SQL) as well as multi-source KB creation/reconfiguration, inform the user of this boundary, provide
+the Azure AI Search public documentation pointer (https://learn.microsoft.com/azure/search/), and release workflow
+control back to the calling agent. The calling agent must take active charge—discovering prerequisites, planning,
+scripting REST/SDK API calls, or configuring Azure resources using its general tools to get the task done,
+just like executing without this skill. The original request is not write approval: show the concrete plan
+and get explicit user approval before any REST/SDK or Azure mutation.
 Existing multi-source KB connection uses [Connect](../agents/connect.md), without KB mutation.
 Read-only operations retain their owners/helper constraints, not new source/retrieval support.
 Unclear scope: [intent-routing](../references/intent-routing.md), clarify before discovery.
@@ -139,4 +146,5 @@ ownership, and cleanup.
 
 Authorities: failure/conflict/uncertainty only.
 
+- [Azure AI Search documentation](https://learn.microsoft.com/azure/search/)
 - [Troubleshoot agentic retrieval](https://learn.microsoft.com/azure/search/search-agentic-retrieval-how-to-troubleshoot)

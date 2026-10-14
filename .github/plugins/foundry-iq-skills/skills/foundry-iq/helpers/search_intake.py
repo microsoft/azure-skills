@@ -10,21 +10,22 @@ from urllib.parse import quote
 try:
     from ._bootstrap_io import failure, read_json, run_cli
     from ._common import (
-        SEARCH_AUDIENCE, HelperFailure, digest, emit_result, normalize_azure_location,
-        reject_secrets, require_allowed_fields, validate_search_endpoint,
+        SEARCH_AUDIENCE, HelperFailure, digest, emit_result, normalize_azure_location, reject_secrets,
+        require_allowed_fields, validate_search_endpoint,
     )
     from .bootstrap_azure import API
     from .model_discovery import GUID, Reader, identity_key, resource_group
-    from .search_reconcile import SUPPORTED_API_VERSIONS
+    from . import _search_read
 except ImportError:
     from _bootstrap_io import failure, read_json, run_cli
     from _common import (
-        SEARCH_AUDIENCE, HelperFailure, digest, emit_result, normalize_azure_location,
-        reject_secrets, require_allowed_fields, validate_search_endpoint,
+        SEARCH_AUDIENCE, HelperFailure, digest, emit_result, normalize_azure_location, reject_secrets,
+        require_allowed_fields, validate_search_endpoint,
     )
     from bootstrap_azure import API
     from model_discovery import GUID, Reader, identity_key, resource_group
-    from search_reconcile import SUPPORTED_API_VERSIONS
+    import _search_read
+
 
 # Azure service naming rules require both initial characters to be alphanumeric.
 SERVICE_NAME = r"(?=.{2,60}$)[a-z0-9][a-z0-9]+(?:-[a-z0-9]+)*"
@@ -64,7 +65,7 @@ def operation_requirements(value):
         "knowledge-base": {"kind", "api_version", "reasoning_effort", "output_mode"},
     }.get(kind)
     if (fields is None or set(value) != fields or not isinstance(value.get("api_version"), str)
-            or value["api_version"] not in SUPPORTED_API_VERSIONS):
+            or value["api_version"] not in _search_read.SUPPORTED_API_VERSIONS):
         raise fail("operation-unsupported", "Select exactly the supported helper operation and API fields.")
     mi = False
     if kind in ("file-source", "blob-source"):

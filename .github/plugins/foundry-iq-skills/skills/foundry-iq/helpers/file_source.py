@@ -3,180 +3,40 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
 
 try:
     from ._progress import Progress, add_progress_argument, reporting
-    from . import file_ingest, search_reconcile, source_vector, file_cu_mi
-    from . import cu_ingestion_auth as file_cu_auth
+    from . import (
+        file_ingest, search_reconcile, file_cu_mi, cu_ingestion_auth as file_cu_auth, _embedding,
+        _file_inventory, _file_source_config, _search_read, _source_readback,
+    )
     from ._common import (
-        SEARCH_AUDIENCE,
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        digest,
-        emit_result,
-        http_request,
-        load_approved_input,
-        normalize_azure_location,
-        reject_secrets,
-        require_allowed_fields,
+        SEARCH_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, load_approved_input, reject_secrets, require_allowed_fields,
+        model_definition,
     )
 except ImportError:
     from _progress import Progress, add_progress_argument, reporting
-    import file_ingest  # type: ignore[no-redef]
-    import search_reconcile  # type: ignore[no-redef]
-    import source_vector
+    import file_ingest
+    import search_reconcile
     import file_cu_mi
     import cu_ingestion_auth as file_cu_auth
-    from _common import (  # type: ignore[no-redef]
-        SEARCH_AUDIENCE,
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        digest,
-        emit_result,
-        http_request,
-        load_approved_input,
-        normalize_azure_location,
-        reject_secrets,
-        require_allowed_fields,
+    import _embedding
+    import _file_inventory
+    import _file_source_config
+    import _search_read
+    import _source_readback
+    from _common import (
+        SEARCH_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, load_approved_input, reject_secrets, require_allowed_fields,
+        model_definition,
     )
 
 
-def _cu_failure(code: str, message: str, *, request_id: str | None = None) -> HelperFailure:
-    return HelperFailure(code, message, blocked_at="cu-prerequisites", request_id=request_id)
-
-
-def validate_content_understanding(value: Any, *, enabled: bool) -> dict[str, Any] | None:
-    if not enabled:
-        if value is not None:
-            raise _cu_failure("cu-choice-conflict", "Minimal extraction must omit CU choices.")
-        return None
-    if not isinstance(value, dict):
-        raise _cu_failure("cu-prerequisite-missing", "Standard planning requires a resolved CU account, disclosed auth channel and owner-verified prerequisites.")
-    value = copy.deepcopy(value)
-    value.setdefault("auth", "system-assigned")
-    reject_secrets(value)
-    require_allowed_fields(value, {
-        "endpoint", "resource_id", "auth", "api_key_environment", "prerequisites", "managed_identity",
-    }, label="File CU choice")
-    if (
-        not isinstance(value.get("endpoint"), str)
-        or re.fullmatch(r"https://[a-z0-9][a-z0-9-]{0,62}\.services\.ai\.azure\.com/?", value["endpoint"]) is None
-        or not isinstance(value.get("resource_id"), str)
-        or re.fullmatch(
-            r"/subscriptions/[0-9a-fA-F-]{36}/resourceGroups/[A-Za-z0-9_.()-]{1,90}"
-            r"/providers/Microsoft\.CognitiveServices/accounts/[A-Za-z0-9][A-Za-z0-9_.-]{1,63}",
-            value["resource_id"], re.IGNORECASE,
-        ) is None
-        or value.get("auth") not in ("api-key-environment", "api-key-arm", "system-assigned")
-        or (value.get("auth") == "api-key-environment" and (
-            not isinstance(value.get("api_key_environment"), str)
-            or search_reconcile.ENVIRONMENT_NAME.fullmatch(value["api_key_environment"]) is None
-        ))
-        or (value.get("auth") != "api-key-environment" and "api_key_environment" in value)
-        or (value.get("auth") != "system-assigned" and "managed_identity" in value)
-    ):
-        raise _cu_failure("cu-choice-invalid", "Select exact AIServices and system-assigned MI, or explicitly retain approved ARM/ENV key auth. No automatic auth fallback or setup changes.")
-    if value["auth"] == "system-assigned":
-        file_cu_mi.validate_choice(value.get("managed_identity"), value["resource_id"])
-    prerequisites = value.get("prerequisites")
-    if not isinstance(prerequisites, dict):
-        raise _cu_failure("cu-prerequisite-missing", "Supply CU region/capability, selected processing/required deployments, identity/local-auth and network evidence references.")
-    fields = {"resource", "configuration", "identity", "network"}
-    require_allowed_fields(prerequisites, fields, label="File CU prerequisites")
-    if any(not source_vector._text(prerequisites.get(key)) for key in fields):
-        raise _cu_failure("cu-prerequisite-missing", "Owner-verified CU capability/region, selected processing/required deployments, auth/access and reachability evidence is required.")
-    source_vector._json_valid(value)
-    return copy.deepcopy(value)
-
-
-def _cu_account_state(choice: dict[str, Any], account: Any) -> dict[str, Any]:
-    properties = account.get("properties") if isinstance(account, dict) else None
-    if not isinstance(properties, dict):
-        raise _cu_failure("cu-prerequisite-invalid", "CU account readback is incomplete.")
-    endpoints = properties.get("endpoints", {})
-    candidates = [properties.get("endpoint")]
-    if isinstance(endpoints, dict):
-        candidates.extend(endpoints.values())
-    if (
-        str(account.get("id", "")).casefold() != choice["resource_id"].casefold()
-        or account.get("kind") != "AIServices"
-        or normalize_azure_location(account.get("location")) is None
-        or properties.get("provisioningState") != "Succeeded"
-        or (choice["auth"] != "system-assigned" and properties.get("disableLocalAuth") is not False)
-        or properties.get("publicNetworkAccess") not in ("Enabled", "Disabled")
-        or choice["endpoint"].rstrip("/") not in [v.rstrip("/") for v in candidates if isinstance(v, str)]
-    ):
-        raise _cu_failure("cu-prerequisite-invalid", "Readback must bind the selected ready AIServices account/endpoint/location/network. Key modes also need enabled local auth; MI does not. Any required setup change needs separate approval.")
-    state = {
-        "id": choice["resource_id"], "kind": "AIServices", "location": account["location"],
-        "identity": copy.deepcopy(account.get("identity")),
-        "properties": {
-            "endpoint": choice["endpoint"].rstrip("/"), "provisioningState": "Succeeded",
-            "disableLocalAuth": properties.get("disableLocalAuth"), "publicNetworkAccess": properties["publicNetworkAccess"],
-            "networkAcls": copy.deepcopy(properties.get("networkAcls")),
-        },
-    }
-    if choice["auth"] == "system-assigned":
-        acl = properties.get("networkAcls")
-        if properties["publicNetworkAccess"] != "Enabled" or (
-            acl is not None and (not isinstance(acl, dict) or acl.get("defaultAction") != "Allow")
-        ):
-            raise _cu_failure("cu-mi-network-unverified", "This MI path requires existing public CU reachability without default-deny ACLs. Restricted/private network compatibility needs separate verified setup and approval; no network changes or key fallback.")
-    reject_secrets(state)
-    source_vector._json_valid(state)
-    return state
-
-
-def _cu_states_match(current: dict[str, Any], retained: dict[str, Any]) -> bool:
-    location = normalize_azure_location(retained.get("location"))
-    return location is not None and (
-        {**current, "location": normalize_azure_location(current.get("location"))}
-        == {**retained, "location": location}
-    )
-
-
-def read_content_understanding(
-    choice: dict[str, Any], *, token_provider: TokenProvider, transport: Transport,
-) -> tuple[dict[str, Any], list[str]]:
-    url = f"{MANAGEMENT_AUDIENCE}{choice['resource_id']}?api-version=2024-10-01"
-    response = transport("GET", url, token_provider(MANAGEMENT_AUDIENCE))
-    try:
-        if response.status != 200:
-            raise _cu_failure("cu-prerequisite-unavailable", "Selected CU account metadata could not be read; no provisioning or auth changes are allowed.")
-        state = _cu_account_state(choice, response.body)
-    except HelperFailure as failure:
-        failure.request_id = response.request_id
-        if response.status != 200:
-            failure.http_status = response.status
-        raise
-    return state, [response.request_id] if response.request_id else []
-
-
-def verify_content_understanding_readback(choice: dict[str, Any], current: Any) -> None:
-    parameters = current.get("fileParameters") if isinstance(current, dict) else None
-    ingestion = parameters.get("ingestionParameters") if isinstance(parameters, dict) else None
-    ai = ingestion.get("aiServices") if isinstance(ingestion, dict) else None
-    if (
-        not isinstance(ai, dict) or ingestion.get("contentExtractionMode") != "standard"
-        or not isinstance(ai.get("uri"), str)
-        or ai["uri"].rstrip("/") != choice["endpoint"].rstrip("/")
-        or ingestion.get("identity") is not None
-        or (choice["auth"] == "system-assigned" and ai.get("apiKey") not in file_cu_mi.REDACTED)
-    ):
-        raise _cu_failure("cu-readback-mismatch", "Observed File CU endpoint/extraction/auth conflicts with the selected configuration; credential details withheld.")
-    # File's approved key may be redacted in GET. It is not embedding auth,
+# File's approved key may be redacted in GET. It is not embedding auth,
     # and source readback cannot prove its value or CU processing readiness.
 
 
@@ -206,7 +66,7 @@ def plan_source(
             "input-schema-invalid", "Planning requires schema_version 1.0.",
             blocked_at="input-resolution",
         )
-    file_ingest.validate_api_version(request.get("api_version", file_ingest.API_VERSION))
+    _file_inventory.validate_api_version(request.get("api_version", _file_inventory.API_VERSION))
     for field in ("name", "owner"):
         if not isinstance(request.get(field), str) or not request[field].strip():
             raise HelperFailure(
@@ -219,17 +79,17 @@ def plan_source(
             "Select minimal or standard extraction and independent vectorization none or azureOpenAI.",
             blocked_at="input-resolution",
         )
-    embedding = source_vector.validate_choice(
+    embedding = _embedding.validate_choice(
         request.get("embedding"), enabled=request["vectorization"] == "azureOpenAI",
-        api_version=file_ingest.API_VERSION,
+        api_version=_file_inventory.API_VERSION,
     )
-    cu = validate_content_understanding(
+    cu = _file_source_config.validate_content_understanding(
         request.get("content_understanding"), enabled=request["extraction_mode"] == "standard",
     )
     if (request.get("reuse_input_file") is not None or request.get("reuse_result_file") is not None) and (
         cu is None or cu["auth"] != "system-assigned"
     ):
-        raise _cu_failure("cu-choice-conflict", "File MI provenance inputs are only for managed-identity exact reuse.")
+        raise _file_source_config._cu_failure("cu-choice-conflict", "File MI provenance inputs are only for managed-identity exact reuse.")
     rbac, network = request.get("rbac"), request.get("network")
     if (
         not isinstance(rbac, dict)
@@ -247,13 +107,13 @@ def plan_source(
             "Supply observed RBAC assignments and network posture/evidence; the policy owner must refresh and verify them before approval.",
             blocked_at="input-resolution",
         )
-    root = file_ingest.resolve_local_root(request.get("local_root"))
-    records = file_ingest.snapshot_inventory(
+    root = _file_inventory.resolve_local_root(request.get("local_root"))
+    records = _file_inventory.snapshot_inventory(
         root, request.get("paths"), service_tier=request.get("service_tier")
     )
     common = {
         "endpoint": request.get("endpoint"), "name": request.get("name"),
-        "api_version": file_ingest.API_VERSION, "owner": request.get("owner"),
+        "api_version": _file_inventory.API_VERSION, "owner": request.get("owner"),
         "cleanup_approved": False, "rbac": copy.deepcopy(rbac),
         "network": copy.deepcopy(network),
     }
@@ -268,7 +128,7 @@ def plan_source(
     ingestion = {
         **copy.deepcopy(common), "operation": "ingest", "local_root": str(root),
         "files": records, "inventory_digest": digest(records),
-        "expected_server_inventory_digest": file_ingest.inventory_digest([]),
+        "expected_server_inventory_digest": _file_inventory.inventory_digest([]),
         "service_tier": request["service_tier"], "extraction_mode": request["extraction_mode"],
     }
     plan = {
@@ -278,7 +138,7 @@ def plan_source(
     }
     if embedding is not None:
         plan["embedding"] = embedding
-        source["desired"]["fileParameters"]["ingestionParameters"]["embeddingModel"] = source_vector.model_definition(embedding)
+        source["desired"]["fileParameters"]["ingestionParameters"]["embeddingModel"] = model_definition(embedding)
     if cu is not None:
         automatic = cu["auth"] == "api-key-arm"
         mi = cu["auth"] == "system-assigned"
@@ -293,27 +153,27 @@ def plan_source(
             aiServices={"uri": cu["endpoint"].rstrip("/")}, disableImageVerbalization=True,
         )
     # Validate the local inventory and all choices before any authentication.
-    _validate_plan(plan, require_cu_readback=False)
+    _file_source_config._validate_plan(plan, require_cu_readback=False)
     cu_request_ids = []
     if cu is not None:
-        state, cu_request_ids = read_content_understanding(cu, token_provider=token_provider, transport=transport)
+        state, cu_request_ids = _file_source_config.read_content_understanding(cu, token_provider=token_provider, transport=transport)
         plan["cu_resource_state"] = state
         if cu["auth"] == "system-assigned":
             plan["cu_identity_state"], ids = file_cu_mi.read_binding(
                 cu, common["endpoint"], token_provider=token_provider, transport=transport,
             )
             cu_request_ids.extend(ids)
-    _validate_plan(plan)
-    transport = source_vector.guard_readback_transport(plan, transport)
-    url = search_reconcile.resource_url(source)
+    _file_source_config._validate_plan(plan)
+    transport = _source_readback.guard_readback_transport(plan, transport)
+    url = _search_read.resource_url(source)
     token = token_provider(SEARCH_AUDIENCE)
-    current, request_id = search_reconcile.read_resource(url, token, transport=transport)
+    current, request_id = _search_read.read_resource(url, token, transport=transport)
     request_ids = cu_request_ids + ([request_id] if request_id else [])
     matched = {}
     if current is not None:
         if cu is not None and cu["auth"] == "system-assigned":
-            file_cu_mi.verify_reuse(request, plan, current)
-        if not search_reconcile.definitions_match(source["desired"], current):
+            _file_source_config.verify_reuse(request, plan, current)
+        if not _search_read.definitions_match(source["desired"], current):
             raise HelperFailure(
                 "definition-conflict",
                 "The exact source has a different definition; planning never overwrites or chooses another name.",
@@ -325,9 +185,9 @@ def plan_source(
                 "definition-evidence-missing", "Exact reuse requires the current source ETag.",
                 blocked_at="reconciliation",
             )
-        before, ids = file_ingest.read_inventory(ingestion, token, transport=transport)
+        before, ids = _file_inventory.read_inventory(ingestion, token, transport=transport)
         request_ids.extend(ids)
-        matched = file_ingest.reconcile_inventory(ingestion, before)
+        matched = _file_inventory.reconcile_inventory(ingestion, before)
         file_ids = [item.get("fileId") for item in matched.values()]
         if (
             not all(isinstance(value, str) and value for value in file_ids)
@@ -338,14 +198,14 @@ def plan_source(
                 blocked_at="reconciliation",
             )
         source.update(action="reuse", expected_etag=etag)
-        ingestion["expected_server_inventory_digest"] = file_ingest.inventory_digest(before)
-        refreshed, refresh_id = search_reconcile.read_resource(url, token, transport=transport)
+        ingestion["expected_server_inventory_digest"] = _file_inventory.inventory_digest(before)
+        refreshed, refresh_id = _search_read.read_resource(url, token, transport=transport)
         if refresh_id:
             request_ids.append(refresh_id)
         if (
             refreshed is None
             or refreshed.get("@odata.etag") != etag
-            or not search_reconcile.definitions_match(source["desired"], refreshed)
+            or not _search_read.definitions_match(source["desired"], refreshed)
         ):
             raise HelperFailure(
                 "definition-drift",
@@ -353,12 +213,12 @@ def plan_source(
                 blocked_at="reconciliation",
             )
     # Do not return a snapshot that changed while Search discovery was running.
-    _validate_plan(plan)
+    _file_source_config._validate_plan(plan)
     if cu is not None:
-        state, ids = read_content_understanding(cu, token_provider=token_provider, transport=transport)
+        state, ids = _file_source_config.read_content_understanding(cu, token_provider=token_provider, transport=transport)
         request_ids.extend(ids)
-        if not _cu_states_match(state, plan["cu_resource_state"]):
-            raise _cu_failure(
+        if not _file_source_config._cu_states_match(state, plan["cu_resource_state"]):
+            raise _file_source_config._cu_failure(
                 "cu-prerequisite-drift", "CU account access or configuration changed during planning; refresh the plan.",
                 request_id=ids[-1] if ids else None,
             )
@@ -368,7 +228,7 @@ def plan_source(
             binding, ids = file_cu_mi.read_binding(cu, common["endpoint"], token_provider=token_provider, transport=transport)
             request_ids.extend(ids)
             if binding != plan["cu_identity_state"]:
-                raise _cu_failure("cu-mi-identity-drift", "Search identity, CU scoped role or network changed during planning.")
+                raise _file_source_config._cu_failure("cu-mi-identity-drift", "Search identity, CU scoped role or network changed during planning.")
     fingerprint = digest(plan)
     mutation_required = source["action"] == "create"
     return {
@@ -410,7 +270,7 @@ def plan_source(
                 ),
                 "kb_reasoning": "Unchanged; source CU does not enable KB chat or source vectors.",
             }} if cu else {}),
-            **({"embedding": source_vector.summary(embedding)} if embedding else {}),
+            **({"embedding": _embedding.summary(embedding)} if embedding else {}),
             "data_boundary": {"paths": [r["path"] for r in records],
                               "file_count": len(records), "total_bytes": sum(r["size"] for r in records)},
             "uploads": 0 if matched else len(records),
@@ -445,115 +305,6 @@ def plan_source(
     }
 
 
-def _validate_plan(
-    plan: dict[str, Any],
-    *,
-    require_cu_readback: bool = True,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    reject_secrets(plan)
-    require_allowed_fields(
-        plan,
-        {
-            "operation",
-            "outcome",
-            "cleanup_approved",
-            "owner",
-            "source",
-            "ingestion",
-            "embedding",
-            "content_understanding",
-            "file_cu_plan_version",
-            "cu_resource_state",
-            "cu_identity_state",
-        },
-        label="File source plan",
-    )
-    if (
-        plan.get("operation") != "reconcile-and-ingest"
-        or plan.get("cleanup_approved") is not False
-    ):
-        raise HelperFailure(
-            "operation-invalid",
-            "File source application requires reconcile-and-ingest with cleanup excluded.",
-            blocked_at="input-resolution",
-        )
-    source = plan.get("source")
-    ingestion = plan.get("ingestion")
-    if not isinstance(source, dict) or not isinstance(ingestion, dict):
-        raise HelperFailure(
-            "input-schema-invalid",
-            "File source application requires source and ingestion objects.",
-            blocked_at="input-resolution",
-        )
-    desired = source.get("desired")
-    if (
-        source.get("operation") != "reconcile"
-        or source.get("resource_type") != "knowledge-source"
-        or source.get("action") not in {"create", "reuse"}
-        or not isinstance(desired, dict)
-        or desired.get("kind") != "file"
-        or ingestion.get("operation") != "ingest"
-        or plan.get("owner") != source.get("owner")
-        or any(
-            source.get(field) != ingestion.get(field)
-            for field in ("endpoint", "name", "api_version", "owner")
-        )
-    ):
-        raise HelperFailure(
-            "step-contract-mismatch",
-            "Source reconciliation and ingestion must target the same approved File source.",
-            blocked_at="input-resolution",
-        )
-    source_mode = desired.get("fileParameters", {}).get(
-        "ingestionParameters", {}
-    ).get("contentExtractionMode")
-    if source_mode != ingestion.get("extraction_mode"):
-        raise HelperFailure(
-            "step-contract-mismatch",
-            "Source and ingestion extraction modes must match exactly.",
-            blocked_at="input-resolution",
-        )
-    search_reconcile._validate_plan(source)
-    file_ingest._validate_plan(ingestion)
-    source_vector.validate_plan_choice(plan)
-    if any(field in plan for field in ("file_cu_plan_version", "content_understanding", "cu_resource_state")):
-        if plan.get("file_cu_plan_version") not in ("1.0", "1.1", "1.2") or source_mode != "standard":
-            raise _cu_failure("cu-plan-mismatch", "New File CU plans require their supported CU-specific version and standard extraction.")
-        cu = validate_content_understanding(plan.get("content_understanding"), enabled=True)
-        automatic = cu["auth"] == "api-key-arm"
-        mi = cu["auth"] == "system-assigned"
-        acquisition = source.get("ai_services_key_acquisition")
-        if automatic:
-            file_cu_auth.validate_acquisition(acquisition, cu["endpoint"])
-        if (
-            plan["file_cu_plan_version"] != ("1.2" if mi else "1.1" if automatic else "1.0")
-            or (automatic and acquisition["resource_id"] != cu["resource_id"])
-            or (not automatic and acquisition is not None)
-            or source.get("ai_services_managed_identity") is not (True if mi else None)
-            or (not mi and "cu_identity_state" in plan)
-        ):
-            raise _cu_failure("cu-plan-mismatch", "CU auth mode, version and exact acquisition scope must match the approved plan.")
-        settings = desired["fileParameters"]["ingestionParameters"]
-        if (
-            settings.get("aiServices") != {"uri": cu["endpoint"].rstrip("/")}
-            or settings.get("identity") is not None
-            or settings.get("disableImageVerbalization") is not True
-            or settings.get("chatCompletionModel") is not None
-            or source.get("ai_services_api_key_environment") != cu.get("api_key_environment")
-            or ("embedding" in plan) != (settings.get("embeddingModel") is not None)
-        ):
-            raise _cu_failure("cu-plan-mismatch", "CU/embedding choices, credential channel and source processing must match the approved definition.")
-        if require_cu_readback:
-            state = plan.get("cu_resource_state")
-            if not isinstance(state, dict) or state != _cu_account_state(cu, state):
-                raise _cu_failure("cu-prerequisite-missing", "Retain the planner's selected CU account readback.")
-            if mi:
-                file_cu_mi.validate_state(plan.get("cu_identity_state"), cu, source["endpoint"])
-    elif source.get("ai_services_key_acquisition") is not None or source.get("ai_services_managed_identity") is not None or "cu_identity_state" in plan:
-        raise _cu_failure("cu-plan-mismatch", "Automatic acquisition requires the complete versioned File CU workflow.")
-    return source, ingestion
-
-
 def _writes(result: dict[str, Any]) -> list[dict[str, Any]]:
     writes: list[dict[str, Any]] = []
     for action in ("created", "updated"):
@@ -584,7 +335,7 @@ def execute(
     progress.update("validation")
     plan = document["plan"]
     fingerprint = document["_computed_fingerprint"]
-    source, ingestion = _validate_plan(plan)
+    source, ingestion = _file_source_config._validate_plan(plan)
     upload_session = None
     if upload_receipt_dir is not None:
         try:
@@ -597,24 +348,24 @@ def execute(
     mi = source.get("ai_services_managed_identity") is True
     mi_callback = None
     if mi_on_created is not None and (not mi or not callable(mi_on_created)):
-        raise _cu_failure("creation-callback-unsupported", "Private MI checkpoints cannot receive File key-auth wire.")
+        raise _file_source_config._cu_failure("creation-callback-unsupported", "Private MI checkpoints cannot receive File key-auth wire.")
     if acquisition is not None or mi:
         approval = document.get("approval")
         if (
             not isinstance(approval, dict) or approval.get("confirmed") is not True
             or approval.get("fingerprint") != digest(plan) or fingerprint != digest(plan)
         ):
-            raise _cu_failure("approval-missing", "Private credential acquisition requires the unchanged fingerprinted source approval.")
+            raise _file_source_config._cu_failure("approval-missing", "Private credential acquisition requires the unchanged fingerprinted source approval.")
         if acquisition is not None:
             file_cu_auth.check_context(acquisition["context"], context_provider)
     child = {"_computed_fingerprint": fingerprint}
     cu_ids = []
     if "content_understanding" in plan:
-        state, cu_ids = read_content_understanding(
+        state, cu_ids = _file_source_config.read_content_understanding(
             plan["content_understanding"], token_provider=token_provider, transport=transport,
         )
-        if not _cu_states_match(state, plan["cu_resource_state"]):
-            raise _cu_failure(
+        if not _file_source_config._cu_states_match(state, plan["cu_resource_state"]):
+            raise _file_source_config._cu_failure(
                 "cu-prerequisite-drift", "CU account access or configuration changed since approval; refresh the plan.",
                 request_id=cu_ids[-1] if cu_ids else None,
             )
@@ -624,27 +375,27 @@ def execute(
             )
             cu_ids.extend(ids)
             if binding != plan["cu_identity_state"]:
-                raise _cu_failure("cu-mi-identity-drift", "Search identity, CU role assignment or network changed since approval; refresh the concrete plan.")
+                raise _file_source_config._cu_failure("cu-mi-identity-drift", "Search identity, CU role assignment or network changed since approval; refresh the concrete plan.")
             raw_transport = transport
 
             def recheck_mi():
-                state, _ = read_content_understanding(
+                state, _ = _file_source_config.read_content_understanding(
                     plan["content_understanding"], token_provider=token_provider, transport=raw_transport,
                 )
                 binding, _ = file_cu_mi.read_binding(
                     plan["content_understanding"], source["endpoint"], token_provider=token_provider, transport=raw_transport,
                 )
-                if not _cu_states_match(state, plan["cu_resource_state"]) or binding != plan["cu_identity_state"]:
-                    raise _cu_failure("cu-mi-identity-drift", "CU account or Search identity/role/network changed immediately before source PUT.")
+                if not _file_source_config._cu_states_match(state, plan["cu_resource_state"]) or binding != plan["cu_identity_state"]:
+                    raise _file_source_config._cu_failure("cu-mi-identity-drift", "CU account or Search identity/role/network changed immediately before source PUT.")
 
             transport, mi_callback = file_cu_mi.guard_create(plan, transport, recheck_mi, mi_on_created)
     if acquisition is not None:
         def recheck():
-            current, _ = read_content_understanding(
+            current, _ = _file_source_config.read_content_understanding(
                 plan["content_understanding"], token_provider=token_provider, transport=transport,
             )
-            if not _cu_states_match(current, plan["cu_resource_state"]):
-                raise _cu_failure("cu-prerequisite-drift", "CU account changed before credential acquisition; refresh the plan and approval.")
+            if not _file_source_config._cu_states_match(current, plan["cu_resource_state"]):
+                raise _file_source_config._cu_failure("cu-prerequisite-drift", "CU account changed before credential acquisition; refresh the plan and approval.")
 
         private_key = file_cu_auth.PrivateKey(
             acquisition, token_provider=token_provider, transport=transport,
@@ -658,7 +409,7 @@ def execute(
     source_result = search_reconcile.execute(
         {**child, "plan": source},
         token_provider=token_provider,
-        transport=source_vector.guard_readback_transport(plan, transport),
+        transport=_source_readback.guard_readback_transport(plan, transport),
         credential_provider=private_key.acquire if private_key else None,
         **({"managed_identity_verified": True, "on_created": mi_callback} if mi else {}),
         **({"cleanup_capture": cleanup_capture} if cleanup_capture is not None else {}),
@@ -667,14 +418,14 @@ def execute(
     source_writes = _writes(source_result)
 
     def check_retry_source(recovery, token):
-        _validate_plan(plan)
-        current, _ = search_reconcile._get(
-            search_reconcile.resource_url(source), token,
-            transport=source_vector.guard_readback_transport(plan, transport), recovery=recovery,
+        _file_source_config._validate_plan(plan)
+        current, _ = _search_read._get(
+            _search_read.resource_url(source), token,
+            transport=_source_readback.guard_readback_transport(plan, transport), recovery=recovery,
         )
         etag = source_result["verification"]["readback"]["etag"]
         if (not etag or current is None or current.get("@odata.etag") != etag
-                or not search_reconcile.definitions_match(source["desired"], current)):
+                or not _search_read.definitions_match(source["desired"], current)):
             raise HelperFailure("file-upload-source-drift", "Retry requires the unchanged acknowledged source version/definition.",
                                 blocked_at="verification")
 
@@ -807,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
         document["_computed_fingerprint"] = fingerprint
         owner = plan.get("owner")
         outcome = str(plan.get("outcome") or outcome)
-        source, _ = _validate_plan(plan)
+        source, _ = _file_source_config._validate_plan(plan)
         if source["action"] == "create" and args.cleanup_receipt_dir is None:
             raise HelperFailure(
                 "file-creation-receipt-required",

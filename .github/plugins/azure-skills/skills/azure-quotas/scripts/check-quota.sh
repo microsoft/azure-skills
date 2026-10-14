@@ -64,21 +64,24 @@ else
     printf "%-40s %-10s %-10s %-10s %-10s\n" "Resource" "Region" "Limit" "Usage" "Available"
     printf "%-40s %-10s %-10s %-10s %-10s\n" "--------" "------" "-----" "-----" "---------"
 
-    echo "$QUOTAS_JSON" | python3 -c "
-import json, sys
+    printf '%s\0%s' "$QUOTAS_JSON" "$USAGES_JSON" | python3 -c '
+import json
+import sys
 
-quotas = json.load(sys.stdin)
-usages = json.loads('''$USAGES_JSON''')
+quotas_data, usages_data = sys.stdin.buffer.read().split(b"\0", 1)
+quotas = json.loads(quotas_data)
+usages = json.loads(usages_data)
+region = sys.argv[1]
 
 usage_lookup = {}
-for u in usages:
-    usage_lookup[u['name']] = u.get('properties', {}).get('usages', {}).get('value', 0)
+for usage in usages:
+    usage_lookup[usage["name"]] = usage.get("properties", {}).get("usages", {}).get("value", 0)
 
-for q in quotas:
-    name = q['name']
-    limit = q.get('properties', {}).get('limit', {}).get('value', 0)
+for quota in quotas:
+    name = quota["name"]
+    limit = quota.get("properties", {}).get("limit", {}).get("value", 0)
     used = usage_lookup.get(name, 0)
-    avail = limit - used
-    print(f'{name:<40} $REGION{\"\":<4} {limit:<10} {used:<10} {avail:<10}')
-"
+    available = limit - used
+    print(f"{name:<40} {region:<10} {limit:<10} {used:<10} {available:<10}")
+' "$REGION"
 fi

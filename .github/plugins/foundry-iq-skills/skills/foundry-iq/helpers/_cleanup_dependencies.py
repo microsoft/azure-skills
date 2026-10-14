@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import inspect
 import re
-from typing import Any
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 
 try:
     from ._common import HelperFailure, digest, odata_name, require_allowed_fields, sdk_error_metadata
+    from . import _search_read
 except ImportError:
     from _common import HelperFailure, digest, odata_name, require_allowed_fields, sdk_error_metadata
+    import _search_read
 
 
 COLLECTIONS = {"index": "indexes", "indexer": "indexers", "skillset": "skillsets", "datasource": "datasources"}
@@ -164,10 +165,7 @@ def _projections(skillset):
 
 
 def search_snapshot(plan, current, token, *, transport, bounds):
-    try:
-        from . import search_reconcile
-    except ImportError:
-        import search_reconcile
+
     names = generated(current)
     inventories = {}
     bases = _list_search(plan, "knowledgebases", token, transport, bounds)
@@ -236,21 +234,21 @@ def search_snapshot(plan, current, token, *, transport, bounds):
     snapshots = []
     for kind, name in sorted(names.items()):
         url = f"{plan['endpoint'].rstrip('/')}/{COLLECTIONS[kind]}('{odata_name(name)}')?api-version={plan['api_version']}"
-        child, _ = search_reconcile.read_resource(url, token, transport=transport)
+        child, _ = _search_read.read_resource(url, token, transport=transport)
         if child is None:
             raise fail("generated-resource-missing", "A generated child is missing; source absence alone cannot prove the remaining cascade.")
         etag = child.get("@odata.etag")
         if child.get("name") != name or not isinstance(etag, str) or not etag.strip():
             raise fail("generated-version-unavailable", "Every generated object requires an exact name and fresh ETag.")
         snapshots.append({"type": kind, "name": name, "etag": etag, "definition_digest": digest(child)})
-    refreshed, _ = search_reconcile.read_resource(search_reconcile.resource_url(plan), token, transport=transport)
-    if (refreshed is None or search_reconcile._definition(refreshed) != search_reconcile._definition(current)
+    refreshed, _ = _search_read.read_resource(_search_read.resource_url(plan), token, transport=transport)
+    if (refreshed is None or _search_read._definition(refreshed) != _search_read._definition(current)
             or refreshed.get("@odata.etag") != current.get("@odata.etag") or generated(refreshed) != names):
         raise fail("definition-drift", "The source changed during dependency discovery.")
     inventory_state = {
         kind: [
             {"name": item["name"], "etag": item.get("@odata.etag"),
-             "definition": search_reconcile._definition(item),
+             "definition": _search_read._definition(item),
              "generated": generated(item) if kind == "knowledgesources" and item.get("kind") in ("file", "azureBlob") else None}
             for item in items
         ]
@@ -327,11 +325,11 @@ def _connection_use(definition, plan, connection):
             raise fail("connection-consumer-opaque", "An MCP connection reference is malformed.")
         if "/" in reference:
             try:
-                from .prompt_connect import PROJECT_ID
+                from . import _prompt_read
             except ImportError:
-                from prompt_connect import PROJECT_ID
+                import _prompt_read
             project, _, leaf = reference.rstrip("/").casefold().rpartition("/connections/")
-            if PROJECT_ID.fullmatch(project) is None or not leaf or "/" in leaf:
+            if _prompt_read.PROJECT_ID.fullmatch(project) is None or not leaf or "/" in leaf:
                 raise fail("connection-consumer-opaque", "An MCP reference is neither a project connection name nor an exact ARM ID.")
             uses |= reference.rstrip("/").casefold() == expected
         else:

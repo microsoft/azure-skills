@@ -16,16 +16,16 @@ Generate an upgrade assessment report before any changes to Azure resources.
 3. **Verify Language Stack** — Confirm the app's runtime is supported on the target plan
 4. **Verify Stack Version** — Confirm the runtime version is supported on the target plan in the region
 5. **Check Deployment Slots** — Determine if slots are in use (Flex Consumption doesn't support slots)
-6. **Check Certificates** — Determine if TLS/SSL certificates are in use (not yet supported in Flex Consumption)
+6. **Check Certificates** — Determine whether TLS/SSL certificates are in use. Flex Consumption uses the preview site-scoped certificate model, so plan to re-add certificates after migration and verify the documented limits and Linux certificate-loading behavior.
 7. **Check Blob Triggers** — Verify blob triggers use EventGrid source (container polling not supported in Flex Consumption)
 8. **Assess Dependencies** — Review upstream and downstream service dependencies and plan mitigation strategies
-9. **Generate Report** — Create `upgrade-assessment-report.md`
+9. **Generate Report** — Create `<UPGRADE_DIR>/upgrade-assessment-report.md`
 
 ## Assessment Report Format
 
 > ⚠️ **MANDATORY**: Use these exact section headings in every assessment report. Do NOT rename, reorder, or omit sections.
 
-The report MUST be saved as `upgrade-assessment-report.md` in the workspace root.
+The report MUST be saved as `<UPGRADE_DIR>/upgrade-assessment-report.md`. See [Artifact Output Policy](../../../../global-rules.md#artifact-output-policy) for how `<UPGRADE_DIR>` resolves (default: `.azure-upgrade/<source-app-name>/`).
 
 ```markdown
 # Upgrade Assessment Report
@@ -52,15 +52,17 @@ The report MUST be saved as `upgrade-assessment-report.md` in the workspace root
 | Language stack supported | ✅ / ❌ | |
 | Stack version supported | ✅ / ❌ | |
 | No deployment slots | ✅ / ⚠️ | |
-| No TLS/SSL certificates | ✅ / ⚠️ | |
+| Certificate requirements assessed | ✅ / ⚠️ / N/A | |
 | Blob triggers use EventGrid | ✅ / ⚠️ / N/A | |
 | .NET isolated (not in-process) | ✅ / ❌ / N/A | |
 
 ## 3. App Settings Inventory
 
-| Setting | Value | Migrate? | Notes |
-|---------|-------|----------|-------|
-| | | Yes / No / Convert | |
+> Record setting names only. Never include app-setting values in the assessment.
+
+| Setting | Migrate? | Notes |
+|---------|----------|-------|
+| | Yes / No / Convert | |
 
 ## 4. Managed Identities
 

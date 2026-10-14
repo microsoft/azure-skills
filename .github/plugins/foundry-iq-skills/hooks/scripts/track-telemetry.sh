@@ -147,7 +147,7 @@
 
 set +e  # Don't exit on errors - fail silently for privacy
 
-TELEMETRY_REPORTER_VERSION="0.1.10-g8cc1aa1c56"
+TELEMETRY_REPORTER_VERSION="0.1.11-gce94fceee1"
 
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then

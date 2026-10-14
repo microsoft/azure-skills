@@ -12,21 +12,21 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 try:
-    from . import _prompt_read as read
+    from . import _prompt_read as read, _prompt_read
     from ._bootstrap_io import read_json, run_cli
     from ._common import (
-        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, azure_cli_token,
-        blocked_result, digest, emit_result, http_request, reject_secrets,
+        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, reject_secrets,
     )
-    from .prompt_connect import _project_identity, _project_endpoint, PROJECT_ID
 except ImportError:
     import _prompt_read as read
+    import _prompt_read
     from _bootstrap_io import read_json, run_cli
     from _common import (
-        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, azure_cli_token,
-        blocked_result, digest, emit_result, http_request, reject_secrets,
+        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, reject_secrets,
     )
-    from prompt_connect import _project_identity, _project_endpoint, PROJECT_ID
+
 
 AI_AUDIENCE = "https://ai.azure.com"
 FOUNDRY_USER = "53ca6127-db72-4b80-b1b0-d745d6d5456d"
@@ -91,7 +91,7 @@ def validate(request):
         if value.startswith("https:"):
             parsed = url(value)
             if key == "project":
-                _project_endpoint(value)
+                _prompt_read._project_endpoint(value)
                 if (not name(parsed.hostname.removesuffix(".services.ai.azure.com"))
                         or not name(unquote(parsed.path.rstrip("/").rsplit("/", 1)[-1]))):
                     raise fail("selection-invalid", "The project endpoint must identify a valid account/project name.")
@@ -104,7 +104,7 @@ def validate(request):
                   or parse_qs(parsed.query) != {"api-version": ["2026-08-01-preview"]}):
                 raise fail("selection-invalid", "Select an exact preview KB MCP endpoint.")
         elif value.startswith("/"):
-            pattern = PROJECT_ID if key == "project" else read.SEARCH_ID if key == "search_service" else None
+            pattern = _prompt_read.PROJECT_ID if key == "project" else read.SEARCH_ID if key == "search_service" else None
             if pattern is None or pattern.fullmatch(value) is None:
                 raise fail("selection-invalid", "The supplied resource ID does not identify the selected resource kind.")
         elif not name(value):
@@ -199,7 +199,7 @@ def resolve(request, reads):
             projects_seen = set()
             for project in reads.collection(MANAGEMENT_AUDIENCE + account_id + "/projects?api-version=" + read.PROJECT_API):
                 candidate = project.get("id", "")
-                if (not isinstance(candidate, str) or PROJECT_ID.fullmatch(candidate) is None
+                if (not isinstance(candidate, str) or _prompt_read.PROJECT_ID.fullmatch(candidate) is None
                         or not candidate.casefold().startswith((account_id + "/projects/").casefold())
                         or candidate.casefold() in projects_seen):
                     raise fail("inventory-unverified", "Project inventory contains an unverified identity.")
@@ -209,11 +209,11 @@ def resolve(request, reads):
         if len(matches) != 1:
             raise ProjectSelectionFailure(matches)
         project_id = matches[0]
-    match = PROJECT_ID.fullmatch(project_id)
+    match = _prompt_read.PROJECT_ID.fullmatch(project_id)
     if match is None:
         raise fail("selection-invalid", "The resolved project resource identity is malformed.")
     endpoint = f"https://{match['account']}.services.ai.azure.com/api/projects/{quote(match['project'], safe='')}"
-    _project_identity({"project_resource_id": project_id, "project_endpoint": endpoint})
+    _prompt_read._project_identity({"project_resource_id": project_id, "project_endpoint": endpoint})
     selection = request["search_service"]
     if selection.startswith("/"):
         search_id = selection

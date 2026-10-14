@@ -8,81 +8,31 @@ import re
 import sys
 from pathlib import Path
 from typing import Any, Callable
-from urllib.parse import urlencode
 
 try:
-    from . import cu_ingestion_auth as file_cu_auth
-    from . import _cleanup_dependencies as cleanup_dependencies, _cleanup_receipts as cleanup_receipts
+    from . import (
+        cu_ingestion_auth as file_cu_auth, _cleanup_dependencies as cleanup_dependencies,
+        _cleanup_receipts as cleanup_receipts, _search_read,
+    )
     from ._common import (
-        SEARCH_AUDIENCE,
-        HelperFailure,
-        HttpResult,
-        ReadRecovery,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        canonical_bytes,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        load_approved_input,
-        odata_name,
-        reject_secrets,
-        require_allowed_fields,
-        validate_search_endpoint,
+        SEARCH_AUDIENCE, HelperFailure, HttpResult, ReadRecovery, TokenProvider, Transport, azure_cli_token,
+        blocked_result, canonical_bytes, digest, emit_result, http_request, is_ambiguous_mutation_failure,
+        load_approved_input, odata_name, reject_secrets, require_allowed_fields, validate_search_endpoint,
         RESOURCE_ID_CONNECTION,
     )
 except ImportError:
     import cu_ingestion_auth as file_cu_auth
-    import _cleanup_dependencies as cleanup_dependencies, _cleanup_receipts as cleanup_receipts
-    from _common import (  # type: ignore[no-redef]
-        SEARCH_AUDIENCE,
-        HelperFailure,
-        HttpResult,
-        ReadRecovery,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        canonical_bytes,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        load_approved_input,
-        odata_name,
-        reject_secrets,
-        require_allowed_fields,
-        validate_search_endpoint,
+    import _cleanup_dependencies as cleanup_dependencies
+    import _cleanup_receipts as cleanup_receipts
+    import _search_read
+    from _common import (
+        SEARCH_AUDIENCE, HelperFailure, HttpResult, ReadRecovery, TokenProvider, Transport, azure_cli_token,
+        blocked_result, canonical_bytes, digest, emit_result, http_request, is_ambiguous_mutation_failure,
+        load_approved_input, odata_name, reject_secrets, require_allowed_fields, validate_search_endpoint,
         RESOURCE_ID_CONNECTION,
     )
 
 
-SUPPORTED_API_VERSIONS = {"2026-04-01", "2026-08-01-preview"}
-RESOURCE_SEGMENTS = {
-    "knowledge-source": "knowledgesources",
-    "knowledge-base": "knowledgebases",
-}
-DYNAMIC_FIELDS = {
-    "@odata.context",
-    "@odata.etag",
-    "currentSynchronizationState",
-    "lastSynchronizationState",
-    "synchronizationStatus",
-    "apiKey",
-    "createdResources",
-    # Azure Search always returns "<redacted>" for connectionString on GET
-    # (secret redaction), never the submitted value, so it can never be
-    # compared for exact equality against a desired definition.
-    "connectionString",
-}
-# Endpoint-URI fields where Azure Search's own readback normalization is
-# inconsistent (resourceUri loses a trailing slash; aiServices.uri keeps
-# whatever was submitted), so both are compared slash-insensitively.
-URI_FIELDS = {"resourceUri", "uri"}
-SHA256 = re.compile(r"^sha256:[a-f0-9]{64}$")
 ENVIRONMENT_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 PLAN_FIELDS = {
     "operation",
@@ -162,14 +112,14 @@ def _kb_model(value: Any, *, required: bool) -> dict[str, Any] | None:
 
 def _kb_model_definition(choice: dict[str, Any]) -> dict[str, Any]:
     try:
-        from .source_vector import model_definition
+        from ._common import model_definition
     except ImportError:
-        from source_vector import model_definition
+        from _common import model_definition
     return model_definition(choice)
 
 
 def _kb_guard(plan: dict[str, Any], transport: Transport) -> Transport:
-    target = _resource_url(plan)
+    target = _search_read._resource_url(plan)
 
     def guarded(method, url, token, **kwargs):
         result = transport(method, url, token, **kwargs)
@@ -203,14 +153,14 @@ def plan_knowledge_base(
     reject_secrets(request)
     require_allowed_fields(request, KB_INTENT_FIELDS, label="KB planning input")
     for field in ("name", "source_name"):
-        _odata_name(request.get(field))
+        _search_read._odata_name(request.get(field))
     if not isinstance(request.get("owner"), str) or not request["owner"].strip() or len(request["owner"]) > 4096:
         raise _kb_failure("input-schema-invalid", "An explicit nonempty owner is required.")
     action = request.get("action", "create-or-reuse")
     effort, output = request.get("reasoning_effort"), request.get("output_mode")
     version = request.get("api_version")
     if (
-        not isinstance(version, str) or version not in SUPPORTED_API_VERSIONS
+        not isinstance(version, str) or version not in _search_read.SUPPORTED_API_VERSIONS
         or action not in ("create-or-reuse", "agent-minimal-transition")
         or effort not in ("minimal", "low", "medium")
         or output not in ("extractiveData", "answerSynthesis")
@@ -242,8 +192,8 @@ def plan_knowledge_base(
         "action": "create", "desired": desired, "kb_plan_version": "1.0", "kb_model": model,
         **{k: copy.deepcopy(request[k]) for k in ("data_movement", "rbac", "network") if k in request},
     }
-    target = _resource_url(plan)
-    source_url = _resource_url({**plan, "resource_type": "knowledge-source", "name": request["source_name"]})
+    target = _search_read._resource_url(plan)
+    source_url = _search_read._resource_url({**plan, "resource_type": "knowledge-source", "name": request["source_name"]})
     # Validate all local sections before authentication; no invented source proof.
     for key, fields in (("data_movement", {"boundary", "result"}), ("rbac", {"assignments"}),
                         ("network", {"posture", "evidence"})):
@@ -253,7 +203,7 @@ def plan_knowledge_base(
             require_allowed_fields(plan[key], fields, label=key)
     transport = _kb_guard(plan, transport)
     token = token_provider(SEARCH_AUDIENCE)
-    source, source_id = _get(source_url, token, transport=transport)
+    source, source_id = _search_read._get(source_url, token, transport=transport)
     if source is None or source.get("name") != request["source_name"] or source.get("kind") not in ("file", "azureBlob"):
         raise _kb_failure("source-unverified", "Select an existing supported source with exact readback.", source_id)
     parameters = source.get("azureBlobParameters")
@@ -265,15 +215,15 @@ def plan_knowledge_base(
         source["kind"] != "azureBlob" or parameters.get("isADLSGen2", False)
     ):
         raise _kb_failure("mode-api-mismatch", "File and ADLS knowledge bases require supported preview.", source_id)
-    source_digest = digest(_definition(source))
+    source_digest = digest(_search_read._definition(source))
     plan["verified_source"] = {"name": request["source_name"], "verified": True, "definition_digest": source_digest}
-    current, current_id = _get(target, token, transport=transport)
+    current, current_id = _search_read._get(target, token, transport=transport)
     if action == "agent-minimal-transition":
         if current is None:
             raise _kb_failure("target-absent", "Transition requires the exact existing KB.", current_id)
         if (
             current.get("name") != plan["name"]
-            or _definition(current.get("knowledgeSources")) != desired["knowledgeSources"]
+            or _search_read._definition(current.get("knowledgeSources")) != desired["knowledgeSources"]
             or current.get("models") not in (None, [])
             or current.get("outputMode") not in (None, "extractiveData")
             or current.get("retrievalReasoningEffort") not in (None, {"kind": "minimal"}, {"kind": "low"})
@@ -284,22 +234,22 @@ def plan_knowledge_base(
         plan["desired"] = desired
         plan["action"] = "update"
     if current is not None:
-        if not definitions_match(desired, current) and action != "agent-minimal-transition":
+        if not _search_read.definitions_match(desired, current) and action != "agent-minimal-transition":
             raise _kb_failure("definition-conflict", "The exact KB differs; never overwrite or choose another name.", current_id)
         etag = current.get("@odata.etag")
         if not isinstance(etag, str) or not etag.strip():
             raise _kb_failure("definition-evidence-missing", "Existing KB readback requires an ETag.", current_id)
         plan["expected_etag"] = etag
-        if definitions_match(desired, current):
+        if _search_read.definitions_match(desired, current):
             plan["action"] = "reuse"
-    refreshed, refresh_id = _get(source_url, token, transport=transport)
-    if refreshed is None or digest(_definition(refreshed)) != source_digest:
+    refreshed, refresh_id = _search_read._get(source_url, token, transport=transport)
+    if refreshed is None or digest(_search_read._definition(refreshed)) != source_digest:
         raise _kb_failure("source-drift", "Source changed during planning; refresh its evidence before approval.", refresh_id)
     request_ids = [source_id, current_id, refresh_id]
     if current is not None:
-        after, after_id = _get(target, token, transport=transport)
+        after, after_id = _search_read._get(target, token, transport=transport)
         request_ids.append(after_id)
-        if after is None or after.get("@odata.etag") != plan["expected_etag"] or not definitions_match(current, after):
+        if after is None or after.get("@odata.etag") != plan["expected_etag"] or not _search_read.definitions_match(current, after):
             raise _kb_failure("definition-drift", "KB changed during planning; discard this proposal.", after_id)
     _validate_plan(plan)
     fingerprint = digest(plan)
@@ -332,92 +282,9 @@ def plan_knowledge_base(
     }
 
 
-def _odata_name(name: Any) -> str:
-    return odata_name(name)
-
-
-def _resource_url(plan: dict[str, Any]) -> str:
-    endpoint = validate_search_endpoint(plan.get("endpoint"))
-    resource_type = plan.get("resource_type")
-    segment = RESOURCE_SEGMENTS.get(resource_type)
-    if segment is None:
-        raise HelperFailure(
-            "resource-type-invalid",
-            "resource_type must be knowledge-source or knowledge-base.",
-            blocked_at="input-resolution",
-        )
-    api_version = plan.get("api_version")
-    if api_version not in SUPPORTED_API_VERSIONS:
-        raise HelperFailure(
-            "api-version-invalid",
-            "API version must be 2026-04-01 or 2026-08-01-preview.",
-            blocked_at="input-resolution",
-        )
-    return (
-        f"{endpoint}/{segment}('{_odata_name(plan.get('name'))}')?"
-        + urlencode({"api-version": api_version})
-    )
-
-
-def _definition(value: Any, *, key: str | None = None) -> Any:
-    if isinstance(value, dict):
-        result = {
-            child_key: _definition(child, key=child_key)
-            for child_key, child in sorted(value.items())
-            if child_key not in DYNAMIC_FIELDS and child is not None
-        }
-        # Preview returns this documented default even when omitted on creation.
-        if value.get("kind") == "azureBlob" and result.get("resultsProcessing") == "rerank":
-            result.pop("resultsProcessing")
-        return {
-            child_key: child
-            for child_key, child in result.items()
-            if child not in ({}, [])
-        }
-    if isinstance(value, list):
-        return [_definition(child) for child in value]
-    # Azure Search silently strips a single trailing slash from
-    # azureOpenAIParameters.resourceUri on readback (while preserving it
-    # verbatim on aiServices.uri), so a byte-exact comparison would
-    # false-negative on functionally identical endpoints that differ only
-    # by a trailing slash. Normalize both known endpoint-URI field names.
-    if (
-        key in URI_FIELDS
-        and isinstance(value, str)
-        and value.endswith("/")
-        and len(value) > 1
-    ):
-        # Remove only one trailing slash; preserve intentional extra
-        # slashes (e.g. "https://example.com//") for exact comparison.
-        return value[:-1]
-    return value
-
-
-def response_etags(result: HttpResult) -> dict[str, Any]:
-    return {
-        "body": result.body.get("@odata.etag") if isinstance(result.body, dict) else None,
-        "headers": list(result.etag_values) if result.etag_values is not None else [
-            value for name, value in result.headers.items() if name.lower() == "etag"
-        ],
-    }
-
-
-def resolve_etag(evidence: dict[str, Any], request_id: str | None = None) -> str | None:
-    values = [*evidence["headers"]]
-    if evidence["body"] is not None:
-        values.append(evidence["body"])
-    if any(not isinstance(value, str) or not value.strip() for value in values):
-        raise HelperFailure("etag-invalid", "Search returned malformed version evidence.",
-                            blocked_at="verification", request_id=request_id)
-    if len(set(values)) > 1:
-        raise HelperFailure("etag-conflict", "Search response header/body ETags conflict.",
-                            blocked_at="verification", request_id=request_id)
-    return values[0] if values else None
-
-
 def _creation_callback_response(result: HttpResult) -> HttpResult:
     """Project provenance only, not credential-bearing service bodies or headers."""
-    evidence = response_etags(result)
+    evidence = _search_read.response_etags(result)
     # Preserve invalidity without forwarding malformed containers that could contain credentials.
     body_etag = evidence["body"] if evidence["body"] is None or isinstance(evidence["body"], str) else []
     etags = tuple(value if isinstance(value, str) else "" for value in evidence["headers"])
@@ -431,33 +298,6 @@ def _creation_callback_response(result: HttpResult) -> HttpResult:
     return HttpResult(result.status, {
         "@odata.etag": body_etag, "azureBlobParameters": {"createdResources": names},
     }, headers, etags)
-
-
-def _get(
-    url: str,
-    token: str,
-    *,
-    transport: Transport,
-    recovery: ReadRecovery | None = None,
-) -> tuple[dict[str, Any] | None, str | None]:
-    try:
-        result = (recovery.get(url, token, transport=transport) if recovery is not None
-                  else transport("GET", url, token))
-    except HelperFailure as failure:
-        if failure.http_status == 404 and failure.blocked_at != "local-persistence":
-            return None, failure.request_id
-        raise
-    if result.status != 200 or not isinstance(result.body, dict):
-        raise HelperFailure(
-            "readback-invalid",
-            "Search resource readback did not return one JSON object.",
-            blocked_at="reconciliation",
-            request_id=result.request_id,
-            status=result.status,
-        )
-    etag = resolve_etag(response_etags(result), result.request_id)
-    body = {**result.body, "@odata.etag": etag} if etag is not None else result.body
-    return body, result.request_id
 
 
 def _validate_plan(plan: dict[str, Any]) -> None:
@@ -494,7 +334,7 @@ def _validate_plan(plan: dict[str, Any]) -> None:
         )
         model = _kb_model(plan["kb_model"], required=required)
         expected = [_kb_model_definition(model)] if model else []
-        if _definition(desired.get("models", [])) != _definition(expected):
+        if _search_read._definition(desired.get("models", [])) != _search_read._definition(expected):
             raise _kb_failure("kb-model-conflict", "KB wire models must match the selected independent chat configuration.")
     for field, allowed in (
         ("data_movement", {"boundary", "result"}),
@@ -620,7 +460,7 @@ def _validate_plan(plan: dict[str, Any]) -> None:
                     or not isinstance(parameters.get("isADLSGen2"), bool)
                     or not isinstance(evidence, dict)
                     or evidence.get("verified") is not True
-                    or SHA256.fullmatch(str(evidence.get("inventory_digest"))) is None
+                    or _search_read.SHA256.fullmatch(str(evidence.get("inventory_digest"))) is None
                 ):
                     raise HelperFailure(
                         "source-evidence-invalid",
@@ -656,7 +496,7 @@ def _validate_plan(plan: dict[str, Any]) -> None:
                 or not isinstance(verified_source, dict)
                 or verified_source.get("name") != sources[0].get("name")
                 or verified_source.get("verified") is not True
-                or SHA256.fullmatch(str(verified_source.get("definition_digest")))
+                or _search_read.SHA256.fullmatch(str(verified_source.get("definition_digest")))
                 is None
             ):
                 raise HelperFailure(
@@ -664,7 +504,7 @@ def _validate_plan(plan: dict[str, Any]) -> None:
                     "Knowledge-base reconciliation requires exact verified source readback.",
                     blocked_at="reconciliation",
                 )
-            _odata_name(verified_source.get("name"))
+            _search_read._odata_name(verified_source.get("name"))
             if plan.get("api_version") == "2026-04-01":
                 preview_fields = {
                     "outputMode",
@@ -711,22 +551,6 @@ def _validate_plan(plan: dict[str, Any]) -> None:
                 "Delete requires the approved owned definition digest.",
                 blocked_at="reconciliation",
             )
-
-
-def resource_url(plan: dict[str, Any]) -> str:
-    """Validate and address the exact selected Search resource."""
-    return _resource_url(plan)
-
-
-def read_resource(
-    url: str, token: str, *, transport: Transport
-) -> tuple[dict[str, Any] | None, str | None]:
-    """Read one identity; only a definitive 404 means absent."""
-    return _get(url, token, transport=transport)
-
-
-def definitions_match(desired: dict[str, Any], current: dict[str, Any]) -> bool:
-    return _definition(desired) == _definition(current)
 
 
 def execute(
@@ -784,7 +608,7 @@ def execute(
         )
         identity = {"type": item["type"], "name": item["name"], "service_managed": True}
         try:
-            child, _ = read_resource(url, token, transport=transport)
+            child, _ = _search_read.read_resource(url, token, transport=transport)
         except HelperFailure as failure:
             raise HelperFailure(
                 failure.code, "Source is absent but generated-child absence readback failed.",
@@ -851,14 +675,13 @@ def _execute(
         )
     if (acquisition is not None) != (credential_provider is not None):
         raise file_cu_auth.failure("cu-executor-required", "Private acquisition requires the approved versioned file_source executor; no standalone credential reads.")
-    url = _resource_url(plan)
+    url = _search_read._resource_url(plan)
     if plan.get("kb_plan_version") == "1.0":
         transport = _kb_guard(plan, transport)
     token = token_provider(SEARCH_AUDIENCE)
-    current, initial_request_id = _get(url, token, transport=transport)
+    current, initial_request_id = _search_read._get(url, token, transport=transport)
     operation = plan["operation"]
     outcome = str(plan.get("outcome") or f"search-{operation}")
-    owner = plan.get("owner")
 
     if operation == "delete":
         if current is None:
@@ -871,7 +694,7 @@ def _execute(
                 request_ids=[initial_request_id],
                 absence=True,
             )
-        current_definition = _definition(current)
+        current_definition = _search_read._definition(current)
         if digest(current_definition) != plan["owned_definition_digest"]:
             raise HelperFailure(
                 "ownership-unproven",
@@ -955,7 +778,7 @@ def _execute(
             )
         write = {"action": "deleted", "name": plan["name"]}
         try:
-            after, verify_request_id = _get(url, token, transport=transport)
+            after, verify_request_id = _search_read._get(url, token, transport=transport)
         except HelperFailure as failure:
             raise HelperFailure(
                 failure.code,
@@ -990,11 +813,11 @@ def _execute(
     source_request_id = None
     if plan["resource_type"] == "knowledge-base":
         verified_source = plan["verified_source"]
-        source_url = _resource_url({
+        source_url = _search_read._resource_url({
             **plan, "resource_type": "knowledge-source", "name": verified_source["name"],
         })
-        source, source_request_id = _get(source_url, token, transport=transport)
-        if source is None or digest(_definition(source)) != verified_source["definition_digest"]:
+        source, source_request_id = _search_read._get(source_url, token, transport=transport)
+        if source is None or digest(_search_read._definition(source)) != verified_source["definition_digest"]:
             raise HelperFailure(
                 "source-drift",
                 "The source is absent or its current definition differs from the approved source.",
@@ -1003,7 +826,7 @@ def _execute(
             )
 
     desired = plan["desired"]
-    if current is not None and _definition(desired) == _definition(current):
+    if current is not None and _search_read._definition(desired) == _search_read._definition(current):
         if (
             plan.get("action") == "reuse"
             and plan.get("expected_etag") is not None
@@ -1094,7 +917,7 @@ def _execute(
     finally:
         if credential_environment is not None or acquisition is not None:
             request_desired["fileParameters"]["ingestionParameters"]["aiServices"].pop("apiKey", None)
-            secret = None
+            del secret
     if result.status not in {200, 201}:
         if result.status in {408, 429} or result.status >= 500:
             return _recover_ambiguous_put(
@@ -1142,7 +965,7 @@ def _execute(
                 if on_file_acknowledged is not None:
                     on_file_acknowledged({
                         "status": result.status, "request_id": ReadRecovery.safe_id(result.request_id) if result.request_id else None,
-                        "etag_evidence": response_etags(_creation_callback_response(result)),
+                        "etag_evidence": _search_read.response_etags(_creation_callback_response(result)),
                     })
             except OSError as failure:
                 raise HelperFailure(
@@ -1150,7 +973,7 @@ def _execute(
                     f"Acknowledged creation receipt persistence failed ({type(failure).__name__}); private details withheld.",
                     blocked_at="local-persistence", request_id=result.request_id, status=result.status,
                 ) from failure
-        after, verify_request_id = _get(url, token, transport=transport, recovery=recovery)
+        after, verify_request_id = _search_read._get(url, token, transport=transport, recovery=recovery)
         if completed_action == "created" and cleanup_capture is not None:
             cleanup_receipts.search_finish(cleanup_capture, plan, after, token, transport)
     except HelperFailure as failure:
@@ -1170,7 +993,7 @@ def _execute(
             status=failure.http_status,
             partial=True,
         ) from failure
-    if after is None or _definition(desired) != _definition(after):
+    if after is None or _search_read._definition(desired) != _search_read._definition(after):
         raise HelperFailure(
             "readback-mismatch",
             "Readback does not contain the approved definition.",
@@ -1220,7 +1043,7 @@ def _recover_ambiguous_put(
 
     def readback():
         recovery.delay(failure)
-        return _get(url, token, transport=transport, recovery=recovery)
+        return _search_read._get(url, token, transport=transport, recovery=recovery)
 
     if completed_action == "created":
         observed = []
@@ -1257,7 +1080,7 @@ def _recover_ambiguous_put(
             f"HTTP {readback_failure.http_status}; request ID {recovery.safe_id(verify_request_id)}."
         )
     else:
-        if after is not None and _definition(plan["desired"]) == _definition(after):
+        if after is not None and _search_read._definition(plan["desired"]) == _search_read._definition(after):
             completed = _completed(
                 outcome,
                 fingerprint,
@@ -1311,7 +1134,7 @@ def _recover_ambiguous_delete(
 ) -> dict[str, Any]:
     identity = _target_identity(plan)
     try:
-        after, verify_request_id = _get(url, token, transport=transport)
+        after, verify_request_id = _search_read._get(url, token, transport=transport)
     except HelperFailure as readback_failure:
         raise HelperFailure(
             "delete-outcome-ambiguous",
@@ -1361,7 +1184,7 @@ def _completed(
         "type": plan["resource_type"],
         "name": plan["name"],
         "etag": readback.get("@odata.etag") if readback else None,
-        "definition_digest": digest(_definition(readback)) if readback else None,
+        "definition_digest": digest(_search_read._definition(readback)) if readback else None,
     }
     resources = {"created": [], "reused": [], "updated": [], "skipped": []}
     if action in resources:

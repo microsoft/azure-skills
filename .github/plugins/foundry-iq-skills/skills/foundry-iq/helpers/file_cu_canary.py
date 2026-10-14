@@ -16,15 +16,27 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 try:
-    from . import _bootstrap_io, file_source, file_ingest, file_cu_mi, search_reconcile
-    from ._common import (HelperFailure, MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, azure_cli_token,
-                          blocked_result, digest, emit_result, http_request, load_approved_input,
-                          require_allowed_fields, reject_secrets)
+    from . import (
+        _bootstrap_io, file_source, file_cu_mi, search_reconcile, _file_inventory, _file_source_config,
+        _search_read,
+    )
+    from ._common import (
+        HelperFailure, MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, load_approved_input, require_allowed_fields, reject_secrets,
+    )
 except ImportError:
-    import _bootstrap_io, file_source, file_ingest, file_cu_mi, search_reconcile
-    from _common import (HelperFailure, MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, azure_cli_token,
-                         blocked_result, digest, emit_result, http_request, load_approved_input,
-                         require_allowed_fields, reject_secrets)
+    import _bootstrap_io
+    import file_source
+    import file_cu_mi
+    import search_reconcile
+    import _file_inventory
+    import _file_source_config
+    import _search_read
+    from _common import (
+        HelperFailure, MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest,
+        emit_result, http_request, load_approved_input, require_allowed_fields, reject_secrets,
+    )
+
 
 PDF_NAME = "cu-mi-probe.pdf"
 MARKER = re.compile(r"CUOCR[2-9]{8}")
@@ -180,7 +192,7 @@ def _check_non_image_channels(plan, marker):
     ingestion = plan["ingestion"]
     # Produce the actual multipart envelope with only the image bytes omitted.
     try:
-        body, boundary = file_ingest._multipart(ingestion, ingestion["files"][0], b"", digest(plan))
+        body, boundary = _file_inventory._multipart(ingestion, ingestion["files"][0], b"", digest(plan))
         message = BytesParser(policy=policy.default).parsebytes(
             f"Content-Type: multipart/form-data; boundary={boundary}\r\n\r\n".encode("ascii") + body
         )
@@ -195,7 +207,7 @@ def _check_non_image_channels(plan, marker):
         raise fail("canary-upload-envelope-unverified", "The produced non-image upload envelope is not the supported multipart contract.")
     try:
         metadata = json.loads(parts[0].get_payload(decode=True))
-        channels = [plan["source"]["desired"], file_ingest._list_url(ingestion),
+        channels = [plan["source"]["desired"], _file_inventory._list_url(ingestion),
                     body.decode("utf-8"), metadata, [list(part.items()) for part in parts]]
     except (ValueError, UnicodeError, TypeError):
         raise fail("canary-upload-envelope-unverified", "The produced non-image upload envelope could not be inspected.") from None
@@ -207,14 +219,14 @@ def _file_contract(plan, marker):
     expected = pdf_bytes(marker)
     if not isinstance(plan, dict) or not isinstance(plan.get("ingestion"), dict):
         raise fail("canary-file-contract-invalid", "Retain the complete File plan.")
-    root = file_ingest.resolve_local_root(plan["ingestion"].get("local_root"))
-    actual = file_ingest._resolve_inventory_path(root, PDF_NAME)
+    root = _file_inventory.resolve_local_root(plan["ingestion"].get("local_root"))
+    actual = _file_inventory._resolve_inventory_path(root, PDF_NAME)
     try:
         if actual.stat().st_size != len(expected):
             raise fail("canary-content-drift", "Probe size differs from the bounded synthetic image-only PDF.")
     except OSError:
         raise fail("canary-content-drift", "Selected synthetic PDF is unreadable.") from None
-    file_source._validate_plan(plan)
+    _file_source_config._validate_plan(plan)
     source, ingestion = plan["source"], plan["ingestion"]
     settings = source["desired"]["fileParameters"]["ingestionParameters"]
     if (
@@ -227,7 +239,7 @@ def _file_contract(plan, marker):
     ):
         raise fail("canary-file-contract-invalid", "Canary requires fresh conditional File Standard MI creation, one synthetic PDF, no embedding/chat and unchanged August API.")
     _check_non_image_channels(plan, marker)
-    records = file_ingest.snapshot_inventory(root, [PDF_NAME], service_tier=ingestion["service_tier"])
+    records = _file_inventory.snapshot_inventory(root, [PDF_NAME], service_tier=ingestion["service_tier"])
     if records != ingestion["files"] or records[0]["sha256"] != "sha256:" + hashlib.sha256(expected).hexdigest():
         raise fail("canary-content-drift", "Synthetic inventory changed; regenerate the concrete plan before approval.")
 
@@ -252,11 +264,11 @@ def plan_canary(request, *, token_provider=azure_cli_token, transport=http_reque
         raise fail("canary-auth-invalid", "This canary only tests File managed identity; no keys or fallback.")
     if fr.get("paths") != [PDF_NAME] or fr.get("extraction_mode") != "standard" or fr.get("vectorization") != "none":
         raise fail("canary-file-contract-invalid", "Select exactly the generated probe PDF, Standard extraction and no vectors.")
-    version = fr.get("api_version", file_ingest.API_VERSION)
-    file_ingest.validate_api_version(version)
+    version = fr.get("api_version", _file_inventory.API_VERSION)
+    _file_inventory.validate_api_version(version)
     mapping = _ocr_mapping(version, request["content_field"])
-    root = file_ingest.resolve_local_root(fr.get("local_root"))
-    selected = file_ingest._resolve_inventory_path(root, PDF_NAME)
+    root = _file_inventory.resolve_local_root(fr.get("local_root"))
+    selected = _file_inventory._resolve_inventory_path(root, PDF_NAME)
     try:
         if selected.stat().st_size != len(pdf_bytes(request["marker"])):
             raise fail("canary-content-drift", "Selected PDF is not the bounded synthetic probe.")
@@ -292,7 +304,7 @@ class BoundedTransport:
         self.upload_ack_failure = None
         self.index_url = None
         fp = plan["file_plan"]
-        self.source_url = search_reconcile.resource_url(fp["source"])
+        self.source_url = _search_read.resource_url(fp["source"])
         self.files_prefix = self.source_url.split("?")[0] + "/files"
         cu = fp["content_understanding"]
         mi = cu["managed_identity"]
@@ -390,7 +402,7 @@ def execute(document, *, token_provider=azure_cli_token, transport=http_request,
     def source_ack(**evidence):
         response = evidence["response"]
         record("source-http-ack", {"status": response.status, "request_id": response.request_id,
-                                   "etag_evidence": search_reconcile.response_etags(response)})
+                                   "etag_evidence": _search_read.response_etags(response)})
 
     try:
         source_result = file_source.execute(
@@ -405,17 +417,17 @@ def execute(document, *, token_provider=azure_cli_token, transport=http_request,
         original_file = _verified_file(source_result, fp["ingestion"])
         mapping = plan["ocr_mapping"]
         token = token_provider(SEARCH_AUDIENCE)
-        current, _ = search_reconcile.read_resource(bounded.source_url, token, transport=bounded)
-        file_source.verify_content_understanding_readback(fp["content_understanding"], current)
+        current, _ = _search_read.read_resource(bounded.source_url, token, transport=bounded)
+        _file_source_config.verify_content_understanding_readback(fp["content_understanding"], current)
         created = current.get("fileParameters", {}).get("createdResources")
         if not isinstance(created, dict) or set(created) != {"index"} or not isinstance(created["index"], str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{1,127}", created["index"]):
             raise fail("canary-index-unverified", "Fresh File readback must identify exactly one generated index.")
         retained = source_result["verification"]["readback"]["source"]
-        if current.get("@odata.etag") != retained["etag"] or not search_reconcile.definitions_match(fp["source"]["desired"], current):
+        if current.get("@odata.etag") != retained["etag"] or not _search_read.definitions_match(fp["source"]["desired"], current):
             raise fail("canary-source-drift", "Source version changed before indexed OCR verification.")
         version = fp["source"]["api_version"]
         bounded.index_url = f"{fp['source']['endpoint'].rstrip('/')}/indexes('{created['index']}')?api-version={version}"
-        index, _ = search_reconcile.read_resource(bounded.index_url, token, transport=bounded)
+        index, _ = _search_read.read_resource(bounded.index_url, token, transport=bounded)
         if not isinstance(index, dict) or index.get("name") != created["index"] or not isinstance(index.get("@odata.etag"), str) or not index["@odata.etag"]:
             raise fail("canary-index-unverified", "Require the generated index's matching name and fresh ETag.")
         _verify_index_fields(index, mapping)
@@ -446,10 +458,10 @@ def execute(document, *, token_provider=azure_cli_token, transport=http_request,
                 sleep(min(plan["bounds"]["poll_interval_seconds"], max(0, bounded.deadline - clock())))
         if not matched:
             raise fail("canary-ocr-unverified", "Upload/source creation is not extraction proof: indexed OCR marker was not observed within the caps.")
-        after, _ = search_reconcile.read_resource(bounded.source_url, token, transport=bounded)
+        after, _ = _search_read.read_resource(bounded.source_url, token, transport=bounded)
         if not isinstance(after, dict) or after.get("@odata.etag") != current.get("@odata.etag") or after.get("fileParameters", {}).get("createdResources") != created:
             raise fail("canary-source-drift", "Generated source/index binding changed during OCR verification.")
-        final_index, _ = search_reconcile.read_resource(bounded.index_url, token, transport=bounded)
+        final_index, _ = _search_read.read_resource(bounded.index_url, token, transport=bounded)
         if final_index != index:
             raise fail("canary-index-drift", "Generated index changed during OCR verification.")
         binding, _ = file_cu_mi.read_binding(fp["content_understanding"], fp["source"]["endpoint"],

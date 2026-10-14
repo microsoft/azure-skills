@@ -68,7 +68,7 @@ not misconfiguration. Visible conflicts/core drift block, even during ingestion.
 CU/source-vector endpoint/auth checks still apply. Masked/nonempty/malformed keys
 or changed identities block; no model calls or query claims.
 
-Reuse `blob_source.monitor` with retained cutoff and bounded watch limits.
+Reuse `_blob_source_read.monitor` with retained cutoff and bounded watch limits.
 Reuse excludes its **retained** first completion (normalized times).
 Require nonempty zero-failure/zero-skip completion, valid times/counters and no
 errors/active cycle/future completion. Stale/denied/malformed/missing evidence blocks.

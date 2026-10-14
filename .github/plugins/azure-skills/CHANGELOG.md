@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.92
+
+- feature: add Managed Harness Agent development workflow ([#3256](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3256))
+
+## 1.2.91
+
+- fix: safely pass quota JSON to Python ([#3377](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3377))
+
+## 1.2.90
+
+- Adding Windows Consumption to Flex upgrade skills ([#3121](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3121))
+
+## 1.2.89
+
+- chore: update telemetry reporter release ([#3365](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3365))
+
 ## 1.2.88
 
 - feat: add Functions trigger and Durable troubleshooting ([#3123](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3123))

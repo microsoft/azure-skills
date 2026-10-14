@@ -3,10 +3,7 @@ from __future__ import annotations
 
 import argparse
 import copy
-import json
-import os
 import re
-import stat
 import sys
 import time
 import uuid
@@ -15,79 +12,44 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 try:
-    from . import _bootstrap_io as private_io
+    from . import (
+        _bootstrap_io as private_io, blob_inventory, search_reconcile, source_vector,
+        _indexer_observation as indexer, _blob_observation as semantic, _blob_source_read, _embedding,
+        _private_json, _search_read,
+    )
     from ._progress import Progress, add_progress_argument, reporting
-    from . import blob_inventory, blob_source, search_reconcile, source_vector, _indexer_observation as indexer
-    from . import _blob_observation as semantic
     from ._common import (
-        HelperFailure, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest,
-        emit_result, http_request, reject_secrets,
+        HelperFailure, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest, emit_result, http_request,
+        reject_secrets,
     )
 except ImportError:
     import _bootstrap_io as private_io
-    from _progress import Progress, add_progress_argument, reporting
-    import blob_inventory, blob_source, search_reconcile, source_vector
+    import blob_inventory
+    import search_reconcile
+    import source_vector
     import _indexer_observation as indexer
     import _blob_observation as semantic
+    import _blob_source_read
+    import _embedding
+    import _private_json
+    import _search_read
+    from _progress import Progress, add_progress_argument, reporting
     from _common import (
-        HelperFailure, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest,
-        emit_result, http_request, reject_secrets,
+        HelperFailure, SEARCH_AUDIENCE, azure_cli_token, blocked_result, digest, emit_result, http_request,
+        reject_secrets,
     )
 
 
-fail = blob_source._failure
+fail = _blob_source_read._failure
 COLLECTIONS = {"datasource": "datasources", "indexer": "indexers",
                "skillset": "skillsets", "index": "indexes"}
-
-
-def _json(raw):
-    def unique(pairs):
-        value = {}
-        for key, child in pairs:
-            if key in value:
-                raise ValueError("Duplicate field")
-            value[key] = child
-        return value
-    try:
-        value = json.loads(raw, object_pairs_hook=unique)
-        json.dumps(value, allow_nan=False, ensure_ascii=False).encode("utf-8")
-        if not isinstance(value, dict):
-            raise ValueError("Expected object")
-        return value
-    except (ValueError, UnicodeError, RecursionError) as exc:
-        raise fail("recheck-evidence-invalid", "Retain bounded, unmodified UTF-8 object evidence.") from exc
-
-
-def read_private(path):
-    path = Path(path)
-    private_io.private_directory(str(path.parent))
-    try:
-        selected = path.lstat()
-        if (not stat.S_ISREG(selected.st_mode) or selected.st_nlink != 1
-                or getattr(selected, "st_file_attributes", 0) & 0x400):
-            raise OSError("Not an ordinary private file")
-        if os.name == "nt":
-            private_io._windows_private(path)
-        elif selected.st_uid != os.getuid() or stat.S_IMODE(selected.st_mode) & 0o077:
-            raise OSError("Not private")
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        with os.fdopen(descriptor, "rb") as handle:
-            opened = os.fstat(handle.fileno())
-            if (selected.st_dev, selected.st_ino) != (opened.st_dev, opened.st_ino):
-                raise OSError("Evidence changed identity")
-            raw = handle.read(private_io.MAX_BYTES + 1)
-        if len(raw) > private_io.MAX_BYTES:
-            raise OSError("Evidence exceeds bound")
-        return _json(raw.decode("utf-8"))
-    except (OSError, UnicodeError) as exc:
-        raise fail("recheck-evidence-unreadable", "Select existing private, unlinked evidence files; no permissions were changed.") from exc
 
 
 def account_context():
     code, stdout, _ = private_io.run_cli(["account", "show"], 30)
     if code:
         raise fail("recheck-auth-context-unavailable", "Current signed-in CLI context is inaccessible; details withheld.")
-    account = _json(stdout)
+    account = _private_json._json(stdout)
     user = account.get("user")
     if (account.get("environmentName") != "AzureCloud" or account.get("state") != "Enabled"
             or not isinstance(user, dict) or user.get("type") not in ("user", "servicePrincipal")
@@ -100,7 +62,7 @@ def account_context():
 
 def _supported(plan):
     try:
-        source, _ = blob_source._validate_plan(plan)
+        source, _ = _blob_source_read._validate_plan(plan)
         ingestion = source["desired"]["azureBlobParameters"]["ingestionParameters"]
     except (KeyError, TypeError, AttributeError, RecursionError) as exc:
         raise fail("recheck-evidence-invalid", "Original Blob creation plan is malformed.") from exc
@@ -125,8 +87,8 @@ def _processing_readback(plan, current):
         ai = desired.get("aiServices")
         if not isinstance(ai, dict) or not isinstance(ai.get("uri"), str) or not ai["uri"].strip():
             raise fail("recheck-processing-unverified", "Standard extraction needs its original CU endpoint evidence.")
-        blob_source.verify_content_understanding_readback({"endpoint": ai["uri"]}, current)
-    source_vector.verify_source_readback(plan.get("embedding"), current)
+        _blob_source_read.verify_content_understanding_readback({"endpoint": ai["uri"]}, current)
+    _embedding.verify_source_readback(plan.get("embedding"), current)
     model = desired.get("embeddingModel")
     if model is not None and "embedding" not in plan:
         parameters = model.get("azureOpenAIParameters") if isinstance(model, dict) else None
@@ -134,7 +96,7 @@ def _processing_readback(plan, current):
                 or any(not isinstance(parameters.get(key), str) or not parameters[key].strip()
                        for key in ("resourceUri", "deploymentId", "modelName"))):
             raise fail("recheck-processing-unverified", "Legacy embedding configuration cannot be verified by this client.")
-        source_vector.verify_source_readback({
+        _embedding.verify_source_readback({
             "endpoint": parameters["resourceUri"], "deployment": parameters["deploymentId"],
             "model": parameters["modelName"],
         }, current)
@@ -143,14 +105,14 @@ def _processing_readback(plan, current):
 def _binding(plan, record, current, generated, binding_receipts=None):
     source = plan["source"]
     observed = {"type": "knowledge-source", "name": source["name"], "etag": _etag(current),
-                "definition_digest": digest(search_reconcile._definition(current))}
+                "definition_digest": digest(_search_read._definition(current))}
     if source["action"] == "create":
-        blob_source._verify_creation_binding(source, plan["boundary"], current, generated, (plan, record))
+        _blob_source_read._verify_creation_binding(source, plan["boundary"], current, generated, (plan, record))
     elif (record["verification"]["readback"] != observed
-          or not search_reconcile.definitions_match(source["desired"], current)
+          or not _search_read.definitions_match(source["desired"], current)
           or source.get("expected_etag", observed["etag"]) != observed["etag"]):
         raise fail("source-binding-unverified", "Reused source does not match its retained read-only identity/configuration.")
-    if (blob_source.generated_resources(current, strict=True) != generated
+    if (_blob_source_read.generated_resources(current, strict=True) != generated
             or plan.get("expected_generated", generated) != generated):
         raise fail("definition-drift", "Generated source identities changed.")
     if binding_receipts is not None and (
@@ -158,7 +120,7 @@ def _binding(plan, record, current, generated, binding_receipts=None):
         or binding_receipts[0]["inventory_digest"] != plan["inventory_digest"]
     ):
         raise fail("source-binding-unverified", "Retained creation must bind the same owner and Storage inventory.")
-    blob_source._verify_storage_binding(
+    _blob_source_read._verify_storage_binding(
         source, plan["boundary"], current, generated,
         lambda: (plan, record) if source["action"] == "create" else binding_receipts,
     )
@@ -169,7 +131,7 @@ def _sanitized_datasource_url(url):
     parsed = urlsplit(url)
     search_reconcile.validate_search_endpoint(f"{parsed.scheme}://{parsed.netloc}")
     if (parsed.fragment or parsed.query not in {
-            f"api-version={version}" for version in search_reconcile.SUPPORTED_API_VERSIONS}
+            f"api-version={version}" for version in _search_read.SUPPORTED_API_VERSIONS}
             or re.fullmatch(r"/datasources\('[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}'\)", parsed.path) is None):
         raise fail("recheck-read-url-invalid", "Sanitized binding requires one exact datasource identity and the bound supported API version.")
     return url + "&includeConnectionString=true"
@@ -186,7 +148,7 @@ def _reader(transport, token_provider, *, warnings=None):
             if parsed.fragment:
                 raise fail("recheck-read-url-invalid", "Read-only Search URLs cannot contain fragments.")
             if parsed.query not in {
-                    f"api-version={version}" for version in search_reconcile.SUPPORTED_API_VERSIONS}:
+                    f"api-version={version}" for version in _search_read.SUPPORTED_API_VERSIONS}:
                 suffix = "&includeConnectionString=true"
                 if not url.endswith(suffix) or _sanitized_datasource_url(url[:-len(suffix)]) != url:
                     raise fail("recheck-read-url-invalid", "Only the exact sanitized datasource GET option is permitted.")
@@ -201,7 +163,7 @@ def _reader(transport, token_provider, *, warnings=None):
                 )
                 ids.extend(recovery.request_ids[:-1])
             if method == "GET" and response.status == 200 and isinstance(response.body, dict):
-                etag = search_reconcile.resolve_etag(search_reconcile.response_etags(response), response.request_id)
+                etag = _search_read.resolve_etag(_search_read.response_etags(response), response.request_id)
                 if etag is not None:
                     response = search_reconcile.HttpResult(
                         response.status, {**response.body, "@odata.etag": etag}, response.headers, response.etag_values,
@@ -243,7 +205,7 @@ def _configuration(plan, creation, generated, get, *, binding_receipts=None, exp
                    diagnostics=None, observations=None, binding_observations=None):
     diagnostics = diagnostics if diagnostics is not None else []
     source = plan["source"]
-    current = get(search_reconcile.resource_url(source))
+    current = get(_search_read.resource_url(source))
     _binding(plan, creation, current, generated, binding_receipts)
     names = {item["type"]: item["name"] for item in generated}
     snapshots = {}
@@ -263,7 +225,7 @@ def _configuration(plan, creation, generated, get, *, binding_receipts=None, exp
         else:
             semantic.note(diagnostics, kind, "info", "generated-configuration-verified", "definition",
                           getattr(get, "request_id", None))
-    refreshed = get(search_reconcile.resource_url(source))
+    refreshed = get(_search_read.resource_url(source))
     _binding(plan, creation, refreshed, generated, binding_receipts)
     if failures:
         raise failures[0]
@@ -297,7 +259,7 @@ def _child_configuration(plan, kind, name, names, get, url, expected, diagnostic
                 raise fail("source-binding-unverified", "Generated datasource type/container/prefix/identity or credential shape conflicts with the bound source.",
                            request_id=getattr(get, "request_id", None))
             try:
-                binding = blob_source._connection_binding(
+                binding = _blob_source_read._connection_binding(
                     credentials.get("connectionString") if isinstance(credentials, dict) else None, boundary,
                 )
             except HelperFailure as failure:
@@ -412,7 +374,7 @@ def _current_datasource_binding(get, url, snapshot, boundary, diagnostics, obser
                    request_id=request_id)
     try:
         visible = (isinstance(credentials, dict) and set(credentials) == {"connectionString"}
-                   and blob_source._connection_binding(credentials["connectionString"], boundary) == "visible")
+                   and _blob_source_read._connection_binding(credentials["connectionString"], boundary) == "visible")
     except HelperFailure:
         visible = False
     if not visible:
@@ -427,7 +389,7 @@ def _current_datasource_binding(get, url, snapshot, boundary, diagnostics, obser
 
 
 def _baseline_cycle(source, read, token_provider):
-    url = search_reconcile.resource_url(source).replace(")?", ")/status?")
+    url = _search_read.resource_url(source).replace(")?", ")/status?")
     response = read("GET", url, token_provider(SEARCH_AUDIENCE))
     body = response.body
     if response.status != 200 or not isinstance(body, dict) or body.get("kind") != "azureBlob":
@@ -439,7 +401,7 @@ def _baseline_cycle(source, read, token_provider):
     if not isinstance(last, dict):
         raise fail("ingestion-status-invalid", "Initial reuse synchronization must be an object.")
     if last.get("endTime") is None:
-        blob_source._timestamp(last.get("startTime"))
+        _blob_source_read._timestamp(last.get("startTime"))
         return None
     cycle = [last.get("startTime"), last.get("endTime")]
     _validate_cycle(cycle)
@@ -451,7 +413,7 @@ def _validate_cycle(cycle):
         return
     if not isinstance(cycle, list) or len(cycle) != 2:
         raise fail("recheck-evidence-invalid", "Retain the original observed reuse cycle, not a reconstructed bound.")
-    if blob_source._timestamp(cycle[1]) < blob_source._timestamp(cycle[0]):
+    if _blob_source_read._timestamp(cycle[1]) < _blob_source_read._timestamp(cycle[0]):
         raise fail("ingestion-status-invalid", "Initial synchronization interval is invalid.")
 
 
@@ -462,8 +424,8 @@ def _binding_receipts(paths):
             or any(not isinstance(path, (str, Path)) or not str(path).strip() for path in paths)):
         raise fail("reuse-evidence-invalid", "Select both existing private creation evidence files.")
     _, prior, fingerprint = _document(paths[0])
-    result = read_private(paths[1])
-    blob_source._validate_reuse_receipts(prior, fingerprint, result)
+    result = _private_json.read_private(paths[1])
+    _blob_source_read._validate_reuse_receipts(prior, fingerprint, result)
     return prior, result
 
 
@@ -492,7 +454,7 @@ class Checkpoint:
     def acknowledge(self, plan, response, not_before, *, url, body, headers):
         if (digest(plan) != self.plan_digest or plan["source"]["action"] != "create"
                 or response.status not in {200, 201}
-                or url != search_reconcile.resource_url(plan["source"])
+                or url != _search_read.resource_url(plan["source"])
                 or headers.get("If-None-Match") != "*" or "If-Match" in headers
                 or body != search_reconcile.canonical_bytes(plan["source"]["desired"])):
             raise fail("recheck-ownership-unproven", "Only the exact successful conditional create can retain a write acknowledgement.")
@@ -509,8 +471,8 @@ class Checkpoint:
             "write": {
                 "method": "PUT", "url": url, "if_none_match": headers["If-None-Match"],
                 "body_digest": digest(plan["source"]["desired"]), "status": response.status,
-                "request_id": response.request_id, "response_etags": search_reconcile.response_etags(response),
-                "generated": blob_source.generated_resources(response.body) if isinstance(response.body, dict) else [],
+                "request_id": response.request_id, "response_etags": _search_read.response_etags(response),
+                "generated": _blob_source_read.generated_resources(response.body) if isinstance(response.body, dict) else [],
             },
         }
         reject_secrets(receipt)
@@ -592,7 +554,7 @@ class Checkpoint:
 
 
 def _document(input_path):
-    document = read_private(input_path)
+    document = _private_json.read_private(input_path)
     reject_secrets(document)
     if set(document) != {"schema_version", "plan", "approval"} or document["schema_version"] != "1.0":
         raise fail("recheck-evidence-invalid", "Retain the original source envelope.")
@@ -611,7 +573,7 @@ def _document(input_path):
 
 def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=None):
     document, plan, fingerprint = _document(input_path)
-    receipt = read_private(receipt_path)
+    receipt = _private_json.read_private(receipt_path)
     reject_secrets(receipt)
     if acknowledgement and receipt.get("kind") == "blob-write-acknowledgement":
         _validate_write(plan, receipt)
@@ -641,7 +603,7 @@ def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=N
             or re.fullmatch("[0-9a-f]{32}", receipt["operation_id"]) is None
             or receipt["integrity"] != digest({k: v for k, v in receipt.items() if k != "integrity"})):
         raise fail("recheck-evidence-invalid", "Original operation/cutoff/checkpoint integrity is missing or changed; never reconstruct it.")
-    blob_source._timestamp(receipt["not_before"])
+    _blob_source_read._timestamp(receipt["not_before"])
     if reused:
         _validate_cycle(receipt["excluded_cycle"])
     creation = receipt["creation"]
@@ -650,7 +612,7 @@ def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=N
         generated = creation["source"]["generated"]
         expected = {"type": "knowledge-source", "name": plan["source"]["name"],
                     "etag": observed["etag"],
-                    "definition_digest": digest(search_reconcile._definition(plan["source"]["desired"]))}
+                    "definition_digest": digest(_search_read._definition(plan["source"]["desired"]))}
         valid = (
             set(creation) == {"approved_plan", "resources", "verification", "ownership", "source"}
             and set(creation["source"]) == {"generated"}
@@ -665,7 +627,7 @@ def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=N
             and creation["ownership"] == {"run_owned": [] if reused else [expected],
                                           "reused_not_owned": [expected] if reused else [], "owner": plan["owner"]}
             and observed == expected and isinstance(expected["etag"], str) and bool(expected["etag"].strip())
-            and generated == blob_source.generated_resources(
+            and generated == _blob_source_read.generated_resources(
                 {"azureBlobParameters": {"createdResources": {item["type"]: item["name"] for item in generated}}},
                 strict=True,
             )
@@ -673,11 +635,11 @@ def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=N
             and isinstance(receipt["request_ids"], list)
             and all(isinstance(item, str) for item in receipt["request_ids"])
             and isinstance(receipt["context_digest"], str)
-            and search_reconcile.SHA256.fullmatch(receipt["context_digest"])
+            and _search_read.SHA256.fullmatch(receipt["context_digest"])
         )
         for kind, item in ({} if acknowledgement else receipt["configuration"]).items():
             if core_projected:
-                valid = valid and semantic.valid(item, kind, search_reconcile.SHA256)
+                valid = valid and semantic.valid(item, kind, _search_read.SHA256)
                 if kind == "indexer":
                     valid = valid and item.get("core_digest") == item.get("non_schedule_digest")
                 if kind == "datasource" and item.get("binding_proof") == "resource-id":
@@ -688,7 +650,7 @@ def _load(input_path, receipt_path, *, acknowledgement=False, binding_receipts=N
                 continue
             hashes = {"digest"} | (indexer.PROJECTION_FIELDS if projected and kind == "indexer" else set())
             valid = valid and set(item) == {"etag"} | hashes and isinstance(item["etag"], str) and bool(item["etag"].strip())
-            valid = valid and all(isinstance(item[key], str) and search_reconcile.SHA256.fullmatch(item[key]) for key in hashes)
+            valid = valid and all(isinstance(item[key], str) and _search_read.SHA256.fullmatch(item[key]) for key in hashes)
     except (KeyError, TypeError, AttributeError):
         valid = False
     if not valid:
@@ -700,7 +662,7 @@ def _historical_result(receipt_path, receipt):
     path = Path(receipt_path).parent / (receipt["operation_id"] + ".blob-result.json")
     if not path.exists():
         return "not-recorded-by-pre-monitor-checkpoint"
-    record = read_private(path)
+    record = _private_json.read_private(path)
     reject_secrets(record)
     if (set(record) != {"schema_version", "kind", "operation_id", "plan_digest", "result", "integrity"}
             or record["schema_version"] != "1.0" or record["kind"] != "blob-operation-result"
@@ -735,13 +697,13 @@ def _validate_write(plan, receipt):
             and isinstance(receipt["operation_id"], str)
             and re.fullmatch("[0-9a-f]{32}", receipt["operation_id"]) is not None
             and isinstance(receipt["context_digest"], str)
-            and search_reconcile.SHA256.fullmatch(receipt["context_digest"]) is not None
+            and _search_read.SHA256.fullmatch(receipt["context_digest"]) is not None
             and receipt["integrity"] == digest({k: v for k, v in receipt.items() if k != "integrity"})
             and set(write) == {"method", "url", "if_none_match", "body_digest", "status",
                                "request_id", "response_etags", "generated"}
             and write["method"] == "PUT" and write["if_none_match"] == "*"
             and type(write["status"]) is int and write["status"] in {200, 201}
-            and write["url"] == search_reconcile.resource_url(plan["source"])
+            and write["url"] == _search_read.resource_url(plan["source"])
             and write["body_digest"] == digest(plan["source"]["desired"])
             and isinstance(write["request_id"], str) and bool(write["request_id"].strip())
             and set(write["response_etags"]) == {"body", "headers"}
@@ -749,7 +711,7 @@ def _validate_write(plan, receipt):
             and isinstance(write["generated"], list)
         )
         if write["generated"]:
-            valid = valid and write["generated"] == blob_source.generated_resources(
+            valid = valid and write["generated"] == _blob_source_read.generated_resources(
                 {"azureBlobParameters": {"createdResources": {
                     item["type"]: item["name"] for item in write["generated"]}}}, strict=True,
             )
@@ -757,8 +719,8 @@ def _validate_write(plan, receipt):
         valid = False
     if not valid:
         raise fail("recheck-ownership-unproven", "Retain the private authenticated conditional-write receipt; input booleans or observed existence cannot replace it.")
-    blob_source._timestamp(receipt["not_before"])
-    if search_reconcile.resolve_etag(write["response_etags"], write["request_id"]) is None:
+    _blob_source_read._timestamp(receipt["not_before"])
+    if _search_read.resolve_etag(write["response_etags"], write["request_id"]) is None:
         raise fail("creation-version-unproven", "Write acknowledgement has no response ETag; never borrow a later GET version.",
                    request_id=write["request_id"])
 
@@ -778,8 +740,8 @@ def capture(input_path, directory, *, token_provider=azure_cli_token, transport=
     cutoff = now()
     progress.update("source-binding")
     _, get, ids = _reader(transport, token_provider)
-    current = get(search_reconcile.resource_url(plan["source"]))
-    generated = blob_source.generated_resources(current, strict=True)
+    current = get(_search_read.resource_url(plan["source"]))
+    generated = _blob_source_read.generated_resources(current, strict=True)
     result = search_reconcile._completed(
         "blob-readiness-capture", fingerprint, plan["source"], action="reused",
         readback=current, request_ids=ids, absence=False,
@@ -801,7 +763,7 @@ def capture(input_path, directory, *, token_provider=azure_cli_token, transport=
         "read_only_evidence": {"request_ids": result["verification"]["request_ids"] + checkpoint.request_ids},
         "indexer_diagnostics": semantic.indexer_only(checkpoint.diagnostics),
         "generated_diagnostics": checkpoint.diagnostics, "indexer_observations": checkpoint.observations,
-        "warnings": [blob_source.SNAPSHOT_WARNING, "Fresh reuse observation is not recovered creation ownership or ingestion proof.",
+        "warnings": [_blob_source_read.SNAPSHOT_WARNING, "Fresh reuse observation is not recovered creation ownership or ingestion proof.",
                      *get.recovery_warnings, *checkpoint.recovery_warnings,
                      *indexer.warnings(checkpoint.diagnostics)],
     }
@@ -823,12 +785,12 @@ def recover(input_path, acknowledgement_path, directory, *, token_provider=azure
     diagnostics, observations, binding_observations = [], [], []
     if acknowledgement["kind"] == "blob-write-acknowledgement":
         write = acknowledgement["write"]
-        current = get(search_reconcile.resource_url(plan["source"]))
-        if (_etag(current) != search_reconcile.resolve_etag(write["response_etags"], write["request_id"])
-                or search_reconcile._definition(current) != search_reconcile._definition(plan["source"]["desired"])):
+        current = get(_search_read.resource_url(plan["source"]))
+        if (_etag(current) != _search_read.resolve_etag(write["response_etags"], write["request_id"])
+                or _search_read._definition(current) != _search_read._definition(plan["source"]["desired"])):
             raise fail("definition-drift", "Current source differs from the acknowledged conditional-write version/definition.",
                        request_id=getattr(get, "request_id", None))
-        generated = blob_source.generated_resources(current, strict=True)
+        generated = _blob_source_read.generated_resources(current, strict=True)
         if write["generated"] and generated != write["generated"]:
             raise fail("definition-drift", "Generated identities differ from the create response.")
         verified = search_reconcile._completed(
@@ -873,7 +835,7 @@ def recover(input_path, acknowledgement_path, directory, *, token_provider=azure
         "generated_diagnostics": diagnostics, "indexer_observations": observations,
         "datasource_binding_observations": binding_observations,
         "safe_next_decision": "Run blob_recheck.py --input with the unchanged original input and --receipt with this checkpoint; then return to the KB/retrieval owner. Preserve the original first failure separately.",
-        "warnings": [blob_source.SNAPSHOT_WARNING, "Configuration was observed during recovery; no earlier generated revision or new ownership is asserted.",
+        "warnings": [_blob_source_read.SNAPSHOT_WARNING, "Configuration was observed during recovery; no earlier generated revision or new ownership is asserted.",
                      *get.recovery_warnings,
                      *indexer.warnings(diagnostics)],
     }
@@ -888,7 +850,7 @@ def recheck(input_path, receipt_path, *, token_provider=azure_cli_token,
     progress.update("evidence-validation")
     binding_receipts = _binding_receipts(binding_paths)
     plan, receipt = _load(input_path, receipt_path, binding_receipts=binding_receipts)
-    limits = blob_source._poll_limits(watch_limits if watch_limits is not None else plan["poll"])
+    limits = _blob_source_read._poll_limits(watch_limits if watch_limits is not None else plan["poll"])
     creation = receipt["creation"]
     generated = creation["source"]["generated"]
     readiness = {"status": "unverified"}
@@ -924,8 +886,8 @@ def recheck(input_path, receipt_path, *, token_provider=azure_cli_token,
             if stage == "before":
                 progress.update("blob-inventory")
                 inventory()
-                readiness = blob_source.monitor(
-                    plan["source"], not_before=blob_source._timestamp(receipt["not_before"]),
+                readiness = _blob_source_read.monitor(
+                    plan["source"], not_before=_blob_source_read._timestamp(receipt["not_before"]),
                     limits=limits, token_provider=token_provider, transport=read,
                     monotonic=monotonic, sleep=sleep, progress=progress,
                     excluded_cycle=receipt.get("excluded_cycle"),
@@ -940,7 +902,7 @@ def recheck(input_path, receipt_path, *, token_provider=azure_cli_token,
                     )
                 cycle = readiness["synchronization"]
                 if (cycle["itemsUpdatesProcessed"] == 0 or cycle["itemsSkipped"]
-                        or blob_source._timestamp(cycle["endTime"]) > now()):
+                        or _blob_source_read._timestamp(cycle["endTime"]) > now()):
                     raise fail("ingestion-unverified", "A checkpoint is not prior ingestion proof; nonempty zero-skip completion is required.")
         progress.update("context-readback")
         if context_provider() != receipt["context_digest"]:
@@ -993,7 +955,7 @@ def recheck(input_path, receipt_path, *, token_provider=azure_cli_token,
         cleanup={"status": "not-requested", "separate_confirmation_required": True},
         recheck_checkpoint={"operation_id": receipt["operation_id"], "receipt_file": Path(receipt_path).name,
                             "evidence_digest": receipt["integrity"], "status": "retained"},
-        warnings=[blob_source.SNAPSHOT_WARNING,
+        warnings=[_blob_source_read.SNAPSHOT_WARNING,
                   *recovery_warnings,
                   "Local checkpoint integrity is not a service signature or new ownership/cleanup authorization.",
                   *indexer.warnings(diagnostics)],

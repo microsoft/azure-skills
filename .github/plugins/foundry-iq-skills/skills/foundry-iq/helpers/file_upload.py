@@ -12,16 +12,28 @@ from dataclasses import replace
 from pathlib import Path
 
 try:
-    from . import _bootstrap_io as private_io, cu_ingestion_auth, file_ingest, search_reconcile
-    from ._common import (HelperFailure, ReadRecovery, RetryAfter, RetryAfterTiming, SEARCH_AUDIENCE,
-                          retry_after_timing, retry_after_not_before, valid_utc_timestamp, azure_cli_token, blocked_result,
-                          digest, emit_result, http_request, load_approved_input, reject_secrets, require_allowed_fields)
+    from . import (
+        _bootstrap_io as private_io, cu_ingestion_auth, _file_inventory, _file_source_config, _search_read,
+        _source_readback,
+    )
+    from ._common import (
+        HelperFailure, ReadRecovery, RetryAfter, RetryAfterTiming, SEARCH_AUDIENCE, retry_after_timing,
+        retry_after_not_before, valid_utc_timestamp, azure_cli_token, blocked_result, digest, emit_result,
+        http_request, load_approved_input, reject_secrets, require_allowed_fields,
+    )
     from ._progress import Progress, add_progress_argument, reporting
 except ImportError:
-    import _bootstrap_io as private_io, cu_ingestion_auth, file_ingest, search_reconcile
-    from _common import (HelperFailure, ReadRecovery, RetryAfter, RetryAfterTiming, SEARCH_AUDIENCE,
-                         retry_after_timing, retry_after_not_before, valid_utc_timestamp, azure_cli_token, blocked_result,
-                         digest, emit_result, http_request, load_approved_input, reject_secrets, require_allowed_fields)
+    import _bootstrap_io as private_io
+    import cu_ingestion_auth
+    import _file_inventory
+    import _file_source_config
+    import _search_read
+    import _source_readback
+    from _common import (
+        HelperFailure, ReadRecovery, RetryAfter, RetryAfterTiming, SEARCH_AUDIENCE, retry_after_timing,
+        retry_after_not_before, valid_utc_timestamp, azure_cli_token, blocked_result, digest, emit_result,
+        http_request, load_approved_input, reject_secrets, require_allowed_fields,
+    )
     from _progress import Progress, add_progress_argument, reporting
 
 
@@ -65,10 +77,7 @@ class Session:
 
     @staticmethod
     def _validate_document(document):
-        try:
-            from . import file_source
-        except ImportError:
-            import file_source
+
         if (not isinstance(document, dict) or document.get("schema_version") != "1.0"
                 or not isinstance(document.get("plan"), dict)
                 or "_computed_fingerprint" in document and document["_computed_fingerprint"] != digest(document.get("plan"))
@@ -76,7 +85,7 @@ class Session:
                 or document.get("approval") != {"confirmed": True, "fingerprint": digest(document.get("plan"))}):
             raise fail("file-upload-approval-missing", "Original unchanged File creation approval is required.")
         require_allowed_fields(document, {"schema_version", "plan", "approval", "_computed_fingerprint"}, label="original File envelope")
-        file_source._validate_plan(document["plan"])
+        _file_source_config._validate_plan(document["plan"])
         if document["plan"]["source"]["action"] != "create":
             raise fail("file-upload-provenance-missing", "This continuation is only for original acknowledged creation, not generic reuse.")
 
@@ -93,9 +102,9 @@ class Session:
     def _load(self):
         # Reuse the existing bounded, private, no-link evidence reader.
         try:
-            from .blob_recheck import read_private
+            from . import _private_json
         except ImportError:
-            from blob_recheck import read_private
+            import _private_json
         try:
             paths = list(self.directory.iterdir())
         except OSError as error:
@@ -106,7 +115,7 @@ class Session:
             if (path.name not in {"run.json", "source-ack.json", "pending-request.json"}
                     and not re.fullmatch(r"(?:[0-9]{4}-(retry-)?(attempt|result)|backoff-[0-9]{4})\.json", path.name)):
                 raise fail("file-upload-evidence-invalid", "Unexpected or incomplete journal entry; do not discard it to resume.")
-            value = read_private(path)
+            value = _private_json.read_private(path)
             if (set(value) != {"schema_version", "kind", "payload", "integrity"}
                     or value["schema_version"] != "1.0" or value["kind"] != "file-upload-journal"
                     or value["integrity"] != digest(value["payload"])):
@@ -119,14 +128,14 @@ class Session:
 
     def acknowledge(self, metadata):
         self._write("source-ack.json", {"original_plan_digest": digest(self.plan),
-                                       "source_url": search_reconcile.resource_url(self.plan["source"]),
+                                       "source_url": _search_read.resource_url(self.plan["source"]),
                                        "acknowledgement": metadata})
 
     def require_ack(self):
         value = self.records.get("source-ack.json")
         if (not isinstance(value, dict) or set(value) != {"original_plan_digest", "source_url", "acknowledgement"}
                 or value["original_plan_digest"] != digest(self.plan)
-                or value["source_url"] != search_reconcile.resource_url(self.plan["source"])):
+                or value["source_url"] != _search_read.resource_url(self.plan["source"])):
             raise fail("file-upload-provenance-missing", "An original acknowledged conditional source creation must be retained.")
         ack = value["acknowledgement"]
         if (not isinstance(ack, dict) or set(ack) != {"status", "request_id", "etag_evidence"}
@@ -135,7 +144,7 @@ class Session:
                 or not isinstance(ack["etag_evidence"], dict) or set(ack["etag_evidence"]) != {"body", "headers"}
                 or not isinstance(ack["etag_evidence"]["headers"], list)):
             raise fail("file-upload-provenance-missing", "Original successful creation ACK/request ID is required, not GET ownership.")
-        etag = search_reconcile.resolve_etag(ack["etag_evidence"], ack["request_id"])
+        etag = _search_read.resolve_etag(ack["etag_evidence"], ack["request_id"])
         if not etag:
             raise fail("file-upload-provenance-missing", "The original creation ACK lacks version proof; GET cannot supply it.")
         return etag
@@ -256,7 +265,7 @@ class Session:
                 attempt = self.records.get(event["attempt"]) if isinstance(event["attempt"], str) else None
                 if (attempt is None or not re.fullmatch(r"[0-9]{4}-(retry-)?attempt\.json", event["attempt"])
                         or event["attempt_digest"] != digest(attempt) or event["method"] != "POST"
-                        or event["url_digest"] != digest(file_ingest._list_url(self.ingestion))):
+                        or event["url_digest"] != digest(_file_inventory._list_url(self.ingestion))):
                     raise fail("file-upload-evidence-invalid", "Backoff does not bind the original upload attempt.")
             elif event["attempt_digest"] is not None:
                 raise fail("file-upload-evidence-invalid", "Backoff attempt provenance is inconsistent.")
@@ -390,7 +399,7 @@ class Session:
             metadata, origin = RetryAfter("missing"), "unavailable"
             timing = RetryAfterTiming(timing.received_at_utc, None)
         events = self.backoff_events()
-        attempt = self.active_attempt if method == "POST" and url == file_ingest._list_url(self.ingestion) else None
+        attempt = self.active_attempt if method == "POST" and url == _file_inventory._list_url(self.ingestion) else None
         event = {"version": "1.0", "plan_digest": digest(self.plan),
                  "previous": digest(next(reversed(events.values()))) if events else None,
                  "method": method, "url_digest": digest(url), "attempt": attempt,
@@ -412,7 +421,7 @@ def _file_id(value):
 
 
 def _proof(plan, record, item):
-    if isinstance(item, dict) and _file_id(item.get("fileId")) and file_ingest._matches(item, plan, record):
+    if isinstance(item, dict) and _file_id(item.get("fileId")) and _file_inventory._matches(item, plan, record):
         return {"file_id": item["fileId"], "record_digest": digest(record)}
     return None
 
@@ -424,7 +433,7 @@ def _observe(plan, states, files):
     observed = {}
     for index, record in enumerate(plan["files"]):
         matches = [item for item in files if item.get("fileName") == record["path"]]
-        if len(matches) > 1 or matches and not file_ingest._matches({**matches[0], "errorMessage": None}, plan, record):
+        if len(matches) > 1 or matches and not _file_inventory._matches({**matches[0], "errorMessage": None}, plan, record):
             raise fail("file-record-conflict", "File inventory has duplicate or conflicting approved markers.")
         state = states[index]
         state["verification"] = {"accepted": "pending", "rejected": "failed"}.get(state["upload"], state["upload"])
@@ -480,7 +489,7 @@ def _progress(progress, plan, states):
 def run_batch(document, *, token_provider, transport, progress, allow_new_uploads=False, session=None,
               eligible=None, source_check=None, allow_upload_retry=True):
     plan, fingerprint = document["plan"], document["_computed_fingerprint"]
-    root, records = file_ingest._validate_plan(plan)
+    root, records = _file_inventory._validate_plan(plan)
     states = session.states() if session else [{"upload": "not_attempted", "request_ids": []} for _ in records]
     if session:
         session.require_backoff()
@@ -491,13 +500,13 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
     retry_used = False
     readback_failed = False
     token = token_provider(SEARCH_AUDIENCE)
-    url = file_ingest._list_url(plan)
+    url = _file_inventory._list_url(plan)
     recovery = ReadRecovery(on_wait=progress.waiting)
     progress.update("file-inventory")
     try:
-        before, ids = file_ingest._list_files(url, token, transport=transport, recovery=recovery)
+        before, ids = _file_inventory._list_files(url, token, transport=transport, recovery=recovery)
         request_ids.extend(ids)
-        if session is None and file_ingest.inventory_digest(before) != plan["expected_server_inventory_digest"]:
+        if session is None and _file_inventory.inventory_digest(before) != plan["expected_server_inventory_digest"]:
             raise fail("server-inventory-drift", "Approved initial file inventory changed.")
         observed = _observe(plan, states, before)
         if not allow_new_uploads and len(observed) != len(records):
@@ -518,7 +527,7 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
         if index not in eligible or state["upload"] != "not_attempted":
             continue
         try:
-            path = file_ingest._resolve_file(root, record)
+            path = _file_inventory._resolve_file(root, record)
             content = path.read_bytes()
             if (len(content) != record["size"] or "sha256:" + hashlib.sha256(content).hexdigest() != record["sha256"]
                     or path.stat().st_mtime_ns != record["mtime_ns"]):
@@ -533,11 +542,11 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
             warnings.append(f"Batch stopped ({failure.code}); no further uploads were attempted.")
             stopped = True
             break
-        body, boundary = file_ingest._multipart(plan, record, content, fingerprint)
+        body, boundary = _file_inventory._multipart(plan, record, content, fingerprint)
         for attempt in range(2):
             try:
                 if attempt:
-                    file_ingest._resolve_file(root, record)
+                    _file_inventory._resolve_file(root, record)
                 if session:
                     session.attempt(index, retry=bool(attempt))
             except HelperFailure as failure:
@@ -598,7 +607,7 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
                     state.update(file_proof=proof, ingested=True, verification="confirmed")
                 elif isinstance(response.body, dict) and (
                     response.body.get("errorMessage") is not None
-                    or "fileName" in response.body and not file_ingest._matches(response.body, plan, record)
+                    or "fileName" in response.body and not _file_inventory._matches(response.body, plan, record)
                 ):
                     primary = primary or fail("upload-metadata-unverified", "Upload ACK metadata conflicts with the approved file.")
                     stopped = True
@@ -615,14 +624,14 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
                     recovery.delay(failure)
                     if source_check is not None:
                         source_check(recovery, token)
-                    inventory, _ = file_ingest._list_files(url, token, transport=transport, recovery=recovery)
+                    inventory, _ = _file_inventory._list_files(url, token, transport=transport, recovery=recovery)
                     seen = _observe(plan, states, inventory)
                     if index in seen:
                         if state["verification"] != "confirmed":
                             raise fail("file-upload-retry-conflict", "Existing file does not prove the approved completed upload.")
                         created.append({"fileName": record["path"], "sha256": record["sha256"]})
                         break
-                    file_ingest._resolve_file(root, record)
+                    _file_inventory._resolve_file(root, record)
                     if time.monotonic() >= recovery.deadline:
                         raise fail("read-recovery-budget-exhausted", "Retry preflight exceeded its complete read budget.")
                     warnings.append("File upload HTTP 429: one same-operation retry after bounded backoff; no source recreation.")
@@ -643,7 +652,7 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
                 ):
                     recovery = ReadRecovery(on_wait=progress.waiting)
                     try:
-                        after, _ = file_ingest._list_files(url, token, transport=transport, recovery=recovery)
+                        after, _ = _file_inventory._list_files(url, token, transport=transport, recovery=recovery)
                         _observe(plan, states, after)
                         if state["verification"] == "confirmed":
                             created.append({"fileName": record["path"], "sha256": record["sha256"]})
@@ -664,7 +673,7 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
     if after is None and not stopped:
         recovery = ReadRecovery(on_wait=progress.waiting)
         try:
-            after, ids = file_ingest._list_files(url, token, transport=transport, recovery=recovery)
+            after, ids = _file_inventory._list_files(url, token, transport=transport, recovery=recovery)
             _observe(plan, states, after)
         except HelperFailure as failure:
             primary = primary or failure
@@ -685,7 +694,7 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
                      for record, state in zip(records, states)
                      if state["upload"] == "unverified" and state["verification"] != "confirmed"]
         failure.writes = created + uncertain + failure.writes
-        failure.resources_remaining = file_ingest._remaining_files(created) + uncertain + failure.resources_remaining
+        failure.resources_remaining = _file_inventory._remaining_files(created) + uncertain + failure.resources_remaining
         failure.partial = bool(created) or any(s["upload"] == "unverified" for s in states) or (
             failure.partial and not _rejected(failure.http_status))
         failure.warnings.extend(warnings)
@@ -696,11 +705,11 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
     return {"status": "completed", "outcome": plan.get("outcome", "file-knowledge-source-ingestion"),
             "approved_plan": {"fingerprint": fingerprint, "confirmed": True},
             "resources": {"created": created, "reused": reused, "updated": [], "skipped": []},
-            "api_contracts": [{"operation": "upload-file", "version": file_ingest.API_VERSION, "preview": True}],
+            "api_contracts": [{"operation": "upload-file", "version": _file_inventory.API_VERSION, "preview": True}],
             "data_movement": {"boundary": {"local_root_digest": digest(str(root))}, "result": "Approved direct File uploads"},
             "auth": {"mode": "entra-user", "principals": []}, "rbac": plan.get("rbac", {"assignments": []}),
             "network": plan.get("network", {"posture": "preserved", "evidence": None}),
-            "verification": {"readback": verified, "request_ids": request_ids, "server_inventory_digest": file_ingest.inventory_digest(after or before),
+            "verification": {"readback": verified, "request_ids": request_ids, "server_inventory_digest": _file_inventory.inventory_digest(after or before),
                              "idempotency": "Only a received File upload 429 permits one bounded same-operation retry; unknown outcomes are never replayed."},
             "warnings": warnings, "file_batch": batch,
             "ownership": {"run_owned": created, "reused_not_owned": reused, "owner": plan["owner"]},
@@ -708,26 +717,23 @@ def run_batch(document, *, token_provider, transport, progress, allow_new_upload
 
 
 def _source_check(session, token, transport, recovery):
-    try:
-        from . import source_vector
-    except ImportError:
-        import source_vector
+
     plan = session.plan
-    file_ingest._validate_plan(session.ingestion)
+    _file_inventory._validate_plan(session.ingestion)
     etag = session.require_ack()
-    current, _ = search_reconcile._get(search_reconcile.resource_url(plan["source"]), token,
-                                       transport=source_vector.guard_readback_transport(plan, transport), recovery=recovery)
+    current, _ = _search_read._get(_search_read.resource_url(plan["source"]), token,
+                                       transport=_source_readback.guard_readback_transport(plan, transport), recovery=recovery)
     if (current is None or current.get("@odata.etag") != etag
-            or not search_reconcile.definitions_match(plan["source"]["desired"], current)):
+            or not _search_read.definitions_match(plan["source"]["desired"], current)):
         raise fail("file-upload-source-drift", "Current source does not match original acknowledged identity/version/definition.")
     return current
 
 
 def _verify(session, token_provider, transport, context_provider):
     try:
-        from . import file_source, file_cu_mi
+        from . import file_cu_mi
     except ImportError:
-        import file_source, file_cu_mi
+        import file_cu_mi
     session.require_ack()
     session.states()
     session.require_backoff()
@@ -738,8 +744,8 @@ def _verify(session, token_provider, transport, context_provider):
         raise fail("file-upload-context-drift", "Original tenant/subscription/principal changed.")
     plan = session.plan
     if "content_understanding" in plan:
-        state, _ = file_source.read_content_understanding(plan["content_understanding"], token_provider=token_provider, transport=transport)
-        if not file_source._cu_states_match(state, plan["cu_resource_state"]):
+        state, _ = _file_source_config.read_content_understanding(plan["content_understanding"], token_provider=token_provider, transport=transport)
+        if not _file_source_config._cu_states_match(state, plan["cu_resource_state"]):
             raise fail("file-upload-auth-drift", "Original CU account/auth/network state changed.")
         if plan["source"].get("ai_services_managed_identity"):
             binding, _ = file_cu_mi.read_binding(plan["content_understanding"], plan["source"]["endpoint"],
@@ -760,7 +766,7 @@ def plan_resume(request, *, token_provider=azure_cli_token, transport=http_reque
     transport = session.transport(transport)
     _verify(session, token_provider, transport, context_provider)
     states = session.states()
-    inventory, _ = file_ingest._list_files(file_ingest._list_url(session.ingestion), token_provider(SEARCH_AUDIENCE),
+    inventory, _ = _file_inventory._list_files(_file_inventory._list_url(session.ingestion), token_provider(SEARCH_AUDIENCE),
                                          transport=transport, recovery=ReadRecovery())
     observed = _observe(session.ingestion, states, inventory)
     eligible = [i for i, state in enumerate(states) if state["upload"] == "not_attempted" and i not in observed]

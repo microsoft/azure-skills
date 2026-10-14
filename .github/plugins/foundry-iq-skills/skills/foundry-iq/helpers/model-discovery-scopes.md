@@ -73,7 +73,7 @@ meaning for `ContentUnderstanding` or another key. Portal evidence cannot replac
 missing ARM metadata. Endpoint selection does not prove path-specific CU/model
 readiness or effective access.
 
-Embedding syntax matches `source_vector.validate_choice`. The KB consumer relays
+Embedding syntax matches `_embedding.validate_choice`. The KB consumer relays
 `models[].azureOpenAIParameters` without an additional domain gate; the public KB
 SDK examples use `AzureOpenAIVectorizerParameters`. Offline tests pass discovered
 chat origins through that consumer's existing validation. This is compatibility

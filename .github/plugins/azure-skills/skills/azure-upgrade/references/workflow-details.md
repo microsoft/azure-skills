@@ -14,7 +14,7 @@ The azure-upgrade skill follows a structured workflow to ensure safe, repeatable
 
 ## Progress Tracking
 
-Create and maintain `upgrade-status.md` in the workspace root:
+Create and maintain `<UPGRADE_DIR>/upgrade-status.md` (see [Artifact Output Policy](global-rules.md#artifact-output-policy) for path resolution):
 
 ```markdown
 # Upgrade Status
@@ -46,7 +46,7 @@ Create and maintain `upgrade-status.md` in the workspace root:
 ## Error Handling
 
 If any phase fails:
-1. Log the error in `upgrade-status.md`
+1. Log the error in `<UPGRADE_DIR>/upgrade-status.md`
 2. Do NOT proceed to the next phase
 3. Inform the user of the failure and suggest remediation
 4. Offer to retry the failed phase or rollback
@@ -56,4 +56,4 @@ If any phase fails:
 After successful validation:
 - Offer to hand off to `azure-validate` for deeper testing
 - Offer to hand off to `azure-deploy` for CI/CD pipeline setup
-- Ask if the user wants to clean up the original app
+- Ask about source cleanup only when the scenario confirms production cutover and all cleanup prerequisites are complete. Otherwise state that the source is being retained for rollback.

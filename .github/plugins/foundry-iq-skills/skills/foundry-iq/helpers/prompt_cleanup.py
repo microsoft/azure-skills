@@ -8,50 +8,19 @@ from pathlib import Path
 from typing import Any, Callable
 
 try:
-    from . import _cleanup_dependencies as cleanup_dependencies
+    from . import _cleanup_dependencies as cleanup_dependencies, _prompt_read
     from ._common import (
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        is_ambiguous_sdk_error,
-        load_approved_input,
-        reject_secrets,
-        require_allowed_fields,
-        sdk_error_status,
-        sdk_error_metadata,
+        MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result,
+        digest, emit_result, http_request, is_ambiguous_mutation_failure, is_ambiguous_sdk_error,
+        load_approved_input, reject_secrets, require_allowed_fields, sdk_error_status, sdk_error_metadata,
     )
-    from .prompt_connect import _connection_url, _load_connection_sdk as _load_sdk, _project_identity
 except ImportError:
     import _cleanup_dependencies as cleanup_dependencies
-    from _common import (  # type: ignore[no-redef]
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        is_ambiguous_sdk_error,
-        load_approved_input,
-        reject_secrets,
-        require_allowed_fields,
-        sdk_error_status,
-        sdk_error_metadata,
-    )
-    from prompt_connect import (  # type: ignore[no-redef]
-        _connection_url,
-        _load_connection_sdk as _load_sdk,
-        _project_identity,
+    import _prompt_read
+    from _common import (
+        MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result,
+        digest, emit_result, http_request, is_ambiguous_mutation_failure, is_ambiguous_sdk_error,
+        load_approved_input, reject_secrets, require_allowed_fields, sdk_error_status, sdk_error_metadata,
     )
 
 
@@ -63,7 +32,7 @@ def load_cleanup_sdk():
     except (PackageNotFoundError, ValueError, IndexError) as exc:
         raise HelperFailure("sdk-version-invalid", "Cleanup requires azure-ai-projects >=2.4,<3 for complete draft inventories.",
                             blocked_at="execution") from exc
-    return _load_sdk()
+    return _prompt_read._load_connection_sdk()
 
 
 def _validate_owned_resource(
@@ -121,7 +90,7 @@ def _validate_plan(
             "Prompt cleanup requires a separate approved cleanup plan and SDK major 2.",
             blocked_at="confirmation",
         )
-    _project_identity(plan)
+    _prompt_read._project_identity(plan)
     agent = _validate_owned_resource(
         plan.get("agent"),
         label="Agent version",
@@ -171,7 +140,7 @@ def _validate_plan(
             blocked_at="reconciliation",
         )
     if connection is not None:
-        _connection_url({**plan, "connection": connection})
+        _prompt_read._connection_url({**plan, "connection": connection})
     return agent, connection
 
 
@@ -184,7 +153,7 @@ def _delete_agent(
     AIProjectClient, _, _, _, extras = sdk_loader()
     AzureCliCredential, AzureError = extras
     client = AIProjectClient(
-        endpoint=_project_identity(plan)[1],
+        endpoint=_prompt_read._project_identity(plan)[1],
         credential=AzureCliCredential(),
     )
     identity = {"type": "prompt-agent-version", "name": agent["name"], "version": agent["version"]}
@@ -327,7 +296,7 @@ def _delete_connection(
     transport: Transport,
     sdk_loader: Callable[[], tuple[Any, Any, Any, Any, Any]] = load_cleanup_sdk,
 ) -> tuple[str, dict[str, Any], list[str]]:
-    url = _connection_url({**plan, "connection": connection})
+    url = _prompt_read._connection_url({**plan, "connection": connection})
     current, initial_request_id = _get_connection(url, token, transport=transport)
     identity = {"type": "project-connection", "name": connection["name"]}
     request_ids = [initial_request_id] if initial_request_id else []
@@ -492,13 +461,13 @@ def execute(
 
     if connection is not None and plan.get("dependency_guard") is not None:
         current, _ = _get_connection(
-            _connection_url({**plan, "connection": connection}),
+            _prompt_read._connection_url({**plan, "connection": connection}),
             token_provider(MANAGEMENT_AUDIENCE), transport=transport,
         )
         if current is not None:
             cleanup_dependencies.verify_prompt(plan, current, sdk_loader=sdk_loader)
             refreshed, _ = _get_connection(
-                _connection_url({**plan, "connection": connection}),
+                _prompt_read._connection_url({**plan, "connection": connection}),
                 token_provider(MANAGEMENT_AUDIENCE), transport=transport,
             )
             if refreshed != current:

@@ -5,11 +5,13 @@ import copy
 import re
 
 try:
-    from . import _bootstrap_io, cu_ingestion_auth, search_reconcile
-    from ._common import MANAGEMENT_AUDIENCE, HelperFailure, digest, require_allowed_fields
+    from . import cu_ingestion_auth, _search_read
+    from ._common import MANAGEMENT_AUDIENCE, HelperFailure, require_allowed_fields
 except ImportError:
-    import _bootstrap_io, cu_ingestion_auth, search_reconcile
-    from _common import MANAGEMENT_AUDIENCE, HelperFailure, digest, require_allowed_fields
+    import cu_ingestion_auth
+    import _search_read
+    from _common import MANAGEMENT_AUDIENCE, HelperFailure, require_allowed_fields
+
 
 SEARCH_API = "2025-05-01"
 ROLE_API = "2022-04-01"
@@ -119,50 +121,9 @@ def validate_state(state, choice, endpoint):
         raise fail("cu-mi-binding-invalid", "Retain complete, unchanged identity, role, API and account bindings.")
 
 
-def verify_reuse(request, plan, current):
-    paths = (request.get("reuse_input_file"), request.get("reuse_result_file"))
-    if not all(isinstance(p, str) and p for p in paths):
-        raise fail("cu-mi-provenance-required", "A redacted source GET cannot establish key versus MI auth. Retain the original approved version 1.2 File input and completed creation result for exact reuse.")
-    prior, result = (_bootstrap_io.read_json(path) for path in paths)
-    if (
-        not isinstance(prior, dict) or not isinstance(result, dict)
-        or not isinstance(prior.get("plan"), dict) or not isinstance(prior.get("approval"), dict)
-        or not isinstance(result.get("resources"), dict)
-        or not isinstance(result["resources"].get("created"), list)
-    ):
-        raise fail("cu-mi-provenance-mismatch", "Retain complete approved input and completed File result objects.")
-    require_allowed_fields(prior, {"schema_version", "plan", "approval"}, label="MI creation input")
-    try:
-        from . import file_source
-    except ImportError:
-        import file_source
-    approved = prior.get("approval", {})
-    pp = prior.get("plan", {})
-    file_source._validate_plan(pp)
-    fingerprint = digest(pp)
-    created = result.get("resources", {}).get("created", [])
-    source = pp.get("source", {})
-    if (
-        prior.get("schema_version") != "1.0" or pp.get("file_cu_plan_version") != "1.2"
-        or approved != {"confirmed": True, "fingerprint": fingerprint}
-        or source.get("action") != "create" or source.get("endpoint") != plan["source"]["endpoint"]
-        or source.get("name") != plan["source"]["name"] or pp.get("owner") != plan["owner"]
-        or pp.get("cu_identity_state") != plan["cu_identity_state"]
-        or pp.get("cu_resource_state") != plan["cu_resource_state"]
-        or result.get("status") != "completed"
-        or result.get("approved_plan") != {"confirmed": True, "fingerprint": fingerprint}
-        or not search_reconcile.definitions_match(source.get("desired"), current)
-        or not any(isinstance(item, dict) and item.get("type") == "knowledge-source"
-                   and item.get("name") == source["name"] and item.get("etag") == current.get("@odata.etag")
-                   and item.get("definition_digest") == digest(search_reconcile._definition(current))
-                   for item in created)
-    ):
-        raise fail("cu-mi-provenance-mismatch", "Retained MI creation evidence does not bind the fresh source/ETag/account/identity. No auth inference, reingestion or ownership claim.")
-
-
 def guard_create(plan, transport, recheck, checkpoint=None):
     """An expected-absent MI plan must not adopt another actor's redacted source."""
-    url = search_reconcile.resource_url(plan["source"])
+    url = _search_read.resource_url(plan["source"])
     acknowledged = False
     created_etag = None
 
@@ -178,7 +139,7 @@ def guard_create(plan, transport, recheck, checkpoint=None):
                 raise fail("cu-mi-checkpoint-failed", "Acknowledged MI creation checkpoint failed; private details withheld.") from None
         try:
             response = evidence["response"]
-            created_etag = search_reconcile.resolve_etag(search_reconcile.response_etags(response), response.request_id)
+            created_etag = _search_read.resolve_etag(_search_read.response_etags(response), response.request_id)
         except HelperFailure:
             raise fail("cu-mi-ack-version-unverified", "MI creation was acknowledged, but its version evidence is invalid. Retain ownership; do not replay.") from None
         if created_etag is None:
@@ -196,7 +157,7 @@ def guard_create(plan, transport, recheck, checkpoint=None):
                 raise fail("cu-mi-source-drift", "Expected source absence changed before creation; do not infer MI from redacted readback. Refresh discovery and provenance.")
             if method == "GET" and result.status == 200 and acknowledged:
                 try:
-                    observed_etag = search_reconcile.resolve_etag(search_reconcile.response_etags(result), result.request_id)
+                    observed_etag = _search_read.resolve_etag(_search_read.response_etags(result), result.request_id)
                 except HelperFailure:
                     raise fail("cu-mi-readback-version-unverified", "Created MI source readback has invalid version evidence.") from None
                 if observed_etag != created_etag:

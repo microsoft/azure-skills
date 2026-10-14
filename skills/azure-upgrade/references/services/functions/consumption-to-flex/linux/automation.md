@@ -8,8 +8,9 @@
 ## Prerequisites
 
 ```bash
-# Ensure Azure CLI v2.77.0+
-az --version
+# Verify required tools
+az version --query '"azure-cli"' -o tsv
+jq --version
 
 # Install resource-graph extension
 az extension add --name resource-graph
@@ -18,6 +19,8 @@ az extension add --name resource-graph
 az login
 az account set --subscription <SUBSCRIPTION_ID>
 ```
+
+If `az` or `jq` is unavailable, stop and provide the relevant installation guidance. If the Azure CLI version is lower than `2.77.0`, stop and require an upgrade before running migration commands.
 
 ---
 
@@ -83,7 +86,7 @@ If this returns entries, the app has slots. Flex Consumption does NOT support sl
 az webapp config ssl list --resource-group $rgName
 ```
 
-If this returns output, the app likely uses certificates. Flex Consumption does NOT support certs yet.
+If this returns output, determine whether the source app actually uses those certificates. Plan to re-add used certificates after migration with the documented [site-scoped certificate process](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to#configure-site-scoped-certificates), verify the per-app limits, and update certificate-loading code to use the documented Linux file paths.
 
 ### 2f. Check Blob Storage Triggers
 
@@ -106,9 +109,9 @@ If this returns rows, convert those blob triggers from `LogsAndContainerScan` to
 appName=<APP_NAME>
 rgName=<RESOURCE_GROUP>
 
-# Get all app settings as JSON
-app_settings=$(az functionapp config appsettings list --name $appName --resource-group $rgName)
-echo "$app_settings"
+# Inventory setting names only; never display or persist general setting values
+az functionapp config appsettings list --name $appName --resource-group $rgName \
+    --query "[].name" -o tsv
 ```
 
 ### 3b. Collect Application Configurations
@@ -195,31 +198,63 @@ Ideally your project files are in source control and you can redeploy from there
 #### Check WEBSITE_RUN_FROM_PACKAGE
 
 ```bash
-az functionapp config appsettings list --name $appName --resource-group $rgName \
-    --query "[?name=='WEBSITE_RUN_FROM_PACKAGE'].value" -o tsv
+UPGRADE_DIR=<UPGRADE_DIR>
+(
+    set -e
+    trap 'unset runFromPackage' EXIT
+    echo "Checking run-from-package configuration..."
+    runFromPackage=$(az functionapp config appsettings list --name $appName --resource-group $rgName \
+        --query "[?name=='WEBSITE_RUN_FROM_PACKAGE'].value | [0]" -o tsv)
+
+    if [[ "$runFromPackage" =~ ^https:// ]]; then
+        echo "Downloading the remote deployment package..."
+        curl --fail --location --silent --show-error --output "$UPGRADE_DIR/source-package.zip" "$runFromPackage"
+        echo "Downloaded the remote deployment package without displaying its URL."
+    elif [[ -n "$runFromPackage" ]]; then
+        echo "Linux Consumption requires WEBSITE_RUN_FROM_PACKAGE to be a remote URL; found an unsupported non-URL value." >&2
+        exit 1
+    else
+        echo "No run-from-package URL was detected; use the scm-releases fallback below or redeploy from source control."
+    fi
+)
 ```
 
-If this returns a URL, download the package from that remote location.
+If the remote package was downloaded, skip the storage download below. If no URL was configured, continue with the `scm-releases` fallback.
 
 #### Download from scm-releases blob container
 
 Linux Consumption apps store deployment packages in the `scm-releases` blob container (in `squashfs` format).
 
+> 📁 The download below writes to `<UPGRADE_DIR>` (default: `.azure-upgrade/<source-app-name>/`). See [Artifact Output Policy](../../../../global-rules.md#artifact-output-policy). Resolve `UPGRADE_DIR` once at session start and create the directory before running.
+
 ```bash
 appName=<APP_NAME>
 rgName=<RESOURCE_GROUP>
+UPGRADE_DIR=<UPGRADE_DIR>   # e.g. .azure-upgrade/$appName  — see global-rules
 
-echo "Getting the storage account connection string..."
-storageConnection=$(az functionapp config appsettings list --name $appName --resource-group $rgName \
-    --query "[?name=='AzureWebJobsStorage'].value" -o tsv)
+(
+    set -e
+    trap 'unset AZURE_STORAGE_CONNECTION_STRING' EXIT
+    echo "Getting the storage account connection string..."
+    export AZURE_STORAGE_CONNECTION_STRING=$(az functionapp config appsettings list --name $appName --resource-group $rgName \
+        --query "[?name=='AzureWebJobsStorage'].value | [0]" -o tsv)
+    if [[ -z "$AZURE_STORAGE_CONNECTION_STRING" ]]; then
+        echo "AzureWebJobsStorage was not found." >&2
+        exit 1
+    fi
 
-echo "Getting the package name..."
-packageName=$(az storage blob list --connection-string $storageConnection --container-name scm-releases \
-    --query "[0].name" -o tsv)
+    echo "Getting the package name..."
+    packageName=$(az storage blob list --container-name scm-releases --query "[0].name" -o tsv)
+    if [[ -z "$packageName" ]]; then
+        echo "No deployment package was found in the scm-releases container." >&2
+        exit 1
+    fi
 
-echo "Downloading package: $packageName"
-az storage blob download --connection-string $storageConnection --container-name scm-releases \
-    --name $packageName --file $packageName
+    echo "Downloading package: $packageName -> $UPGRADE_DIR/$packageName"
+    az storage blob download --container-name scm-releases --name "$packageName" \
+        --file "$UPGRADE_DIR/$packageName" --no-progress --output none
+    echo "Downloaded package: $packageName"
+)
 ```
 
 > 💡 If your storage account is restricted to managed identity access only, you may need to grant your Azure account the `Storage Blob Data Reader` role.
@@ -258,9 +293,9 @@ The command automatically:
 az functionapp show --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP> \
     --query "{name:name, kind:kind, sku:properties.sku}" --output table
 
-# Review migrated app settings
+# Review migrated app-setting names without displaying values
 az functionapp config appsettings list --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP> \
-    --output table
+    --query "[].name" -o tsv
 
 # Check managed identity
 az functionapp identity show --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP>
@@ -319,6 +354,14 @@ Update your existing pipeline (Azure Pipelines or GitHub Actions) to target the 
 
 ### Option B: Deploy from Local Project (if user selects option 2)
 
+Verify that Azure Functions Core Tools v4 is available:
+
+```bash
+func --version
+```
+
+If `func` is unavailable or the reported major version is not `4`, stop and provide the [Core Tools installation guidance](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools). Do not install or upgrade Core Tools without user approval; offer the pipeline or existing-package deployment options instead.
+
 ```bash
 # From your project directory
 func azure functionapp publish <NEW_APP_NAME>
@@ -327,9 +370,10 @@ func azure functionapp publish <NEW_APP_NAME>
 ### Option C: Deploy Existing Package (if user selects option 3)
 
 ```bash
-# Deploy the zip package downloaded in Step 3
+# Deploy the zip package downloaded in Step 3 (resolves to <UPGRADE_DIR>/<PACKAGE_NAME>
+# per the Artifact Output Policy in references/global-rules.md)
 az functionapp deployment source config-zip --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP> \
-    --src <PACKAGE_PATH.zip>
+    --src <UPGRADE_DIR>/<PACKAGE_NAME>
 ```
 
 ### After Successful Deployment
@@ -399,11 +443,23 @@ traces
 
 ## Step 7: Cleanup (Optional)
 
-```bash
-# ⛔ REQUIRES ask_user confirmation before executing
+Do not offer source deletion until all of these conditions are verified:
 
-# Delete the original function app
-az functionapp delete --name <ORIGINAL_APP_NAME> --resource-group <RESOURCE_GROUP>
+1. all applicable production HTTP traffic, clients, DNS, and custom domains use the target;
+2. every applicable production trigger has completed source-first cutover and target validation;
+3. no production-readiness work remains deferred;
+4. the source no longer processes production workloads.
+
+If any condition is incomplete, retain the source for rollback and record cleanup as skipped or deferred.
+
+Only after every condition passes, use `ask_user` immediately before deletion:
+
+> Production cutover is complete and source app `<SOURCE_APP_NAME>` is no longer processing production workloads. May I permanently delete it? This is irreversible and removes the rollback app.
+
+Run only after that explicit approval:
+
+```bash
+az functionapp delete --name <SOURCE_APP_NAME> --resource-group <SOURCE_RESOURCE_GROUP>
 ```
 
 > 💡 No rush. The Consumption plan only charges for actual usage, so keeping the old app (with triggers disabled) costs very little. We recommend keeping it for a few days/weeks.
@@ -412,10 +468,18 @@ az functionapp delete --name <ORIGINAL_APP_NAME> --resource-group <RESOURCE_GROU
 
 ## Rollback
 
-```bash
-# Restart the original app if it was stopped
-az functionapp start --name <ORIGINAL_APP_NAME> --resource-group <RESOURCE_GROUP>
+If the source app was previously stopped, use `ask_user` immediately before restarting it:
 
-# Optionally delete the new Flex Consumption app
+> May I restart source app `<SOURCE_APP_NAME>` in resource group `<SOURCE_RESOURCE_GROUP>` to restore processing?
+
+Run only after that explicit approval:
+
+```bash
+az functionapp start --name <SOURCE_APP_NAME> --resource-group <SOURCE_RESOURCE_GROUP>
+```
+
+Deleting the new Flex app requires a separate confirmation:
+
+```bash
 az functionapp delete --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP>
 ```

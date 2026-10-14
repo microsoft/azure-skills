@@ -60,7 +60,7 @@ Use `sessions create` only when a session must exist before invoke or file opera
 
 ## The azure.yaml service block
 
-After `azd ai agent init`, every hosted agent is defined as a **service block in `azure.yaml`** (`host: azure.ai.agent`) plus the active azd env; init consolidates the sample's definition into `azure.yaml`.
+After `azd ai agent init`, each agent developed through azd is defined as a **service block in `azure.yaml`** (`host: azure.ai.agent`) plus the active azd env. Hosted Agents add code/container fields; a Managed Harness Agent uses `kind: prompt` and `harness.type: github_copilot_preview`.
 
 | Location | What it holds |
 |------|---------------|
@@ -120,7 +120,25 @@ services:
 - `codeConfiguration` present -> code deploy (ZIP, Foundry builds).
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 - `deployments[]` (under the `ai-project` service) -- model deployments provisioned via Bicep. `name` is the literal Azure deployment resource name the agent references through `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
-- Connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_ENDPOINT` env var (see [toolbox.md](../../toolbox/toolbox.md)).
+- Hosted connections/toolboxes -- created with `azd ai connection` / `azd ai toolbox` and consumed via a `TOOLBOX_ENDPOINT` env var (see [toolbox.md](../../toolbox/toolbox.md)).
+
+### Managed Harness Agent service block
+
+```yaml
+services:
+  assistant:
+    host: azure.ai.agent
+    kind: prompt
+    name: assistant
+    model: gpt-5-mini
+    instructions: Help the user.
+    harness:
+      type: github_copilot_preview
+    tools:
+      - type: web_search
+```
+
+A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. In this workflow, existing Toolboxes are attached through their versioned MCP endpoint and existing Skills are referenced by name and version; connection, Toolbox, and Skill resources are managed separately with their `azd ai` commands.
 
 ## State (azd env vars)
 

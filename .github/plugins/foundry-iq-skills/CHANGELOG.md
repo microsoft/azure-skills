@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+- fix: hand off unsupported Foundry IQ scenarios ([#3376](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3376))
+
+## 0.1.16
+
+- fix(foundry-iq-skills): resolve Python CodeQL findings ([#3315](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3315))
+
+## 0.1.15
+
+- chore: update telemetry reporter release ([#3365](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3365))
+
 ## 0.1.14
 
 - feat: support musl telemetry reporter builds and releases ([#3337](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3337))

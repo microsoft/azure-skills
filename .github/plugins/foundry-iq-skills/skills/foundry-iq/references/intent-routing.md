@@ -100,7 +100,7 @@ mentioned child step.
 | Set up only a Search service. | [Search](../search-services/create.md) | Verified service only; no source or KB creation. |
 | Query this existing KB. | [Retrieve](../knowledge-bases/retrieve.md) | Read-only source-backed retrieval; no creation. |
 | Connect this KB to my existing Foundry agent. | [Connect](../agents/connect.md) | Verified requested connection and agent retrieval; configuration alone is insufficient. |
-| Make OneLake and Blob searchable together. | [Diagnose](../troubleshooting/diagnose.md) | Explain unsupported scope; never substitute a Blob-only success. |
+| Make OneLake and Blob searchable together. | [Diagnose](../troubleshooting/diagnose.md) | State unsupported scope, point to documentation, and hand off to agent to take direct action; never substitute a Blob-only success. |
 | Build a classic Search index and query it from my app. | Outside this skill | Classic Search handoff; do not invent a KB requirement. |
 
 ## References

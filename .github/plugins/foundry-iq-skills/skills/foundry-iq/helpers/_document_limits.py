@@ -22,7 +22,7 @@ def install_limits():
         raise OSError("unsupported limit platform")
 
     import ctypes
-    from ctypes import wintypes as w
+    import ctypes.wintypes as w
 
     class Basic(ctypes.Structure):
         _fields_ = [

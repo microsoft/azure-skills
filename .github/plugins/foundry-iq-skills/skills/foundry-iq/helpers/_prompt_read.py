@@ -4,21 +4,17 @@ from __future__ import annotations
 import copy
 import json
 import re
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any
-from urllib.parse import parse_qs, quote, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit
 
 try:
     from ._bootstrap_io import run_cli
-    from ._common import (
-        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, digest,
-        require_allowed_fields,
-    )
+    from ._common import MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, digest, require_allowed_fields
 except ImportError:
     from _bootstrap_io import run_cli
-    from _common import (
-        MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, digest,
-        require_allowed_fields,
-    )
+    from _common import MANAGEMENT_AUDIENCE, SEARCH_AUDIENCE, HelperFailure, digest, require_allowed_fields
+
 
 PROJECT_API = "2025-10-01-preview"
 SEARCH_API = "2025-05-01"
@@ -228,3 +224,155 @@ def read_dependencies(plan, *, token_provider, transport, cli=run_cli, capture_c
     ):
         raise fail("project-reader-role-unverified", "The approved principal is not the observed Foundry PROJECT identity.")
     return state, profile, warnings, request_ids
+
+
+ARM_API_VERSION = "2025-10-01-preview"
+
+
+SDK_MAJOR = "2"
+
+
+PROJECT_ID = re.compile(
+    r"^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/"
+    r"Microsoft\.CognitiveServices/accounts/(?P<account>[^/]+)/projects/"
+    r"(?P<project>[^/]+)$",
+    re.IGNORECASE,
+)
+
+
+PROJECT_PATH = re.compile(r"^/api/projects/(?P<project>[^/]+)/?$")
+
+
+def _project_endpoint(value: Any) -> str:
+    if not isinstance(value, str):
+        raise HelperFailure(
+            "project-endpoint-invalid",
+            "Project endpoint must be a string.",
+            blocked_at="input-resolution",
+        )
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError as error:
+        raise HelperFailure(
+            "project-endpoint-invalid", "Project endpoint is malformed.",
+            blocked_at="input-resolution",
+        ) from error
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or not parsed.hostname.endswith(".services.ai.azure.com")
+        or PROJECT_PATH.fullmatch(parsed.path) is None
+        or parsed.query
+        or parsed.fragment
+        or parsed.username
+        or parsed.password
+        or port not in {None, 443}
+    ):
+        raise HelperFailure(
+            "project-endpoint-invalid",
+            "Project endpoint must be an HTTPS services.ai.azure.com project URL.",
+            blocked_at="input-resolution",
+        )
+    return value.rstrip("/")
+
+
+def _project_identity(plan: dict[str, Any]) -> tuple[str, str]:
+    project_id = plan.get("project_resource_id")
+    match = PROJECT_ID.fullmatch(project_id) if isinstance(project_id, str) else None
+    if match is None:
+        raise HelperFailure(
+            "project-resource-id-invalid",
+            "project_resource_id must identify one Microsoft Foundry project.",
+            blocked_at="input-resolution",
+        )
+    endpoint = _project_endpoint(plan.get("project_endpoint"))
+    parsed = urlsplit(endpoint)
+    endpoint_account = parsed.hostname.removesuffix(".services.ai.azure.com")
+    endpoint_match = PROJECT_PATH.fullmatch(parsed.path)
+    if (
+        endpoint_match is None
+        or endpoint_account.casefold() != match.group("account").casefold()
+        or unquote(endpoint_match.group("project")).casefold()
+        != match.group("project").casefold()
+    ):
+        raise HelperFailure(
+            "project-identity-mismatch",
+            "project_endpoint and project_resource_id must identify the same Foundry project.",
+            blocked_at="reconciliation",
+        )
+    return project_id, endpoint
+
+
+def _connection_url(plan: dict[str, Any]) -> str:
+    project_id = plan.get("project_resource_id")
+    if not isinstance(project_id, str) or PROJECT_ID.fullmatch(project_id) is None:
+        raise HelperFailure(
+            "project-resource-id-invalid",
+            "project_resource_id must identify one Microsoft Foundry project.",
+            blocked_at="input-resolution",
+        )
+    connection = plan.get("connection")
+    if not isinstance(connection, dict):
+        raise HelperFailure(
+            "connection-invalid",
+            "connection must be an object.",
+            blocked_at="input-resolution",
+        )
+    name = connection.get("name")
+    if not isinstance(name, str) or not name:
+        raise HelperFailure(
+            "connection-invalid",
+            "connection.name is required.",
+            blocked_at="input-resolution",
+        )
+    return (
+        "https://management.azure.com"
+        f"{project_id}/connections/{quote(name, safe='')}?"
+        + urlencode({"api-version": ARM_API_VERSION})
+    )
+
+
+def _load_sdk() -> tuple[Any, Any, Any, Any, Any]:
+    try:
+        if version("azure-ai-projects").split(".", 1)[0] != SDK_MAJOR:
+            raise HelperFailure(
+                "sdk-version-invalid",
+                "azure-ai-projects 2.x is required.",
+                blocked_at="execution",
+            )
+        from azure.ai.projects import AIProjectClient
+        from azure.ai.projects.models import (
+            MCPTool,
+            PromptAgentDefinition,
+            StructuredInputDefinition,
+        )
+        from azure.core.exceptions import AzureError
+        from azure.identity import AzureCliCredential
+    except PackageNotFoundError as exc:
+        raise HelperFailure(
+            "sdk-unavailable",
+            "azure-ai-projects 2.x is not installed.",
+            blocked_at="execution",
+        ) from exc
+    except ImportError as exc:
+        raise HelperFailure(
+            "sdk-unavailable",
+            "azure-ai-projects, azure-identity, and azure-core are required.",
+            blocked_at="execution",
+        ) from exc
+    return (
+        AIProjectClient,
+        MCPTool,
+        PromptAgentDefinition,
+        StructuredInputDefinition,
+        (AzureCliCredential, AzureError),
+    )
+
+
+def _load_connection_sdk() -> tuple[Any, Any, Any, Any, Any]:
+    sdk = _load_sdk()
+    installed = re.match(r"^2\.(\d+)\.", version("azure-ai-projects"))
+    if installed is None or int(installed[1]) < 4:
+        raise fail("sdk-version-invalid", "Complete Prompt version reads require azure-ai-projects>=2.4.0,<3, including drafts.")
+    return sdk

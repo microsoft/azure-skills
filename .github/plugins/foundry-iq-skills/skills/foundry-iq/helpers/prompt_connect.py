@@ -2,64 +2,34 @@ from __future__ import annotations
 
 import argparse
 import copy
-try:
-    from . import _cleanup_receipts as cleanup_receipts
-except ImportError:
-    import _cleanup_receipts as cleanup_receipts
 import json
 import re
 import sys
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, Callable
-from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 try:
-    from . import _prompt_read
-    from ._bootstrap_io import MAX_BYTES, read_json, run_cli
+    from . import _cleanup_receipts as cleanup_receipts, _prompt_read
+    from ._bootstrap_io import MAX_BYTES, run_cli
     from ._common import (
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        canonical_bytes,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        is_ambiguous_sdk_error,
-        load_approved_input,
-        reject_secrets,
-        require_allowed_fields,
+        MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result,
+        canonical_bytes, digest, emit_result, http_request, is_ambiguous_mutation_failure,
+        is_ambiguous_sdk_error, load_approved_input, reject_secrets, require_allowed_fields,
         sdk_error_metadata,
     )
 except ImportError:
+    import _cleanup_receipts as cleanup_receipts
     import _prompt_read
-    from _bootstrap_io import MAX_BYTES, read_json, run_cli
-    from _common import (  # type: ignore[no-redef]
-        MANAGEMENT_AUDIENCE,
-        HelperFailure,
-        TokenProvider,
-        Transport,
-        azure_cli_token,
-        blocked_result,
-        canonical_bytes,
-        digest,
-        emit_result,
-        http_request,
-        is_ambiguous_mutation_failure,
-        is_ambiguous_sdk_error,
-        load_approved_input,
-        reject_secrets,
-        require_allowed_fields,
+    from _bootstrap_io import MAX_BYTES, run_cli
+    from _common import (
+        MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token, blocked_result,
+        canonical_bytes, digest, emit_result, http_request, is_ambiguous_mutation_failure,
+        is_ambiguous_sdk_error, load_approved_input, reject_secrets, require_allowed_fields,
         sdk_error_metadata,
     )
 
 
-ARM_API_VERSION = "2025-10-01-preview"
-SDK_MAJOR = "2"
 GROUNDING = (
     "For every user question, call knowledge_base_retrieve before answering, "
     "including questions that seem unrelated to the knowledge base. "
@@ -70,13 +40,6 @@ GROUNDING = (
     "If retrieval fails, report the failure instead of treating it as no evidence "
     "or answering from general knowledge."
 )
-PROJECT_ID = re.compile(
-    r"^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/"
-    r"Microsoft\.CognitiveServices/accounts/(?P<account>[^/]+)/projects/"
-    r"(?P<project>[^/]+)$",
-    re.IGNORECASE,
-)
-PROJECT_PATH = re.compile(r"^/api/projects/(?P<project>[^/]+)/?$")
 SEARCH_HOST = re.compile(
     r"^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?\.search\.windows\.net$"
 )
@@ -102,96 +65,6 @@ PLAN_FIELDS = {
     "verified_dependencies",
     "agent_versions",
 }
-
-
-def _project_endpoint(value: Any) -> str:
-    if not isinstance(value, str):
-        raise HelperFailure(
-            "project-endpoint-invalid",
-            "Project endpoint must be a string.",
-            blocked_at="input-resolution",
-        )
-    try:
-        parsed = urlsplit(value)
-        port = parsed.port
-    except ValueError as error:
-        raise HelperFailure(
-            "project-endpoint-invalid", "Project endpoint is malformed.",
-            blocked_at="input-resolution",
-        ) from error
-    if (
-        parsed.scheme != "https"
-        or not parsed.hostname
-        or not parsed.hostname.endswith(".services.ai.azure.com")
-        or PROJECT_PATH.fullmatch(parsed.path) is None
-        or parsed.query
-        or parsed.fragment
-        or parsed.username
-        or parsed.password
-        or port not in {None, 443}
-    ):
-        raise HelperFailure(
-            "project-endpoint-invalid",
-            "Project endpoint must be an HTTPS services.ai.azure.com project URL.",
-            blocked_at="input-resolution",
-        )
-    return value.rstrip("/")
-
-
-def _project_identity(plan: dict[str, Any]) -> tuple[str, str]:
-    project_id = plan.get("project_resource_id")
-    match = PROJECT_ID.fullmatch(project_id) if isinstance(project_id, str) else None
-    if match is None:
-        raise HelperFailure(
-            "project-resource-id-invalid",
-            "project_resource_id must identify one Microsoft Foundry project.",
-            blocked_at="input-resolution",
-        )
-    endpoint = _project_endpoint(plan.get("project_endpoint"))
-    parsed = urlsplit(endpoint)
-    endpoint_account = parsed.hostname.removesuffix(".services.ai.azure.com")
-    endpoint_match = PROJECT_PATH.fullmatch(parsed.path)
-    if (
-        endpoint_match is None
-        or endpoint_account.casefold() != match.group("account").casefold()
-        or unquote(endpoint_match.group("project")).casefold()
-        != match.group("project").casefold()
-    ):
-        raise HelperFailure(
-            "project-identity-mismatch",
-            "project_endpoint and project_resource_id must identify the same Foundry project.",
-            blocked_at="reconciliation",
-        )
-    return project_id, endpoint
-
-
-def _connection_url(plan: dict[str, Any]) -> str:
-    project_id = plan.get("project_resource_id")
-    if not isinstance(project_id, str) or PROJECT_ID.fullmatch(project_id) is None:
-        raise HelperFailure(
-            "project-resource-id-invalid",
-            "project_resource_id must identify one Microsoft Foundry project.",
-            blocked_at="input-resolution",
-        )
-    connection = plan.get("connection")
-    if not isinstance(connection, dict):
-        raise HelperFailure(
-            "connection-invalid",
-            "connection must be an object.",
-            blocked_at="input-resolution",
-        )
-    name = connection.get("name")
-    if not isinstance(name, str) or not name:
-        raise HelperFailure(
-            "connection-invalid",
-            "connection.name is required.",
-            blocked_at="input-resolution",
-        )
-    return (
-        "https://management.azure.com"
-        f"{project_id}/connections/{quote(name, safe='')}?"
-        + urlencode({"api-version": ARM_API_VERSION})
-    )
 
 
 def connection_definition(plan: dict[str, Any]) -> dict[str, Any]:
@@ -435,7 +308,7 @@ def _validate_plan(plan: dict[str, Any], *, resolved: bool = True) -> None:
             "The approved plan must bind azure-ai-projects major version 2.",
             blocked_at="input-resolution",
         )
-    _project_identity(plan)
+    _prompt_read._project_identity(plan)
     connection = plan.get("connection")
     agent = plan.get("agent")
     rbac = plan.get("rbac_verified")
@@ -614,7 +487,7 @@ def _reconcile_connection(
     transport: Transport,
     cleanup_capture=None,
 ) -> tuple[str, dict[str, Any], list[str]]:
-    url = _connection_url(plan)
+    url = _prompt_read._connection_url(plan)
     desired = connection_definition(plan)
     request_ids: list[str] = []
     current, ids = _prompt_read.get_object(url, token, transport, absent=True, label="connection")
@@ -817,43 +690,6 @@ def _recover_ambiguous_connection(
     return completed_action, readback.body, request_ids
 
 
-def _load_sdk() -> tuple[Any, Any, Any, Any, Any]:
-    try:
-        if version("azure-ai-projects").split(".", 1)[0] != SDK_MAJOR:
-            raise HelperFailure(
-                "sdk-version-invalid",
-                "azure-ai-projects 2.x is required.",
-                blocked_at="execution",
-            )
-        from azure.ai.projects import AIProjectClient
-        from azure.ai.projects.models import (
-            MCPTool,
-            PromptAgentDefinition,
-            StructuredInputDefinition,
-        )
-        from azure.core.exceptions import AzureError
-        from azure.identity import AzureCliCredential
-    except PackageNotFoundError as exc:
-        raise HelperFailure(
-            "sdk-unavailable",
-            "azure-ai-projects 2.x is not installed.",
-            blocked_at="execution",
-        ) from exc
-    except ImportError as exc:
-        raise HelperFailure(
-            "sdk-unavailable",
-            "azure-ai-projects, azure-identity, and azure-core are required.",
-            blocked_at="execution",
-        ) from exc
-    return (
-        AIProjectClient,
-        MCPTool,
-        PromptAgentDefinition,
-        StructuredInputDefinition,
-        (AzureCliCredential, AzureError),
-    )
-
-
 def _version_ids(agents, name: str) -> list[str]:
     result = agents.list_versions(agent_name=name, include_drafts=True)
     pages = result.by_page() if hasattr(result, "by_page") else [result]
@@ -871,14 +707,6 @@ def _version_ids(agents, name: str) -> list[str]:
             if len(versions) > 200:
                 raise _prompt_read.fail("agent-version-limit", "Selected agent has more than 200 versions; do not truncate.")
     return sorted(versions)
-
-
-def _load_connection_sdk() -> tuple[Any, Any, Any, Any, Any]:
-    sdk = _load_sdk()
-    installed = re.match(r"^2\.(\d+)\.", version("azure-ai-projects"))
-    if installed is None or int(installed[1]) < 4:
-        raise _prompt_read.fail("sdk-version-invalid", "Complete Prompt version reads require azure-ai-projects>=2.4.0,<3, including drafts.")
-    return sdk
 
 
 def _version_state(agents, name: str, version_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -921,7 +749,7 @@ def _checked_version_state(item, name: str, version_id: str) -> tuple[dict[str, 
 def _connect_agent(
     plan: dict[str, Any],
     *,
-    sdk_loader: Callable[[], tuple[Any, Any, Any, Any, Any]] = _load_connection_sdk,
+    sdk_loader: Callable[[], tuple[Any, Any, Any, Any, Any]] = _prompt_read._load_connection_sdk,
     read_only: bool = False,
     resolve: bool = False,
     before_write: Callable[[], None] | None = None,
@@ -939,7 +767,7 @@ def _connect_agent(
     connection = plan["connection"]
     created_write: dict[str, Any] | None = None
     client = AIProjectClient(
-        endpoint=_project_endpoint(plan["project_endpoint"]),
+        endpoint=_prompt_read._project_endpoint(plan["project_endpoint"]),
         credential=AzureCliCredential(),
     )
     try:
@@ -1237,7 +1065,7 @@ def execute(
     *,
     token_provider: TokenProvider = azure_cli_token,
     transport: Transport = http_request,
-    sdk_loader: Callable[[], tuple[Any, Any, Any, Any, Any]] = _load_connection_sdk,
+    sdk_loader: Callable[[], tuple[Any, Any, Any, Any, Any]] = _prompt_read._load_connection_sdk,
     cli=run_cli,
     cleanup_capture=None,
 ) -> dict[str, Any]:
@@ -1248,7 +1076,7 @@ def execute(
             from . import _initial_prompt, prompt_cleanup
         except ImportError:
             import _initial_prompt, prompt_cleanup
-        if sdk_loader in (_load_sdk, _load_connection_sdk):
+        if sdk_loader in (_prompt_read._load_sdk, _prompt_read._load_connection_sdk):
             sdk_loader = prompt_cleanup.load_cleanup_sdk
         return _initial_prompt.execute(document, capture=cleanup_capture, token_provider=token_provider,
                                        transport=transport, sdk_loader=sdk_loader)
@@ -1258,12 +1086,12 @@ def execute(
         or cleanup_capture.owner != plan.get("owner")
     ):
         raise HelperFailure("cleanup-receipt-input-invalid", "Capture must bind this exact approved connection plan.", blocked_at="confirmation")
-    if cleanup_capture is not None and sdk_loader in (_load_sdk, _load_connection_sdk):
+    if cleanup_capture is not None and sdk_loader in (_prompt_read._load_sdk, _prompt_read._load_connection_sdk):
         try:
-            from .prompt_cleanup import load_cleanup_sdk
+            from . import prompt_cleanup
         except ImportError:
-            from prompt_cleanup import load_cleanup_sdk
-        loaded = load_cleanup_sdk()
+            import prompt_cleanup
+        loaded = prompt_cleanup.load_cleanup_sdk()
         sdk_loader = lambda: loaded
     connection_action, connection = "", {}
     request_ids, connection_warnings, connection_write = [], [], []
@@ -1331,7 +1159,7 @@ def execute(
         "api_contracts": [
             {
                 "operation": "project-connection",
-                "version": ARM_API_VERSION,
+                "version": _prompt_read.ARM_API_VERSION,
                 "preview": True,
             },
             {
@@ -1376,7 +1204,7 @@ def execute(
 
 
 def plan_source(request: dict[str, Any], *, token_provider=azure_cli_token,
-                transport=http_request, sdk_loader=_load_connection_sdk, cli=run_cli) -> dict[str, Any]:
+                transport=http_request, sdk_loader=_prompt_read._load_connection_sdk, cli=run_cli) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise _prompt_read.fail("input-schema-invalid", "Prompt planning requires a resolved intent object.")
     reject_secrets(request)
@@ -1424,7 +1252,7 @@ def plan_source(request: dict[str, Any], *, token_provider=azure_cli_token,
     )
     plan["rbac_verified"].update(verified=True, principal_id=state["project"]["principal_id"])
     current, ids = _prompt_read.get_object(
-        _connection_url(plan), token_provider(MANAGEMENT_AUDIENCE), transport, absent=True, label="connection",
+        _prompt_read._connection_url(plan), token_provider(MANAGEMENT_AUDIENCE), transport, absent=True, label="connection",
     )
     request_ids.extend(ids)
     if current is not None:
@@ -1443,7 +1271,7 @@ def plan_source(request: dict[str, Any], *, token_provider=azure_cli_token,
     warnings = list(dict.fromkeys(warnings + refreshed_warnings))
     request_ids.extend(ids)
     refreshed, ids = _prompt_read.get_object(
-        _connection_url(plan), token_provider(MANAGEMENT_AUDIENCE), transport, absent=True, label="connection",
+        _prompt_read._connection_url(plan), token_provider(MANAGEMENT_AUDIENCE), transport, absent=True, label="connection",
     )
     request_ids.extend(ids)
     if ((current is None) != (refreshed is None)

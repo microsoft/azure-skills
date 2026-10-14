@@ -5,11 +5,19 @@ import re
 from urllib.parse import quote
 
 try:
-    from . import prompt_connect, _cleanup_dependencies as dependencies, _cleanup_receipts as receipts
-    from ._common import HelperFailure, canonical_bytes, digest, reject_secrets, require_allowed_fields, sdk_error_status, sdk_error_metadata
+    from . import _cleanup_dependencies as dependencies, _cleanup_receipts as receipts, _prompt_read
+    from ._common import (
+        HelperFailure, canonical_bytes, digest, reject_secrets, require_allowed_fields, sdk_error_status,
+        sdk_error_metadata,
+    )
 except ImportError:
-    import prompt_connect, _cleanup_dependencies as dependencies, _cleanup_receipts as receipts
-    from _common import HelperFailure, canonical_bytes, digest, reject_secrets, require_allowed_fields, sdk_error_status, sdk_error_metadata
+    import _cleanup_dependencies as dependencies
+    import _cleanup_receipts as receipts
+    import _prompt_read
+    from _common import (
+        HelperFailure, canonical_bytes, digest, reject_secrets, require_allowed_fields, sdk_error_status,
+        sdk_error_metadata,
+    )
 
 
 def fail(code, message):
@@ -21,7 +29,7 @@ def validate(plan):
     require_allowed_fields(plan, {"operation", "sdk_major", "project_resource_id", "project_endpoint",
                                  "agent", "owner", "cleanup_approved", "inventory_limits", "absence_inventory_digest",
                                  "prerequisites"}, label="Initial Prompt creation")
-    prompt_connect._project_identity(plan)
+    _prompt_read._project_identity(plan)
     if (plan.get("operation") != "create-initial-prompt-agent" or plan.get("sdk_major") != 2
             or plan.get("cleanup_approved") is not False or not isinstance(plan.get("owner"), str) or not plan["owner"].strip()):
         raise fail("input-schema-invalid", "Initial Prompt creation needs separate approved creation intent and owner.")

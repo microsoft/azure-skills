@@ -2,7 +2,7 @@
 
 > **Source**: Azure Functions Consumption Plan (Y1/Dynamic) on Linux
 > **Target**: Azure Functions Flex Consumption Plan (FC1/FlexConsumption)
-> **Platform**: Linux only (Windows support planned for future)
+> **Platform**: Linux → Linux. For a Windows Consumption source, use the [Windows workflow](../windows/workflow.md).
 > **Docs**: [Linux migration guide](https://learn.microsoft.com/en-us/azure/azure-functions/migration/migrate-plan-consumption-to-flex?pivots=platform-linux)
 
 ## Why Upgrade?
@@ -53,7 +53,7 @@
 | Feature | Status | Impact |
 |---------|--------|--------|
 | Deployment slots | ❌ Not supported | Rearchitect to use separate apps |
-| TLS/SSL certificates | ❌ Not supported | Wait for support or find alternative |
+| TLS/SSL certificates | ⚠️ Site-scoped certificates in preview | Re-add certificates after migration, verify the per-app limits, and update code that loads certificates to use Linux file paths |
 | Blob trigger (polling) | ❌ Only EventGrid source | Convert `LogsAndContainerScan` → `EventGrid` |
 | Azure Government | ❌ Not available | Cannot migrate yet |
 
@@ -132,7 +132,7 @@ After user selects an option, execute the corresponding deployment method from [
 > - The original app is still running — keep it as rollback for a few days
 > - Update any clients/pipelines to point to the new URL
 > - Enable HTTPS-only and managed identity on the new app for better security
-> - When confident, you can delete the original app
+> - Do not delete the original app until production traffic and every production trigger have completed cutover and target validation
 
 ### Phase 6: Post-Upgrade Validation
 
@@ -148,7 +148,9 @@ After user selects an option, execute the corresponding deployment method from [
 
 - Keep the original app for a few days/weeks as rollback
 - Consumption plan charges only for actual usage — low cost to keep idle
-- When confident, delete using the command in [automation.md](automation.md) — Step 7
+- Offer deletion only after all production clients, DNS/custom domains, and triggers use the target; target execution is verified; no production-readiness work remains deferred; and the source no longer processes production workloads
+- If any condition is incomplete, retain the source and record cleanup as skipped or deferred
+- After every condition passes, use the confirmation and command in [automation.md](automation.md) — Step 7
 
 ## Trigger Migration Risks
 
@@ -213,10 +215,10 @@ These app settings are NOT supported in Flex Consumption and should be filtered 
 
 ## Rollback
 
-1. Restart the original app: `az functionapp start --name <ORIGINAL_APP_NAME> --resource-group <RESOURCE_GROUP>`
+1. Obtain immediate confirmation, then restart the source app if it was stopped: `az functionapp start --name <SOURCE_APP_NAME> --resource-group <SOURCE_RESOURCE_GROUP>`
 2. Redirect clients back to original resources (queues/topics/containers)
 3. Revert DNS or custom domain changes
-4. Delete the new Flex Consumption app if needed
+4. Obtain separate confirmation before deleting the new Flex Consumption app if needed
 
 ## References
 

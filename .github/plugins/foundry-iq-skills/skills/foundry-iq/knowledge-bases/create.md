@@ -8,6 +8,9 @@ Single-source helper; Azure supports multiple sources.
 ## Do not use
 
 Not multiple sources, unsupported connectors, classic Search or agents.
+For unsupported sources/connectors or multi-source KB creation/reconfiguration,
+route to [Diagnose](../troubleshooting/diagnose.md) to hand off to the calling agent
+with Azure AI Search public documentation pointers so the agent can take action to get it done.
 Never mutate conflicts, select duplicates or call GA extraction synthesis.
 
 ## Inputs and discovery order

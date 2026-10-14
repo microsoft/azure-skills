@@ -947,3 +947,10 @@ def emit_result(
 
 TokenProvider = Callable[[str], str]
 Transport = Callable[..., HttpResult]
+
+
+def model_definition(choice: dict[str, Any]) -> dict[str, Any]:
+    return {"kind": "azureOpenAI", "azureOpenAIParameters": {
+        "resourceUri": choice["endpoint"].rstrip("/"), "deploymentId": choice["deployment"],
+        "modelName": choice["model"], "authIdentity": None,
+    }}

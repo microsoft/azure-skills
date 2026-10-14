@@ -1,11 +1,11 @@
 ---
 name: foundry-iq
-description: "Foundry IQ knowledge bases. WHEN: make local or Blob documents searchable; create/diagnose KBs; triage unsupported connectors or multi-source KB creation/reconfiguration; connect existing KB to agents (including multi-source KBs); create/reuse a Search service; retrieve from an existing knowledge base with citations; no brand words needed. Read its procedure before query/target questions. NOT: other KB providers, repository-file search, classic Azure AI Search index/query/app work, generic agent creation."
+description: "Foundry IQ knowledge bases. WHEN: make local or Blob documents searchable; create/diagnose KBs; triage unsupported connectors or multi-source KB creation/reconfiguration (even with classic-search terms); connect existing KB to agents (including multi-source KBs); create/reuse a Search service; retrieve from an existing knowledge base with citations; no brand words needed. Read its procedure before query/target questions. NOT: other KB providers, repository-file search, classic Azure AI Search index/query/app work with no Foundry IQ KB or connector request, generic agent creation."
 license: MIT
 compatibility: Azure
 metadata:
   author: Microsoft
-  version: "0.1.4"
+  version: "0.2.1"
 ---
 
 # Foundry IQ
@@ -37,6 +37,8 @@ Read-only operations use their owning procedure and actual helper constraints;
 this does not add retrieval modes or supported source kinds.
 Explicit unsupported provisioning or multi-source KB creation/reconfiguration uses Diagnose
 and stops before discovery, even when connecting an agent is also requested.
+This routing takes precedence over classic-search terms (e.g. hybrid search) in compound requests.
+Never end in a plain refusal: Diagnose gives the boundary, docs pointer and agent handoff; writes still need an approved concrete plan.
 Do not silently execute only the supported part of a compound request.
 If existing-KB connection versus KB creation/reconfiguration is unclear, read
 intent-routing and clarify that scope before Azure discovery. Never infer KB mutation.

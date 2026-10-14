@@ -2,16 +2,21 @@
 from __future__ import annotations
 
 import copy
+import uuid
 from datetime import datetime
 from pathlib import Path
-import uuid
 
 try:
-    from . import _bootstrap_io as private_io
-    from ._common import HelperFailure, digest, load_approved_input, reject_secrets, odata_name, validate_search_endpoint
+    from . import _bootstrap_io as private_io, _search_read
+    from ._common import (
+        HelperFailure, digest, load_approved_input, reject_secrets, odata_name, validate_search_endpoint,
+    )
 except ImportError:
     import _bootstrap_io as private_io
-    from _common import HelperFailure, digest, load_approved_input, reject_secrets, odata_name, validate_search_endpoint
+    import _search_read
+    from _common import (
+        HelperFailure, digest, load_approved_input, reject_secrets, odata_name, validate_search_endpoint,
+    )
 
 
 def fail(code, message):
@@ -84,30 +89,33 @@ def search_target(plan):
 
 def search_ack(capture, plan, response):
     try:
-        from . import search_reconcile as search, _cleanup_dependencies as dependencies
+        from . import _cleanup_dependencies as dependencies
     except ImportError:
-        import search_reconcile as search, _cleanup_dependencies as dependencies
+        import _cleanup_dependencies as dependencies
     generated = None
     if plan["resource_type"] == "knowledge-source":
         try:
             generated = dependencies.generated(response.body) if isinstance(response.body, dict) else None
-        except HelperFailure:
-            pass
+        except HelperFailure as error:
+            if error.code not in {"source-cleanup-kind-unsupported", "generated-ownership-unproven", "name-invalid"}:
+                raise
+            # Retain the ACK before search_finish rejects incomplete ownership evidence.
+            generated = None
     capture.start(search_target(plan), {
         "operation": "search-create", "status": response.status, "request_id": response.request_id,
-        "definition_digest": digest(search._definition(plan["desired"])),
-        "etag_evidence": search.response_etags(response), "generated": generated, "version": None,
+        "definition_digest": digest(_search_read._definition(plan["desired"])),
+        "etag_evidence": _search_read.response_etags(response), "generated": generated, "version": None,
     })
 
 
 def search_finish(capture, plan, current, token, transport):
     try:
-        from . import search_reconcile as search, _cleanup_dependencies as dependencies
+        from . import _cleanup_dependencies as dependencies
     except ImportError:
-        import search_reconcile as search, _cleanup_dependencies as dependencies
+        import _cleanup_dependencies as dependencies
     target = search_target(plan)
     ack = capture.records[digest(target)]["acknowledgement"]
-    etag = search.resolve_etag(ack["etag_evidence"], ack["request_id"])
+    etag = _search_read.resolve_etag(ack["etag_evidence"], ack["request_id"])
     if ack["status"] != 201 or not etag or current is None or current.get("@odata.etag") != etag:
         raise fail("creation-version-unproven", "Require original HTTP 201 and the unchanged acknowledged ETag, not a later GET version.")
     children = []
@@ -116,16 +124,16 @@ def search_finish(capture, plan, current, token, transport):
             raise fail("generated-creation-evidence-unavailable", "The original create response did not identify this exact generated cascade.")
         for kind, name in sorted(ack["generated"].items()):
             url = f"{plan['endpoint'].rstrip('/')}/{dependencies.COLLECTIONS[kind]}('{odata_name(name)}')?api-version={plan['api_version']}"
-            child, _ = search.read_resource(url, token, transport=transport)
+            child, _ = _search_read.read_resource(url, token, transport=transport)
             if child is None or child.get("name") != name or not child.get("@odata.etag"):
                 raise fail("generated-version-unavailable", "An original generated child lacks exact version readback.")
             children.append({"type": kind, "name": name, "etag": child["@odata.etag"], "definition_digest": digest(child)})
-        refreshed, _ = search.read_resource(search.resource_url(plan), token, transport=transport)
+        refreshed, _ = _search_read.read_resource(_search_read.resource_url(plan), token, transport=transport)
         if (refreshed is None or refreshed.get("@odata.etag") != etag
-                or search._definition(refreshed) != search._definition(current)
+                or _search_read._definition(refreshed) != _search_read._definition(current)
                 or dependencies.generated(refreshed) != ack["generated"]):
             raise fail("definition-drift", "Source changed during original generated-child capture.")
-    capture.finish(target, {"definition_digest": digest(search._definition(current)), "etag": etag, "generated": children})
+    capture.finish(target, {"definition_digest": digest(_search_read._definition(current)), "etag": etag, "generated": children})
 
 
 def project_target(plan, kind, *, name=None, version=None):
@@ -148,13 +156,9 @@ def connection_ack(capture, plan, response):
 
 
 def connection_finish(capture, plan, body):
-    try:
-        from .search_reconcile import resolve_etag
-    except ImportError:
-        from search_reconcile import resolve_etag
     target = project_target(plan, "project-connection")
     ack = capture.records[digest(target)]["acknowledgement"]
-    etag = resolve_etag(ack["etag_evidence"], ack["request_id"])
+    etag = _search_read.resolve_etag(ack["etag_evidence"], ack["request_id"])
     if ack["status"] != 201 or not etag or etag != (body.get("etag") or body.get("@odata.etag")):
         raise fail("creation-version-unproven", "Connection readback must retain its original HTTP 201 ETag.")
     capture.finish(target, {"definition_digest": digest(body), "etag": etag, "generated": []})
@@ -185,13 +189,11 @@ def agent_ack(capture, plan, created, metadata):
 
 def load(input_path, receipt_path, target):
     try:
-        from .blob_recheck import read_private
-        from . import search_reconcile as search
+        from . import _private_json
     except ImportError:
-        from blob_recheck import read_private
-        import search_reconcile as search
+        import _private_json
     _, plan, fingerprint = load_approved_input(input_path)
-    record = read_private(receipt_path)
+    record = _private_json.read_private(receipt_path)
     reject_secrets(record)
     fields = {"schema_version", "kind", "plan_digest", "owner", "target", "state", "acknowledgement", "snapshot", "integrity"}
     if (not isinstance(record, dict) or set(record) != fields or record["schema_version"] != "1.0"
@@ -205,7 +207,7 @@ def load(input_path, receipt_path, target):
             or not isinstance(snapshot, dict) or set(snapshot) != {"definition_digest", "etag", "generated", "version_identity"}
             or not isinstance(ack["request_id"], str) or not ack["request_id"].strip()
             or snapshot["definition_digest"] != ack["definition_digest"]
-            or not isinstance(snapshot["definition_digest"], str) or not search.SHA256.fullmatch(snapshot["definition_digest"])
+            or not isinstance(snapshot["definition_digest"], str) or not _search_read.SHA256.fullmatch(snapshot["definition_digest"])
             or not isinstance(snapshot["generated"], list)):
         raise fail("ownership-unproven", "Producer receipt lacks complete acknowledged version evidence.")
     if (snapshot["version_identity"] != ack["version_identity"]
@@ -221,12 +223,12 @@ def load(input_path, receipt_path, target):
         raise fail("ownership-unproven", "Native ETag evidence must be complete.")
     if target["type"] in ("knowledge-base", "knowledge-source"):
         if (ack["operation"] != "search-create" or ack["status"] != 201
-                or search.resolve_etag(ack["etag_evidence"], ack["request_id"]) != snapshot["etag"]
+                or _search_read.resolve_etag(ack["etag_evidence"], ack["request_id"]) != snapshot["etag"]
                 or not isinstance(snapshot["etag"], str) or not snapshot["etag"].strip()):
             raise fail("creation-version-unproven", "Original Search create acknowledgement and snapshot versions disagree.")
     elif target["type"] == "project-connection":
         if (ack["operation"] != "project-connection-create" or ack["status"] != 201
-                or search.resolve_etag(ack["etag_evidence"], ack["request_id"]) != snapshot["etag"]
+                or _search_read.resolve_etag(ack["etag_evidence"], ack["request_id"]) != snapshot["etag"]
                 or not snapshot["etag"] or snapshot["generated"]):
             raise fail("creation-version-unproven", "Original connection acknowledgement and readback versions disagree.")
     elif target["type"] == "prompt-agent-version":

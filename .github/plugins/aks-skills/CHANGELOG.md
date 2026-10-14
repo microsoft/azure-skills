@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+- chore: update telemetry reporter release ([#3365](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3365))
+
 ## 1.0.2
 
 - feat: support musl telemetry reporter builds and releases ([#3337](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3337))

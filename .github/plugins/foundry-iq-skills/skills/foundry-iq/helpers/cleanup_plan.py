@@ -9,12 +9,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 try:
-    from . import prompt_cleanup, prompt_connect, search_reconcile, _cleanup_dependencies as dependencies, _cleanup_receipts as receipts
+    from . import (
+        prompt_cleanup, prompt_connect, search_reconcile, _cleanup_dependencies as dependencies,
+        _cleanup_receipts as receipts, _blob_source_read, _file_source_config, _prompt_read, _search_read,
+    )
     from ._common import (
         SEARCH_AUDIENCE, MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token,
-        blocked_result, digest, emit_result, http_request, load_approved_input,
-        reject_secrets, require_allowed_fields, sdk_error_metadata, sdk_error_status,
-        validate_search_endpoint,
+        blocked_result, digest, emit_result, http_request, load_approved_input, reject_secrets,
+        require_allowed_fields, sdk_error_metadata, sdk_error_status, validate_search_endpoint,
     )
 except ImportError:
     import prompt_cleanup
@@ -22,11 +24,14 @@ except ImportError:
     import search_reconcile
     import _cleanup_dependencies as dependencies
     import _cleanup_receipts as receipts
+    import _blob_source_read
+    import _file_source_config
+    import _prompt_read
+    import _search_read
     from _common import (
         SEARCH_AUDIENCE, MANAGEMENT_AUDIENCE, HelperFailure, TokenProvider, Transport, azure_cli_token,
-        blocked_result, digest, emit_result, http_request, load_approved_input,
-        reject_secrets, require_allowed_fields, sdk_error_metadata, sdk_error_status,
-        validate_search_endpoint,
+        blocked_result, digest, emit_result, http_request, load_approved_input, reject_secrets,
+        require_allowed_fields, sdk_error_metadata, sdk_error_status, validate_search_endpoint,
     )
 
 
@@ -77,12 +82,12 @@ def _target(value: Any) -> dict[str, Any]:
         raise _failure("hosted-cleanup-unsupported", "Hosted teardown remains unsupported; retain the deployment and toolbox.")
     if kind in {"knowledge-base", "knowledge-source"}:
         require_allowed_fields(target, SEARCH_FIELDS, label="Search cleanup target")
-        search_reconcile.resource_url({**target, "resource_type": kind})
+        _search_read.resource_url({**target, "resource_type": kind})
         target["endpoint"] = validate_search_endpoint(target["endpoint"])
     elif kind in {"prompt-agent-version", "project-connection"}:
         fields = PROMPT_FIELDS if kind == "prompt-agent-version" else PROMPT_FIELDS - {"version"}
         require_allowed_fields(target, fields, label="Prompt cleanup target")
-        project_id, endpoint = prompt_connect._project_identity(target)
+        project_id, endpoint = _prompt_read._project_identity(target)
         target["project_resource_id"] = project_id.casefold()
         target["project_endpoint"] = endpoint
         if not _text(target.get("name")):
@@ -211,21 +216,15 @@ def _search_prior(prior: dict[str, Any], target: dict[str, Any]) -> dict[str, An
     if prior.get("operation") in ("reconcile-and-ingest", "reconcile-and-monitor"):
         source = _object(prior.get("source"), "Prior source")
         if _object(source.get("desired"), "Prior source definition").get("kind") == "file":
-            try:
-                from . import file_source
-            except ImportError:
-                import file_source
-            file_source._validate_plan(prior)
+
+            _file_source_config._validate_plan(prior)
         else:
-            try:
-                from . import blob_source
-            except ImportError:
-                import blob_source
-            blob_source._validate_plan(prior)
+
+            _blob_source_read._validate_plan(prior)
     search_reconcile._validate_plan(source)
     if (
         source.get("operation") != "reconcile" or source.get("action") != "create"
-        or search_reconcile.resource_url(source) != search_reconcile.resource_url(
+        or _search_read.resource_url(source) != _search_read.resource_url(
             {**target, "resource_type": target["type"]}
         )
     ):
@@ -342,14 +341,14 @@ def _plan_search(
     source = _search_prior(prior, target)
     owned = _owned_entry(result, target)
     body = response["body"]
-    owned_digest = digest(search_reconcile._definition(body))
+    owned_digest = digest(_search_read._definition(body))
     etag = body.get("@odata.etag")
     if (
         (response.get("_checkpoint_validated") is not True and (
             response.get("operation") != "search-create" or type(response.get("status")) is not int or response["status"] != 201
         )) or not _text(etag)
         or body.get("name") != target["name"]
-        or not search_reconcile.definitions_match(source["desired"], body)
+        or not _search_read.definitions_match(source["desired"], body)
         or owned.get("definition_digest") != owned_digest or owned.get("etag") != etag
     ):
         raise _failure("ownership-unproven", "Require the original HTTP 201 create body and matching retained owned readback, not GET recovery.")
@@ -361,11 +360,11 @@ def _plan_search(
         "owned_definition_digest": owned_digest, "expected_etag": etag,
     }
     token = token_provider(SEARCH_AUDIENCE)
-    current, request_id = search_reconcile.read_resource(search_reconcile.resource_url(plan), token, transport=transport)
+    current, request_id = _search_read.read_resource(_search_read.resource_url(plan), token, transport=transport)
     if current is None:
         return _absent(target, request_id)
     if (
-        digest(search_reconcile._definition(current)) != owned_digest
+        digest(_search_read._definition(current)) != owned_digest
         or current.get("@odata.etag") != etag
     ):
         raise _failure("definition-drift", "Current definition or creation ETag changed; same-name replacement is not owned.")
@@ -403,7 +402,7 @@ def _plan_prompt(
 ) -> dict[str, Any]:
     prompt_connect._validate_plan(prior)
     owned = _owned_entry(result, target)
-    prior_project, prior_endpoint = prompt_connect._project_identity(prior)
+    prior_project, prior_endpoint = _prompt_read._project_identity(prior)
     body = response["body"]
     require_allowed_fields(body, {"name", "version", "definition", "id", "created_at"}, label="SDK create-version response")
     definition = _object(body.get("definition"), "Created Prompt definition")
@@ -463,7 +462,7 @@ def _plan_prompt(
 
 def _plan_connection(request, target, prior, result, response, *, base_dir, token_provider, transport, sdk_loader):
     prompt_connect._validate_plan(prior)
-    project, endpoint = prompt_connect._project_identity(prior)
+    project, endpoint = _prompt_read._project_identity(prior)
     body = response["body"]
     created = {"type": "project-connection", "name": target["name"]}
     owned_write = {"action": "created", "connection": target["name"]}
@@ -502,7 +501,7 @@ def _plan_connection(request, target, prior, result, response, *, base_dir, toke
         "project_resource_id": target["project_resource_id"], "project_endpoint": target["project_endpoint"],
         "connection": {"name": target["name"], "run_owned": True, "expected_etag": etag, "owned_definition_digest": digest(body)},
     }
-    url = prompt_connect._connection_url(plan)
+    url = _prompt_read._connection_url(plan)
     token = token_provider(MANAGEMENT_AUDIENCE)
     current, request_id = prompt_cleanup._get_connection(url, token, transport=transport)
     if current is not None and current != body:
@@ -553,15 +552,15 @@ def _plan_protected(request, target, prior, record, *, base_dir, token_provider,
         raise _failure("ownership-unproven", "Original producer owner and cleanup accountable owner differ.")
     if target["type"] in ("knowledge-base", "knowledge-source"):
         source = _search_prior(prior, target)
-        if snapshot["definition_digest"] != digest(search_reconcile._definition(source["desired"])):
+        if snapshot["definition_digest"] != digest(_search_read._definition(source["desired"])):
             raise _failure("ownership-unproven", "Receipt does not bind the original approved Search definition.")
         plan.update(resource_type=target["type"], **{k: target[k] for k in ("endpoint", "name", "api_version")},
                     owned_definition_digest=snapshot["definition_digest"], expected_etag=snapshot["etag"])
         token = token_provider(SEARCH_AUDIENCE)
-        current, request_id = search_reconcile.read_resource(search_reconcile.resource_url(plan), token, transport=transport)
+        current, request_id = _search_read.read_resource(_search_read.resource_url(plan), token, transport=transport)
         if current is None:
             return _absent(target, request_id)
-        if digest(search_reconcile._definition(current)) != snapshot["definition_digest"] or current.get("@odata.etag") != snapshot["etag"]:
+        if digest(_search_read._definition(current)) != snapshot["definition_digest"] or current.get("@odata.etag") != snapshot["etag"]:
             raise _failure("definition-drift", "Current Search state differs from the original producer snapshot.")
         if target["type"] == "knowledge-source":
             if dependencies.generated(current) != record["acknowledgement"]["generated"]:
@@ -596,7 +595,7 @@ def _plan_protected(request, target, prior, record, *, base_dir, token_provider,
         prompt_connect._validate_plan(prior)
         if target["type"] == "prompt-agent-version" and record["acknowledgement"]["operation"] != "agents.create_version":
             raise _failure("ownership-unproven", "Connect receipts must come from the native new-version operation.")
-    project, endpoint = prompt_connect._project_identity(prior)
+    project, endpoint = _prompt_read._project_identity(prior)
     if project.casefold() != target["project_resource_id"] or endpoint != target["project_endpoint"]:
         raise _failure("ownership-unproven", "Receipt project differs from original creation approval.")
     plan.update(sdk_major=2, project_resource_id=target["project_resource_id"], project_endpoint=target["project_endpoint"])
@@ -628,7 +627,7 @@ def _plan_protected(request, target, prior, record, *, base_dir, token_provider,
     plan["connection"] = {"name": target["name"], "run_owned": True, "expected_etag": snapshot["etag"],
                           "owned_definition_digest": snapshot["definition_digest"]}
     token = token_provider(MANAGEMENT_AUDIENCE)
-    url = prompt_connect._connection_url(plan)
+    url = _prompt_read._connection_url(plan)
     current, request_id = prompt_cleanup._get_connection(url, token, transport=transport)
     if current is not None and (digest(current) != snapshot["definition_digest"] or not prompt_connect._connection_readback(prior, current)[0]):
         raise _failure("definition-drift", "Connection differs from its original acknowledged producer state.")
@@ -681,11 +680,11 @@ def plan_cleanup(
         raise _failure("target-selection-required", "Select an exact numeric created agent version and original SDK response file.")
     if "creation_receipt_file" in request:
         try:
-            from .blob_recheck import read_private
+            from . import _private_json
         except ImportError:
-            from blob_recheck import read_private
+            import _private_json
         path = _path(request, "creation_receipt_file", base_dir)
-        if read_private(path).get("kind") == "cleanup-creation-receipt":
+        if _private_json.read_private(path).get("kind") == "cleanup-creation-receipt":
             if ("creation_response_file" in request or "creation_result_file" in request
                     or (selection_fields and evidence_field != "agent_creation_receipt_file")):
                 raise _failure("input-schema-invalid", "Protected receipts cannot be mixed with manual response adapters.")
@@ -725,7 +724,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result["approval_summary"]["retained_targets"] = [_target(request.get("target"))]
         except HelperFailure:
-            pass
+            result.setdefault("warnings", []).append("The selected target could not be validated for the retained-target summary.")
         emit_result(result)
         return 2
     return 0
