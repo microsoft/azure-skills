@@ -413,10 +413,8 @@ function Get-ToolInputPath {
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Path patterns per client, one block per plugin (used for SKILL.md and
-# file-reference matching). When onboarding another plugin, add a new block by
-# swapping both the catalog/plugin segments (e.g. "azure" and "azure-skills")
-# for the new plugin's name.
+# Plugin-local path patterns per client (used for SKILL.md and file-reference
+# matching). The build packages this script with the owning plugin's patterns.
 
 . $pluginPathAllowPattern
 

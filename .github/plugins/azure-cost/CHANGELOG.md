@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.13
+
+- feature: support per plugin hook ([#3370](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3370))
+
 ## 1.0.12
 
 - fix: enable standalone telemetry reporter by default ([#3383](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3383))
