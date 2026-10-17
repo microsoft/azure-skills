@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.96
+
+- feature: add `azure-mysql` for MySQL Flexible Server planning, secure connections, inspection, troubleshooting, and recovery, with preparation and diagnostics routing.
+- fix: gate MySQL MCP data-plane operations on verified TLS and mapped Entra authentication; document column-only schema output and explicit index/constraint inspection.
+- fix: warn against MySQL Shell 8.4.10 stdin truncation of long Entra tokens and require intact in-memory token handling.
+
 ## 1.2.95
 
 - feature: support per plugin hook ([#3370](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3370))

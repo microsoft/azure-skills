@@ -10,6 +10,24 @@ env:
   NPM_CONFIG_REGISTRY: https://packagefeedproxy.microsoft.io/npm/
 
 jobs:
+  test-mysql-skill:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out pull request branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Validate MySQL skill content and plugin mirrors
+        run: node --test .github/scripts/test-azure-mysql.js
+
   test-copilot-cli-installation:
     runs-on: ubuntu-latest
 

@@ -16,7 +16,7 @@ This plugin ships **curated Azure skills** that teach an agent how Azure work ge
 - **Build, deploy, and evolve** with `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-upgrade`, `azure-enterprise-infra-planner`, `azure-hosted-copilot-sdk`, `azure-kubernetes`, and `airunway-aks-setup`
 - **Troubleshoot, monitor, and govern** with `azure-diagnostics`, `appinsights-instrumentation`, `azure-compliance`, `azure-resource-lookup`, and `azure-quotas`
 - **Optimize architecture and cost** with `azure-cost`, `azure-compute`, `azure-resource-visualizer`, and `azure-cloud-migrate`
-- **Work across data, AI, identity, and platform services** with `azure-ai`, `azure-aigateway`, `azure-storage`, `azure-kusto`, `azure-messaging`, `azure-rbac`, `entra-app-registration`, and `microsoft-foundry`
+- **Work across data, AI, identity, and platform services** with `azure-ai`, `azure-aigateway`, `azure-storage`, `azure-mysql`, `azure-kusto`, `azure-messaging`, `azure-rbac`, `entra-app-registration`, and `microsoft-foundry`
 
 ### Azure MCP Server: the hands
 
@@ -318,6 +318,8 @@ Once the plugin is installed, try prompts like these:
 - `Validate my Azure deployment files before I run azd up.`
 - `Deploy this project to Azure Container Apps.`
 - `List my Azure storage accounts.`
+- `Help me connect this app securely to Azure Database for MySQL Flexible Server.`
+- `Troubleshoot high CPU on my Azure MySQL Flexible Server without changing configuration.`
 - `Find cost savings across my Azure subscription.`
 - `Troubleshoot why my container app is failing health probes.`
 - `What role should I assign to let this managed identity read blobs?`
@@ -370,3 +372,14 @@ export AZURE_MCP_COLLECT_TELEMETRY=false
 
 This repository is automatically sync'ed from https://github.com/microsoft/GitHub-Copilot-for-Azure. If you would like to contribute to Azure skills, please open PR's there. Thank you!
 
+### MySQL skill maintenance
+
+The [azure-mysql skill](skills/azure-mysql/SKILL.md) uses the existing Azure MCP server for MySQL Flexible Server planning, secure connections, inspection, troubleshooting, and recovery. No additional MCP server is needed.
+
+Keep its root and packaged files, along with the MySQL preparation and diagnostics routing, synchronized under `skills/` and `.github/plugins/azure-skills/skills/`. Run the dependency-free content checks with Node.js 22+:
+
+```bash
+node --test .github/scripts/test-azure-mysql.js
+```
+
+These checks cover plugin discovery, metadata, mirrored content, relative references, and MCP example schemas. They do not provision Azure resources or evaluate agent routing quality. For catalog changes, also run the [landing-page build](landing-page/README.md#build-and-preview).
