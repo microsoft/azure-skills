@@ -345,6 +345,16 @@ const skillProfiles: Record<string, SkillProfile> = {
     highlights: ["Copilot SDK", "Hosting", "Identity"],
     icon: "lucide:bot",
     order: 46
+  },
+  "azure-mysql": {
+    category: "AI and data",
+    scenario: "MySQL",
+    role: "MySQL operations",
+    summary: "Plans secure MySQL Flexible Server deployments and guides connections, diagnostics, and recovery.",
+    prompt: "Help me connect this app securely to Azure Database for MySQL Flexible Server.",
+    highlights: ["Flexible Server", "Passwordless auth", "Safe operations"],
+    icon: "lucide:database",
+    order: 47
   }
 };
 

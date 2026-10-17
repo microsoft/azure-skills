@@ -75,6 +75,7 @@ Select hosting stack and map components to Azure services.
 | Need       | Primary      | Reference                                       | Alternatives      |
 | ---------- | ------------ | ----------------------------------------------- | ----------------- |
 | Relational | Azure SQL    | [SQL Database](services/sql-database/README.md) | PostgreSQL, MySQL |
+| MySQL-compatible | Azure Database for MySQL Flexible Server | [MySQL](services/mysql/README.md) | |
 | Document   | Cosmos DB    | [Cosmos DB](services/cosmos-db/README.md)       | MongoDB           |
 | Cache      | Redis Cache  |                                                 |                   |
 | Files      | Blob Storage | [Storage](services/storage/README.md)           | Files Storage     |

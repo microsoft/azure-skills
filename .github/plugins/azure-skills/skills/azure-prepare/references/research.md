@@ -28,6 +28,7 @@ After architecture planning, research each selected component to gather best pra
 | Azure SQL | [SQL Database](services/sql-database/README.md) | — |
 | Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | — |
 | PostgreSQL | — | — |
+| MySQL Flexible Server | [MySQL](services/mysql/README.md) | `azure-mysql` |
 | Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage` |
 | **Messaging** | | |
 | Service Bus | [Service Bus](services/service-bus/README.md) | — |
@@ -80,6 +81,7 @@ Invoke related skills for specialized scenarios:
 |----------|--------|
 | Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Handle directly without a separate skill |
+| MySQL networking, passwordless auth, HA, or migration | `azure-mysql`; return decisions to the current preparation plan |
 | Need detailed security hardening | Handle directly with service-specific security guidance and platform best practices |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
@@ -94,6 +96,11 @@ For **Azure Functions**:
 
 For **PostgreSQL**:
 1. Handle passwordless auth patterns directly without a separate skill
+
+For **MySQL Flexible Server**:
+1. Load: [services/mysql/README.md](services/mysql/README.md)
+2. Invoke **`azure-mysql`** for the selected service decisions and supporting stack
+3. Continue the current preparation plan; do not recursively restart `azure-prepare`
 
 ### Step 3: Document in Plan
 

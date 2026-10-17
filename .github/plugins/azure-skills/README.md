@@ -107,6 +107,7 @@ For the complete list of 40+ services, see the [official documentation](https://
 
 Ask GitHub Copilot CLI or Claude Code to:
 - "List my Azure storage accounts"
+- "Inspect my Azure Database for MySQL Flexible Server configuration before recommending changes"
 - "Show me all containers in my Cosmos DB database"
 - "List all secrets in my key vault 'my-vault'"
 - "Deploy a web app to Azure App Service"
@@ -116,6 +117,10 @@ Ask GitHub Copilot CLI or Claude Code to:
 - "Generate an Azure CLI command to create a storage account"
 
 For more examples, visit the [Azure MCP documentation](https://learn.microsoft.com/azure/developer/azure-mcp-server/).
+
+### Azure Database for MySQL
+
+The included [azure-mysql skill](skills/azure-mysql/SKILL.md) guides MySQL Flexible Server planning, passwordless connections, TLS/private networking, safe inspection, diagnostics, and recovery. It reuses this plugin's Azure MCP server and requires no additional MCP installation. Configuration or data changes require explicit approval.
 
 ## Documentation
 
