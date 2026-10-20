@@ -38,6 +38,8 @@ Get access restrictions from the source app:
 az functionapp config access-restriction show --name <SOURCE_APP_NAME> --resource-group <SOURCE_RESOURCE_GROUP> -o json
 ```
 
+For Blob/Event Grid triggers, first check the target's public network access and the complete proposed main-site rule set, including fallback actions, against the Event Grid delivery path agreed in [Step 2f](discovery-and-assessment.md#2f-check-blob-storage-triggers). Event Grid push delivery cannot reach a private-only endpoint; outbound VNet integration does not resolve this. If the configuration cannot be read or the proposed restrictions would block delivery, stop and record Step 4i as blocked. Use `ask_user` to resolve the delivery design; do not automatically enable public access or relax restrictions.
+
 Recreate every explicit main-site rule, preserving its name, action, priority, description, and selector. Skip platform-generated fallback rows with priority `2147483647` (`Allow all` or `Deny all`); default actions are applied separately below.
 
 ```bash

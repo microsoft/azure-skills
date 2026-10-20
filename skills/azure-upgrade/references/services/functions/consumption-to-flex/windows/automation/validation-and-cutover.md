@@ -76,6 +76,8 @@ Do not use the target app-setting disable/enable transaction below for a functio
 
 > ⚠️ **Per-trigger mitigations apply first**: Even with this controlled per-function cutover, the [Trigger Migration Risks](../workflow.md#trigger-migration-risks) table lists per-trigger-type prerequisites — new consumer group for Event Hubs, dedicated lease container for Cosmos DB, new event subscription for blob/EventGrid, etc. Apply the relevant mitigation **before** flipping the disable flag for the corresponding function.
 
+For Blob/Event Grid triggers, check that the target's current networking configuration still permits the agreed inbound delivery path before enabling the target. Do not generate test events, create test blobs, or provision test resources for these triggers. Configuration checks, a healthy HTTP endpoint, and a successfully created event subscription do not prove runtime delivery. Use existing execution telemetry or user-provided validation evidence; otherwise report runtime delivery as unverified and leave trigger validation incomplete. Do not relax network restrictions automatically.
+
 For each event-driven function, choose one of these paths:
 
 #### Path A: Isolated Target Validation

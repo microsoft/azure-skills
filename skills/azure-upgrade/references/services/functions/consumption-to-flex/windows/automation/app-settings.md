@@ -17,6 +17,8 @@ az functionapp config appsettings list --name <SOURCE_APP_NAME> --resource-group
 > Before reading values, compare mapped source names case-insensitively. If two source names map to the same target name, stop and use `ask_user`; never silently choose between them. An existing target name is not a collision: after the user approves the mapping, the source value replaces it using the same idempotent merge behavior as an unchanged setting name.
 >
 > Surface this once as a **post-migration follow-up** (do not block 4c on it): connection strings or keys for **Azure services** (Storage, Service Bus, Event Hubs, Cosmos DB, Key Vault) can be replaced with [identity-based connections](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference#configure-an-identity-based-connection) for better security — see the [identities-instead-of-secrets tutorial](https://learn.microsoft.com/en-us/azure/azure-functions/functions-identity-based-connections-tutorial). The user owns the conversion (code + role assignments), and it only applies to Azure services that support Microsoft Entra ID auth — settings for third-party services stay as-is.
+>
+> This optional follow-up doesn't override storage authentication requirements. If host or deployment storage prohibits Shared Key authentication, Step 4b must remain blocked until identity-first provisioning is verified; don't defer that requirement until after migration.
 
 **Decision — Copy or defer source app settings**
 
@@ -62,7 +64,7 @@ The deny list and storage prefix are normalized to lowercase at runtime, so sour
 
 > 💡 **App Insights**: `APPLICATIONINSIGHTS_CONNECTION_STRING` is intentionally **excluded** to preserve the target-specific value created by Step 4b. Step [4k](trigger-safety-and-monitoring.md#4k-verify-application-insights-monitoring) verifies monitoring and preserves AAD ingestion only when the source already used it.
 
-> 💡 **Storage (`AzureWebJobsStorage*`)**: Every setting whose name starts with `AzureWebJobsStorage` is intentionally **excluded**, matching the published migration filter. Step 4b owns runtime storage end-to-end — the platform sets a fresh connection string for `<STORAGE_NAME>` matching the [MS Learn flex-consumption-how-to](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#create-a-flex-consumption-app) flow. If the source app was identity-based and you want to preserve that posture on the new app, run optional [4b.opt](app-creation.md#4bopt-identity-based-storage-optional-security-hardening) to re-derive the required variants against `<STORAGE_NAME>`.
+> 💡 **Storage (`AzureWebJobsStorage*`)**: Every setting whose name starts with `AzureWebJobsStorage` is intentionally **excluded**, matching the published migration filter. Preserve the target storage configuration verified by [Step 4b](app-creation.md#4b-create-the-flex-consumption-app), whether connection-string-based or identity-based. When converting a permitted connection-string target, [4b.opt](app-creation.md#4bopt-identity-based-storage) re-derives identity settings against `<STORAGE_NAME>`; don't copy source storage settings or downgrade a user-provisioned identity-based target.
 
 > 💡 **Casing is preserved on the wire**: The `ascii_downcase` step is comparison-only. Surviving settings keep the exact key casing the source app had — they're PATCHed back unchanged.
 

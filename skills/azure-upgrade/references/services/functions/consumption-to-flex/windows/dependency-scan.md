@@ -87,6 +87,8 @@ Run for every worker runtime. Cite the category number on each finding.
 
 ### `powershell`
 
+**Flex Consumption packaging check:** Inspect `host.json`, `requirements.psd1`, and the app-root `Modules` folder to determine whether the app relies on managed dependencies. Flex Consumption doesn't support managed dependencies, even for Linux-compatible modules. If required modules aren't bundled with the app, record that preparation is required in assessment report §11 and advise packaging them in `Modules` before deployment. Verify that the deployment package includes the required modules and their dependencies. Any source or packaging changes require user approval.
+
 - **(1, 7) WMI / CIM cmdlets** — `Get-WmiObject`, `Get-CimInstance`, `Invoke-WmiMethod`, `Invoke-CimMethod`. PowerShell 7 on Linux silently returns `null` instead of erroring — failures are easy to miss.
 - **(1) COM activation & Windows-only providers** — `New-Object -ComObject …`, `Get-EventLog`, Windows-service form of `Get-Service`/`*-Service`, anything in `Microsoft.PowerShell.LocalAccounts`.
 - **(4, 7) Registry cmdlets / provider paths** — any access to the `Registry::` provider: `Get-ItemProperty Registry::*`, `Get-ChildItem HKLM:` / `HKCU:` / `HKCR:`, `Set-ItemProperty -Path HKLM:\…`, `New-PSDrive -PSProvider Registry`.

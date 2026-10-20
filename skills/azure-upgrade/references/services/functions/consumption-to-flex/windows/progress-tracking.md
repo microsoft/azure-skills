@@ -12,6 +12,12 @@ Maintain `<UPGRADE_DIR>/upgrade-status.md` and show the current status in chat a
    - add new headings as pending in document order;
    - record renamed or removed saved entries under Notes instead of silently discarding them.
 
+## Resume After External Provisioning
+
+When Step 4b is blocked on keyless provisioning and the user returns with a target resource ID, load [Adopt a User-Provisioned Target](automation/app-creation.md#adopt-a-user-provisioned-target) before any target writes. Keep the block until read-only verification and user approval succeed. Do not reapply target-name defaults or rerun creation/conversion commands.
+
+Record the adopted target resource ID in `Current Status` and its verified storage, identity, and monitoring resource IDs in Notes. Mark Step 4b complete only as externally provisioned and verified; reconcile applicable skipped steps as directed by the adoption procedure. Set `Next action` to the first unfinished step at or after 4c, not app creation. Preserve all outstanding approval gates.
+
 ## Reporting Rules
 
 1. Before each action, update `Current Status` and display: `Phase <current> of <total> · <step> · <description> · <state>`.
@@ -59,6 +65,7 @@ State meanings:
 |----------|-------|
 | Source app | <SOURCE_APP_NAME> |
 | Target app | <NEW_APP_NAME or pending> |
+| Target resource ID | <verified target resource ID or pending> |
 | Outcome | in progress / validation-only success / production cutover complete / rolled back |
 | Current phase | <current> of <total derived from scenario headings> |
 | Current step | <step> |

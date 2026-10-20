@@ -65,7 +65,9 @@ az functionapp config appsettings list --name <NEW_APP_NAME> --resource-group <R
 
 ### 4k. Verify Application Insights Monitoring
 
-Microsoft Learn requires monitoring to be enabled before deployment but does not require changing workspaces or authentication models during migration. Preserve the monitoring configuration created by Step 4b unless the user explicitly requests customization.
+Microsoft Learn requires monitoring to be enabled before deployment but does not require changing workspaces or authentication models during migration. Preserve the monitoring configuration created or verified by Step 4b unless the user explicitly requests customization.
+
+Restore `<TARGET_AI_NAME>`, `<TARGET_AI_RESOURCE_ID>`, and `<TARGET_AI_RESOURCE_GROUP>` from the verified Step 4b metadata in progress Notes. Require the name and resource group to agree with the component resource ID. Missing or conflicting metadata is a blocker; do not infer the component's resource group from the function app. Address the component by its full resource ID below so lookups use its own subscription and resource group.
 
 This step verifies that Application Insights is configured and authorized. It does not query telemetry or prove that logs are being ingested; validate runtime behavior and telemetry after code deployment.
 
@@ -78,10 +80,10 @@ az functionapp config appsettings list --name <NEW_APP_NAME> --resource-group <R
 Verify the Application Insights component recorded from Step 4b:
 
 ```bash
-az monitor app-insights component show --app <TARGET_AI_NAME> --resource-group <RESOURCE_GROUP> --query "{name:name,id:id,workspaceResourceId:workspaceResourceId}" -o table
+az monitor app-insights component show --ids <TARGET_AI_RESOURCE_ID> --query "{name:name,id:id,workspaceResourceId:workspaceResourceId}" -o table
 ```
 
-If either the setting or component is absent, stop and investigate. Use `ask_user` before creating or wiring a replacement monitoring resource. Do not change the automatically selected Log Analytics workspace unless the user explicitly requests monitoring customization.
+Require the component lookup to succeed and its returned name and resource ID to match the recorded metadata. If either the setting or component is absent, the read fails, or metadata conflicts, stop and investigate. Use `ask_user` before creating or wiring a replacement monitoring resource. Do not change the selected Log Analytics workspace unless the user explicitly requests monitoring customization.
 
 Check whether the source used AAD-authenticated ingestion:
 
@@ -99,7 +101,7 @@ az functionapp config appsettings list --name <SOURCE_APP_NAME> --resource-group
   Use `<NEW_PRINCIPAL_ID>` from 4e and grant it `Monitoring Metrics Publisher` on the **target** Application Insights component:
 
   ```bash
-  az role assignment create --assignee-object-id <NEW_PRINCIPAL_ID> --assignee-principal-type ServicePrincipal --role "Monitoring Metrics Publisher" --scope $(az monitor app-insights component show --app <TARGET_AI_NAME> --resource-group <RESOURCE_GROUP> --query id -o tsv)
+  az role assignment create --assignee-object-id <NEW_PRINCIPAL_ID> --assignee-principal-type ServicePrincipal --role "Monitoring Metrics Publisher" --scope <TARGET_AI_RESOURCE_ID>
   ```
 
 Verify setting names and the target-scoped role without displaying connection-string values:

@@ -105,10 +105,14 @@ If this returns output, determine which certificates the source app actually use
 Find blob triggers NOT using EventGrid source:
 
 ```bash
-az functionapp function list --name <APP_NAME> --resource-group <RESOURCE_GROUP> --query "[?config.bindings[0].type=='blobTrigger' && config.bindings[0].source!='EventGrid'].{Function:name, TriggerType:config.bindings[0].type, Source:config.bindings[0].source}" --output table
+az functionapp function list --name <APP_NAME> --resource-group <RESOURCE_GROUP> --query "[].{Function:name, BlobTrigger:(config.bindings[?type=='blobTrigger'] | [0])} | [?BlobTrigger && BlobTrigger.source!='EventGrid'].{Function:Function, TriggerType:BlobTrigger.type, Source:BlobTrigger.source}" --output table
 ```
 
-If this returns rows, convert those blob triggers from `LogsAndContainerScan` to `EventGrid` before upgrading.
+If this returns rows, those blob triggers must change from `LogsAndContainerScan` to `EventGrid` before upgrading, subject to the delivery check below.
+
+For all Blob triggers, inspect the planned target inbound configuration (or the existing target's public network access, private endpoints, and main-site access restrictions). Event Grid push delivery [can't deliver through private endpoints](https://learn.microsoft.com/en-us/azure/event-grid/consume-private-endpoints); outbound VNet integration with storage does not provide inbound event delivery.
+
+Before recommending conversion, use `ask_user` to agree on a supported Event Grid delivery path. A private-only target without one, unreadable target networking configuration, or an unresolved delivery requirement is a blocker; record it in the assessment and progress status. Do not enable public access or relax restrictions automatically. Check the agreed configuration when applying [target access restrictions](networking-and-storage.md#4i-migrate-access-restrictions) and report any unverified runtime delivery during [cutover](validation-and-cutover.md#per-function-cutover-event-driven-triggers).
 
 ### 2g. Source Code Windows Dependency Scan
 

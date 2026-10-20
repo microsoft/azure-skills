@@ -76,6 +76,7 @@ The source app is read-only throughout assessment and replication. Before any cu
 | Disable setting for function names containing `-` | ❌ Not supported on Linux | Isolate the target dependency, rename/repackage the function, use a source-first deployment cutover, or explicitly accept active-trigger risk |
 | Azure Government | ❌ Not available | Cannot migrate yet |
 | MSDeploy / FTP / Kudu git deploy | ❌ Not supported | Switch to `az functionapp deploy` or `func azure functionapp publish` |
+| PowerShell managed dependencies | ❌ Not supported | Package all required modules in the app-root `Modules` folder before deployment; verify Linux compatibility. `requirements.psd1` alone doesn't install modules on Flex Consumption. See [PowerShell dependency management](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-powershell#dependency-management). |
 
 #### Windows-to-Linux Specific Blockers
 
@@ -149,8 +150,8 @@ Collect all settings and configurations from the existing app before creating th
 Execute Steps 4a–4l from [automation.md](automation.md). Each sub-step handles a discrete part of the migration:
 
 - **4a** — *(optional)* Create a new storage account — only run if the user explicitly asked for new or different storage; see [Storage Account Options](#storage-account-options)
-- **4b** — Create the Flex Consumption app (binds storage — source account by default; conn-string-based per the [MS Learn create flow](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#create-a-flex-consumption-app))
-- **4b.opt** — *(optional, security hardening)* Identity-based storage — only run if the source app was already identity-based or the user explicitly requested it; re-derives `AzureWebJobsStorage__*` settings against the new app's chosen storage account
+- **4b** — Run the storage authentication preflight; use connection-string creation only when Shared Key access is permitted. Otherwise block for user-provisioned, verified identity-first creation — [App Creation](automation/app-creation.md#4b-create-the-flex-consumption-app)
+- **4b.opt** — Convert a permitted connection-string target to identity-based storage if the source was identity-based or the user requested it; not a workaround for prohibited Shared Key access
 - **4c** — Review app-setting names, then ask whether to copy filtered source settings or defer them until target-specific dependencies are configured
 - **4d** — Apply site configurations (HTTP/2, TLS, HTTPS-only, client certs, SCM basic auth)
 - **4e** — Migrate system-assigned managed identity and role assignments
@@ -169,7 +170,7 @@ Execute Steps 4a–4l from [automation.md](automation.md). Each sub-step handles
 
 Enterprise subscriptions commonly enforce policies blocking local auth. Configure identity-based access:
 
-- **Storage accounts**: Step 4b creates the new app with a connection-string `AzureWebJobsStorage` binding (matching the [MS Learn create flow](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#create-a-flex-consumption-app)). To preserve or upgrade to identity-based storage, run optional [4b.opt](automation/app-creation.md#4bopt-identity-based-storage-optional-security-hardening), which assigns the storage data-plane roles to the new app's identity and writes `AzureWebJobsStorage__credential`, `__clientId` (UMI only), `__blobServiceUri`, `__queueServiceUri`, `__tableServiceUri` against the **new** app's storage account. Source-app `AzureWebJobsStorage__*` settings are intentionally dropped by 4c — carrying them over verbatim would silently point the new app's runtime at the source storage account.
+- **Storage accounts**: [Step 4b](automation/app-creation.md#4b-create-the-flex-consumption-app) checks Shared Key access and policy before creation. Where keys are prohibited, managed identity and effective roles are required for both runtime and deployment storage; block until identity-first provisioning is verified. Runtime identity settings alone don't configure deployment identity. [4b.opt](automation/app-creation.md#4bopt-identity-based-storage) is a post-create conversion only where connection-string creation was permitted. Step 4c preserves target storage settings rather than copying source `AzureWebJobsStorage*` settings.
 - **Application Insights**: Preserve `Authorization=AAD` when the source already uses it; otherwise treat conversion as optional post-migration hardening
 - When using User Assigned Managed Identity, pass `managedIdentityClientId` explicitly
 
@@ -185,6 +186,8 @@ Steps 4a–4i migrate application configuration; Step 4f.auth handles built-in a
 ### Phase 5: Deploy Code
 
 > ⚠️ **Code is NOT automatically migrated.** The new app is created with config only — you must deploy code separately.
+>
+> ⚠️ If Step 4b storage authentication preflight or identity-first provisioning remains blocked, do not deploy code. Required storage identities, role assignments, and access validation cannot be deferred.
 >
 > ⚠️ If source app settings were deferred in Step 4c, deployment is blocked until the user confirms all required application-specific target settings are configured. The skill may inspect names, but never setting values.
 >
@@ -322,7 +325,7 @@ Windows Consumption has three historical aliases for run-from-package — all mu
 
 ### Storage (replaced by Step 4b / 4b.opt)
 
-Every setting whose name starts with `AzureWebJobsStorage` is dropped by the 4c filter — storage is owned end-to-end by Step 4b (default conn-string binding for `<STORAGE_NAME>`, matching the [MS Learn create flow](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#create-a-flex-consumption-app)) or by optional [Step 4b.opt](automation/app-creation.md#4bopt-identity-based-storage-optional-security-hardening) (identity-based binding against the new app's storage account):
+Every setting whose name starts with `AzureWebJobsStorage` is dropped by the 4c filter. Preserve the target binding verified by Step 4b or configured by [Step 4b.opt](automation/app-creation.md#4bopt-identity-based-storage):
 
-- `AzureWebJobsStorage` — the raw connection string is dropped because `--storage-account` in 4b binds storage at the platform level. The platform sets a fresh value pointing at `<STORAGE_NAME>`.
-- All `AzureWebJobsStorage__*` variants are dropped because carrying them over verbatim could silently point the new app's runtime at the **source** storage account regardless of which account 4b bound. If you need identity-based storage on the new app, [4b.opt](automation/app-creation.md#4bopt-identity-based-storage-optional-security-hardening) re-derives the required settings against `<STORAGE_NAME>` after assigning the data-plane roles.
+- `AzureWebJobsStorage` — discard the source connection string. Step 4b creates a fresh target connection string only when Shared Key authentication is permitted; identity-first targets must not receive one.
+- All `AzureWebJobsStorage__*` variants — discard source settings so they can't silently point the target runtime at the wrong account. Preserve verified target identity settings or re-derive them through 4b.opt where conversion is permitted.

@@ -30,7 +30,7 @@ Load only the file for the current workflow unit. Complete it before loading the
 | 1 | Prerequisites, discovery, and compatibility assessment | [Discovery and Assessment](automation/discovery-and-assessment.md) |
 | 2 | Source configuration and dependency inventory | [Configuration Inventory](automation/configuration-inventory.md) |
 | 3 | Deployment package retrieval when local source is unavailable | [Deployment Package](automation/deployment-package.md) |
-| 4 | Target naming, storage selection, creation, and optional identity-based storage | [App Creation](automation/app-creation.md) |
+| 4 | Target naming, storage selection, authentication preflight, and creation | [App Creation](automation/app-creation.md) |
 | 5 | Production-setting copy or defer decision and secure transfer | [App Settings](automation/app-settings.md) |
 | 6 | Site configuration and managed identities | [Site and Identity Configuration](automation/site-and-identity.md) |
 | 7 | Built-in authentication configuration or migration deferral | [Built-in Authentication](automation/built-in-authentication.md) |

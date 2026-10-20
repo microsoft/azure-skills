@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.96
+
+- Updates to Windows to Flex upgrade skill ([#3379](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3379))
+
 ## 1.2.95
 
 - feature: support per plugin hook ([#3370](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3370))
