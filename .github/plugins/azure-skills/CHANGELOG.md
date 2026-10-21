@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.97
+
+- fix: use MAR images in Python template ([#3414](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3414))
+
 ## 1.2.96
 
 - Updates to Windows to Flex upgrade skill ([#3379](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3379))

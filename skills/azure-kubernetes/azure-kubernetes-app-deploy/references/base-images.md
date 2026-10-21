@@ -25,7 +25,7 @@ generated, so templates never go stale.
 |----------|---------------------------------|-----------|------------------------------------------|
 | .NET | `mcr.microsoft.com/dotnet/{sdk,aspnet}` | floating major (e.g. `9.0`) | already Microsoft ✓ |
 | Java | `eclipse-temurin:<maj>-{jdk,jre}-alpine` | floating major LTS | `mcr.microsoft.com/openjdk/jdk:<maj>-azurelinux` (also `-distroless`) |
-| Python | `python:<maj.min>-slim` | floating major.minor | `mcr.microsoft.com/azurelinux/base/python:<maj.min>` |
+| Python | `mcr.microsoft.com/azurelinux/base/python:<maj.min>` | floating major.minor | already Microsoft ✓ |
 | Node | `node:<maj>-alpine` | floating major LTS | `mcr.microsoft.com/azurelinux/base/nodejs:<maj>` |
 | Go | build `golang:<ver>-alpine`, runtime `gcr.io/distroless/static-debian12` | floating major.minor | `mcr.microsoft.com/oss/go/microsoft/golang:<ver>-azurelinux3.0` |
 | Rust | build `rust:<ver>-slim`, runtime `gcr.io/distroless/cc-debian12` | floating major.minor | `mcr.microsoft.com/azurelinux/base/rust:<maj.min>` |
@@ -37,7 +37,7 @@ generated, so templates never go stale.
 > that Debian release. This asymmetry with the build stages is intentional —
 > don't "fix" it by adding a placeholder.
 
-> Adopting the Microsoft Azure Linux images for Python/Node/Go/Rust changes the
+> Adopting the Microsoft Azure Linux images for Node/Go/Rust changes the
 > in-image package manager (`tdnf`, not `apk`/`apt`) and the non-root-user
 > setup. That migration is intentionally **out of scope** here — this file
 > documents the target so a later change can adopt it.

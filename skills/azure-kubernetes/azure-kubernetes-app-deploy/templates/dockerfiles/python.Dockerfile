@@ -14,8 +14,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-# Base: latest stable Python, Debian-slim (NOT Alpine — musl breaks many C extensions). See references/base-images.md.
-FROM python:<LATEST_STABLE_PYTHON>-slim AS build
+# Base: latest stable Python on Azure Linux. See references/base-images.md.
+FROM mcr.microsoft.com/azurelinux/base/python:<LATEST_STABLE_PYTHON> AS build
 
 WORKDIR /app
 
@@ -38,12 +38,14 @@ COPY . .
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM python:<LATEST_STABLE_PYTHON>-slim
+FROM mcr.microsoft.com/azurelinux/base/python:<LATEST_STABLE_PYTHON>
 
 WORKDIR /app
 
 # AKS Deployment Safeguards DS004: create and switch to a non-root user
-RUN groupadd --gid 1000 appuser \
+RUN tdnf install -y shadow-utils \
+    && tdnf clean all \
+    && groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid appuser --shell /bin/sh --create-home appuser
 
 # Copy the virtual environment and application source from the build stage
