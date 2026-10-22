@@ -2,6 +2,7 @@
 
 Provision Azure resources when needed, deploy the agent, and smoke-test it.
 For **hosted agents** (custom container or code), use `azd deploy`.
+For **Voice Agents**, use `azd deploy` and smoke-test over the `voice` WebSocket endpoint.
 For **Managed Harness Agents** (`kind: prompt` plus the GitHub Copilot harness), use `azd deploy`.
 For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 
@@ -11,15 +12,18 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container deploy via `azd deploy` (remote builds require a Dockerfile and ACR; local builds also require Docker; no `codeConfiguration:` in the `azure.yaml` service block) |
+| Voice (Prompt Voice) | `azd provision` when needed, declarative `azd deploy`, then verify over the `voice` WebSocket endpoint (`azd ai agent invoke` is not supported) |
+| Voice (Hosted Voice) | `azd provision` when needed, `azd deploy` for both the `kind: hosted` target and `kind: voice` wrapper, report both versions separately, and smoke-test the wrapper over the `voice` WebSocket endpoint |
 | Managed Harness Agent | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
-| Local dev | [create-hosted](../create/create-hosted.md), [local-run](../create/references/local-run.md) |
+| Local dev | [create-hosted](../create/create-hosted.md), [create-voice](../create/create-voice.md), [local-run](../create/references/local-run.md) |
 
 ## Route by Agent Type
 
-- Shipping Python / .NET code -> **Hosted** (azd workflow below).
+- Voice Agent (single-agent Prompt Voice or two-agent Hosted Voice wrapper + `kind: hosted` target) -> **Voice** (azd Voice workflow below).
+- Shipping Python / .NET code (`kind: hosted`) -> **Hosted** (azd workflow below).
 - Explicit `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
 - Ordinary Prompt Agent model / instructions / tools -> **Prompt** (MCP workflow below).
 
@@ -334,6 +338,10 @@ Show Agent name, version, project, model, harness, tools, optional Toolbox, depl
 | Published definition lacks harness | Fix `harness.type`, verify the extension version, and redeploy |
 | Tool shape rejected | Read the matching Managed Harness Agent tool reference and preserve REST field names |
 | Connection missing | Use a user-supplied/existing configured connection, or create it only on explicit request |
+
+## Workflow -- Voice Agent (azd)
+
+Follow [Voice Agent deployment](references/voice-deploy.md) for Prompt Voice and Hosted Voice provisioning, deployment order, and two-stage verification.
 
 ## Workflow -- Prompt agent (MCP)
 

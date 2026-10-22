@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.98
+
+- feature: implement Microsoft Foundry Voice Agent skill support ([#3385](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3385))
+
 ## 1.2.97
 
 - fix: use MAR images in Python template ([#3414](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3414))

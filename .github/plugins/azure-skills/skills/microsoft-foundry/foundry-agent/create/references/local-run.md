@@ -72,6 +72,12 @@ azd ai agent run
 
 azd opens Microsoft 365 Agents Playground for Activity traffic. If Activity coexists with another protocol, invoke each requested protocol through its own client path.
 
+### Voice Agents and Hosted Voice targets (`invocations_ws` + Bridge `1.0`)
+
+- **Prompt Voice Agents** have no local container runtime. Skip local run and deploy to Azure, then verify over the managed `voice` WebSocket endpoint (see [voice-agent-smoke-test.md](voice-agent-smoke-test.md)).
+- **Hosted Voice targets** (`kind: hosted` with `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` and `metadata.voiceLiveCompatible: "true"`) expose `ws://127.0.0.1:8088/invocations_ws` and `GET /readiness` locally instead of HTTP `responses`/`invocations`. Start the target locally (`uv run --no-sync python main.py` or `azd ai agent run <target-service> --no-client`) and run `scripts/smoke_test.py` (`session.start` with `protocol_version: "1.0"` -> `session.ready`, `user.message` with `"/help"` -> `response.created` -> `response.output_text.done` -> `response.done`) before deploying (see [voice-agent-hosted-bridge.md](voice-agent-hosted-bridge.md)).
+- Local target testing validates only the Hosted target's Bridge `1.0` handler, not the managed Foundry Voice audio pipeline (`kind: voice` wrapper), which must be smoke-tested after deployment.
+
 ## Useful flags
 
 | Flag | Purpose |
