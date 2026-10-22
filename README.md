@@ -225,6 +225,16 @@ git --version
 
 3. Wait for the installation to complete. You should see confirmation that the Azure skills have been successfully added.
 
+### Neotask
+
+**Install the plugin** from [Neotask Construct](https://construct.neotask.ai/p/microsoft-azure):
+
+```bash
+neotask construct install microsoft-azure
+```
+
+The other plugins in this repository install the same way: `microsoft-aks-skills`, `microsoft-azure-cost`, `microsoft-azure-kusto-graph-skills`, `microsoft-azure-local-skills`, and `microsoft-foundry-iq-skills`.
+
 ## Sovereign Cloud Configuration
 
 By default, the Azure MCP server connects to the Azure Public Cloud. If you use a sovereign cloud (Azure China Cloud or Azure US Government), you need to configure the MCP server to use the appropriate cloud environment.
