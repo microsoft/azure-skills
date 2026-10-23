@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.99
+
+- fix: exclude venv in agentignore ([#3433](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3433))
+
 ## 1.2.98
 
 - feature: implement Microsoft Foundry Voice Agent skill support ([#3385](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3385))

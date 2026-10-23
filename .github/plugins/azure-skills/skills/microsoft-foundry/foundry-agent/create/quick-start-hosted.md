@@ -221,7 +221,7 @@ FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<p
 AZURE_AI_MODEL_DEPLOYMENT_NAME=<deployment-name>
 ```
 
-Keep `.env` out of the deploy package: make sure `src/<agent-name>/.agentignore` lists `.env` (add it if missing).
+Keep `.env` out of the deploy package: make sure `src/<agent-name>/.agentignore` lists `.env` (add it if missing). For Python, also list `.venv/`, `__pycache__/`, and `*.pyc` in `.agentignore`.
 
 Also mirror them into the azd env (so `azd ai agent run` injects the right values — it reads azd env *before* `.env`):
 

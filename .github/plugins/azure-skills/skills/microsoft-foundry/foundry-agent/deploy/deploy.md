@@ -136,6 +136,8 @@ environment:
 - `AZURE_AI_MODEL_DEPLOYMENT_NAME`
 - `AZURE_TENANT_ID`
 
+For Python, verify that `<service-dir>/.agentignore` excludes `.venv/`, adding the rule if missing.
+
 #### Container deploy
 
 Complete the [Container Deploy Precheck](references/container-deploy.md)
