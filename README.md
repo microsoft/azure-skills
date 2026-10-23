@@ -84,6 +84,28 @@ apm install microsoft/azure-skills
 /plugin update azure@azure-skills
 ```
 
+**Automatic updates (optional, enterprise administrators)**:
+
+Add or merge the following into your enterprise-managed `managed-settings.json`, **not your personal Copilot CLI configuration**:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "azure-skills": {
+      "source": {
+        "source": "github",
+        "repo": "microsoft/azure-skills"
+      },
+      "autoUpdate": true
+    }
+  }
+}
+```
+
+`autoUpdate: true` requires clients to periodically refresh this marketplace and update installed plugins sourced from it; it does not install the plugin for you. Set it to `false` to disable automatic updates for this marketplace, or omit it to retain the existing default or user-configured behavior. A defined managed value takes precedence over user preferences, and `strictKnownMarketplaces` restrictions still apply.
+
+See [Getting started with enterprise-managed settings](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/get-started) for setup and the [`extraKnownMarketplaces` reference](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/enterprise-administrators/enterprise-managed-settings#extraknownmarketplaces) for details.
+
 ### VS Code
 
 Install the **Azure MCP** extension from the Visual Studio Marketplace:
