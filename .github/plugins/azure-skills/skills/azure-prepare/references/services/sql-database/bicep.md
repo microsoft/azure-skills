@@ -168,8 +168,10 @@ hooks:
 **Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
 
 Key behaviours of the scripts:
-- Installs the `rdbms-connect` Azure CLI extension if not already present (required for `az sql db query`)
+- Requires modern go-sqlcmd on `PATH` and uses `ActiveDirectoryDefault` authentication
 - Loads `azd env get-values` safely (no `eval`)
+- Accepts app resource names of 2-60 ASCII letters, digits or hyphens, starting and ending with a letter or digit; rejects other values before executing SQL
+- Escapes SQL literals and identifiers separately, disables sqlcmd variable substitution, and fails on environment-loading or SQL errors
 - Grants `db_datareader` + `db_datawriter` by default (idempotent)
 - Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)
 - `SERVICE_WEB_NAME` takes priority over `SERVICE_API_NAME` when resolving the app identity

@@ -44,11 +44,39 @@ continues with the base guidance.
 
 ## Install
 
-In Copilot CLI:
+Install the base `azure` plugin first, then add this plugin. This plugin is
+published in the `microsoft/azure-skills` marketplace. Its manifests don't
+declare `azure` as a dependency, because a client could then install a second
+copy of `azure` next to the one you already have. Keep exactly one copy of
+`azure`, from whichever marketplace you installed it.
+
+### Copilot CLI
 
 1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
 2. Install this plugin: `/plugin install aks-skills@azure-skills`
 3. Update it later with `/plugin update aks-skills@azure-skills`
+
+### Claude Code
+
+`aks-skills` isn't listed in `claude-plugins-official`, so add the
+`azure-skills` marketplace even if you installed `azure` from
+`claude-plugins-official`.
+
+1. If you don't have the base plugin yet, install it:
+   `/plugin install azure@claude-plugins-official`
+2. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
+3. Install this plugin: `/plugin install aks-skills@azure-skills`
+4. Run `/reload-plugins`, or start a new session, so the skills appear.
+5. Update it later with `/plugin update aks-skills@azure-skills`
+
+### Codex
+
+Codex reads the same Claude-style marketplace.
+
+1. Add the marketplace: `codex plugin marketplace add microsoft/azure-skills`
+2. In the Codex plugin browser, open the `azure-skills` marketplace and install
+   `azure` (if you don't have it yet) and `aks-skills`.
+3. Start a new session so the skills appear.
 
 If your organization's plugin policy blocks this plugin, the base `azure`
 plugin's AKS guidance remains available.

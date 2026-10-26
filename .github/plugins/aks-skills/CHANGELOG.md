@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.7
+
+- fix: document aks-skills install for Claude Code and Codex ([#3380](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3380))
+
 ## 1.0.6
 
 - feature: support per plugin hook ([#3370](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3370))

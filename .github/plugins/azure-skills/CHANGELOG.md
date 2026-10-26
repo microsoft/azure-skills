@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.100
+
+- fix: harden SQL access grant scripts ([#3435](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3435))
+
 ## 1.2.99
 
 - fix: exclude venv in agentignore ([#3433](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3433))
