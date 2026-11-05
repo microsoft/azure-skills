@@ -22,6 +22,12 @@ npm run dev
 
 Open `http://localhost:4321/azure-skills/` (or the port Astro prints).
 
+Local npm commands use your environment and user-level npm configuration. To match
+CI when installing or updating dependencies, pass
+`--registry=https://packagefeedproxy.microsoft.io/npm/ --omit-lockfile-registry-resolved=true`
+to `npm ci` or `npm install`. The second option keeps registry package URLs out of
+generated lockfiles.
+
 ## Build and preview
 
 ```bash
@@ -50,6 +56,9 @@ Build output is written to `landing-page/dist/`.
 ## Deployment
 
 GitHub Pages deployment is handled by `.github/workflows/pages.yml`.
+
+The build job sets `NPM_CONFIG_REGISTRY` to Microsoft's package proxy and
+`NPM_CONFIG_OMIT_LOCKFILE_REGISTRY_RESOLVED` to `"true"` through environment variables.
 
 - On **pull requests**, the workflow runs install/build validation only.
 - On **push to `main`**, it builds and deploys to GitHub Pages.
