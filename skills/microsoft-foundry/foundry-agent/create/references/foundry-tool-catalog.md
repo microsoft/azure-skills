@@ -545,9 +545,11 @@ Not catalog-driven — the user provides the spec themselves. Each Save in this 
 
 | Tile | `authType` options | `target` | Notes |
 |---|---|---|---|
-| OpenAPI | `None`, `CustomKeys`, `ApiKey`, `OAuth2` | OpenAPI spec URL or upstream API base | Agent gets `tools[].openapi.auth.security_scheme.connection_id`. |
+| OpenAPI | `None`, `CustomKeys`, `ApiKey`, `ProjectManagedIdentity` | OpenAPI spec URL or upstream API base | Agent gets `tools[].openapi.auth.security_scheme.connection_id`. |
 | A2A (Preview) | `None` / `CustomKeys` / `UserEntraToken` / `AAD` (mapped from UI) | A2A endpoint | `metadata.agentCardPath` default `/.well-known/agent-card.json`; agent gets `tools=[A2APreviewTool(project_connection_id=...)]`; runtime emits `a2a_preview_call` / `a2a_preview_call_output` events. |
 | MCP | covered above | — | This tile is just a router to the catalog / BYO flows. |
+
+OpenAPI tools support anonymous, key-based, and project managed identity authentication. They don't support OAuth identity passthrough (`OAuth2` connections), including inside a toolbox. OAuth support for MCP tools doesn't extend to OpenAPI tools in the same toolbox. See [OpenAPI authentication in Microsoft Foundry](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/openapi#configure-openapi-authentication-in-the-foundry-portal).
 
 ## Toolbox attach — `gateway_connector` tool naming
 
