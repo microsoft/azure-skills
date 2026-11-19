@@ -38,8 +38,8 @@ Foundry agent creation to `microsoft-foundry`.
 | Indexer/skillset failures | Inspect indexer status (`lastResult.status`, `errors[]`, `warnings[]` with `key`, `name`, `statusCode`). Verify data-source RBAC, skillset AI Services identity/key attachment and projection target field mappings. |
 | `503` / `429` throttling | Queries and indexing share replicas/partitions; heavy indexing or replica changes raise dropped queries. |
 
-4. For permitted live checks, prefer `azure__search` (`search_index_list`,
-   `search_index_get`, `search_query`) and keyless RBAC (`Search Index Data Reader` /
+4. For permitted live checks, prefer `azure__search` (`search_service_list`,
+   `search_index_get`, `search_index_query`) and keyless RBAC (`Search Index Data Reader` /
    `Search Service Contributor`). When diagnostic settings export to
    Log Analytics, check `AzureMetrics` (`ThrottledSearchQueriesPercentage`,
    `SearchLatency`, `SearchQueriesPerSecond`, `DocumentsProcessedCount`,
