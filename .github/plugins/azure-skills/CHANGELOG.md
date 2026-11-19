@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.131
+
+- feat: expand Azure AI Foundry diagnostics ([#3546](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3546))
+
 ## 1.2.130
 
 - feat: add offline preflights for Document Intelligence, Translator, AI Search, and Content Safety to azure-ai ([#3532](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/3532))

@@ -39,3 +39,31 @@ and PowerShell 7, including ConstrainedLanguage mode.
 
 3. **Not checkable here**: report image dimensions, page counts and label-file
    consistency as `unknown`; never print label values.
+
+## Training-set label coverage
+
+For a local copy of a custom extraction training folder. Prints the number of
+label files and, per field name, how many documents contain that label entry;
+never values, text or file names. Both commands count empty `value` arrays as
+label entries; use the bundled auditor when available to separate labeled
+values from empty-value-only labels.
+
+```bash
+d="<local-training-folder>"; echo "label_files=$(find "$d" -name '*.labels.json' | wc -l)"; find "$d" -name '*.labels.json' -exec sh -c 'grep -o "\"label\" *: *\"[^\"/]*" "$1" | sed "s/.*\"//" | sort -u' _ {} \; | sort | uniq -c
+```
+
+```powershell
+$d = "<local-training-folder>"; $files = @(Get-ChildItem -LiteralPath $d -Recurse -Filter '*.labels.json'); "label_files=$($files.Count)"; $files | ForEach-Object { try { (Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json).labels | ForEach-Object { ($_.label -split '/')[0] } | Sort-Object -Unique } catch { 'unreadable_label_file' } } | Group-Object | Sort-Object Name | Select-Object Count, Name
+```
+
+Compare each count with `label_files`: a field labeled in only some documents
+needs a check that the value is really absent in the others. OCR layout API
+versions (all should match the build API version):
+
+```bash
+find "<local-training-folder>" -name '*.ocr.json' -exec sh -c 'grep -o -m1 "\"apiVersion\" *: *\"[^\"]*\"" "$1" | head -n1 | sed "s/.*: *//"' _ {} \; | sort | uniq -c
+```
+
+```powershell
+Get-ChildItem -LiteralPath "<local-training-folder>" -Recurse -Filter '*.ocr.json' | ForEach-Object { $m = Select-String -LiteralPath $_.FullName -Pattern '"apiVersion"\s*:\s*"([^"]+)"' -List; if ($m) { $m.Matches[0].Groups[1].Value } else { 'not_found' } } | Group-Object | Select-Object Count, Name
+```
