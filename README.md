@@ -247,6 +247,12 @@ git --version
 
 3. Wait for the installation to complete. You should see confirmation that the Azure skills have been successfully added.
 
+Alternatively, install the Azure skills with the [GitHub CLI](https://cli.github.com/manual/gh_skill):
+
+```bash
+gh skill install microsoft/azure-skills --all --agent github-copilot --scope user
+```
+
 ## Sovereign Cloud Configuration
 
 By default, the Azure MCP server connects to the Azure Public Cloud. If you use a sovereign cloud (Azure China Cloud or Azure US Government), you need to configure the MCP server to use the appropriate cloud environment.
